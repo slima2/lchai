@@ -1,0 +1,386 @@
+services:
+  # ─── Infrastructure ──────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: oncology-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-oncology}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-oncology_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-oncology_xai}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-oncology}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - oncology-net
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: oncology-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - oncology-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: oncology-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - oncology-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: oncology-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - oncology-net
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: oncology-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER:-minioadmin} $${MINIO_ROOT_PASSWORD:-minioadmin};
+      mc mb local/oncology-xai --ignore-existing;
+      mc mb local/oncology-xai/images --ignore-existing;
+      mc mb local/oncology-xai/tiles --ignore-existing;
+      mc mb local/oncology-xai/overlays --ignore-existing;
+      mc mb local/oncology-xai/heatmaps --ignore-existing;
+      mc mb local/oncology-xai/xai --ignore-existing;
+      mc mb local/oncology-xai/ehr --ignore-existing;
+      mc mb local/oncology-xai/reports --ignore-existing;
+      mc mb local/oncology-xai/ontology --ignore-existing;
+      mc mb local/oncology-xai/reasoner --ignore-existing;
+      exit 0;
+      "
+    networks:
+      - oncology-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: oncology-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-oncology_xai}
+      KC_DB_USERNAME: ${POSTGRES_USER:-oncology}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-oncology_secret}
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e 'GET /health/ready HTTP/1.1\\r\\nhost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3;if [ $? -eq 0 ]; then exit 0;else exit 1;fi;"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - oncology-net
+
+  fuseki:
+    image: stain/jena-fuseki:latest
+    container_name: oncology-fuseki
+    environment:
+      ADMIN_PASSWORD: admin
+      FUSEKI_DATASET_1: oncology
+    ports:
+      - "3030:3030"
+    volumes:
+      - fuseki_data:/fuseki/databases
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3030/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - oncology-net
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    container_name: oncology-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - oncology-net
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: oncology-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - oncology-net
+
+  # ─── Application Services ────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: apps/api-gateway/Dockerfile
+    container_name: oncology-api-gateway
+    env_file: ../.env
+    environment:
+      - SERVICE_NAME=api-gateway
+      - SERVICE_PORT=8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks:
+      - oncology-net
+
+  case-service:
+    build:
+      context: ..
+      dockerfile: apps/case-service/Dockerfile
+    container_name: oncology-case-service
+    env_file: ../.env
+    environment:
+      - SERVICE_NAME=case-service
+      - SERVICE_PORT=8001
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - oncology-net
+
+  image-service:
+    build:
+      context: ..
+      dockerfile: apps/image-service/Dockerfile
+    container_name: oncology-image-service
+    env_file: ../.env
+    environment:
+      - SERVICE_NAME=image-service
+      - SERVICE_PORT=8002
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - oncology-net
+
+  inference-service:
+    build:
+      context: ..
+      dockerfile: apps/inference-service/Dockerfile
+    container_name: oncology-inference-service
+    env_file: ../.env
+    environment:
+      - SERVICE_NAME=inference-service
+      - SERVICE_PORT=8003
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - oncology-net
+
+  inference-worker:
+    build:
+      context: ..
+      dockerfile: apps/inference-service/Dockerfile
+    container_name: oncology-inference-worker
+    command: celery -A app.celery_app:celery worker --loglevel=info --concurrency=2
+    env_file: ../.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - oncology-net
+
+  ehr-service:
+    build:
+      context: ..
+      dockerfile: apps/ehr-service/Dockerfile
+    container_name: oncology-ehr-service
+    env_file: ../.env
+    environment:
+      - SERVICE_NAME=ehr-service
+      - SERVICE_PORT=8004
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fuseki:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - oncology-net
+
+  graph-service:
+    build:
+      context: ..
+      dockerfile: apps/graph-service/Dockerfile
+    container_name: oncology-graph-service
+    env_file: ../.env
+    environment:
+      - SERVICE_NAME=graph-service
+      - SERVICE_PORT=8005
+    ports:
+      - "8005:8005"
+    volumes:
+      # Carpeta local con ncit.owl y mondo.owl para grafo desde OWL real
+      - ../ontologies:/data/ontologies
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fuseki:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - oncology-net
+
+  ontology-admin-service:
+    build:
+      context: ..
+      dockerfile: apps/ontology-admin-service/Dockerfile
+    container_name: oncology-ontology-admin
+    env_file: ../.env
+    environment:
+      - SERVICE_NAME=ontology-admin-service
+      - SERVICE_PORT=8006
+    ports:
+      - "8006:8006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fuseki:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - oncology-net
+
+  audit-service:
+    build:
+      context: ..
+      dockerfile: apps/audit-service/Dockerfile
+    container_name: oncology-audit-service
+    env_file: ../.env
+    environment:
+      - SERVICE_NAME=audit-service
+      - SERVICE_PORT=8007
+    ports:
+      - "8007:8007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - oncology-net
+
+  webapp:
+    build:
+      context: ../apps/webapp
+      dockerfile: Dockerfile
+    container_name: oncology-webapp
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_KEYCLOAK_URL=http://localhost:8080
+      - VITE_KEYCLOAK_REALM=oncology
+      - VITE_KEYCLOAK_CLIENT_ID=oncology-webapp
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-gateway
+    networks:
+      - oncology-net
+
+networks:
+  oncology-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  redis_data:
+  minio_data:
+  fuseki_data:
+  prometheus_data:

@@ -1,0 +1,18 @@
+% =============================================================================
+% Snippet: SHAP UI screenshot figure + explanation for Results and Discussion
+% Place this in Section "SHAP-Based Explainability" (EGFR part), after the
+% individual SHAP figures (bar, beeswarm, force plot) and the paragraph that
+% discusses the "representative case-level explanation" / force plot.
+% =============================================================================
+% Figure filename: shap_ui_egfr_screenshot.png
+% Copy shap_ui_egfr_screenshot.png to your thesis figure directory if needed.
+% =============================================================================
+
+The LCHAI~v1.2 interface integrates these three views---morphologic profile, global SHAP importance, and case-level force plot---on a single screen (Figure~\ref{fig:shap_ui_egfr_screenshot}). For the same TCGA case, the morphologic profile shows the \emph{observed} pattern composition (e.g., solid 56.7\%, mucinous 36.7\%, acinar 5.7\%), while the SHAP bar chart reflects the \emph{model's} global feature importance (e.g., \texttt{pct\_lepidic} and \texttt{pct\_papillary} rank highest for EGFR). These need not coincide: a pattern can dominate the case yet have low global importance if the classifier discriminates more by other features. The force plot for this case makes the outcome explicit: large negative contributions from \texttt{pct\_mucinous} and \texttt{pct\_solid} outweigh the small positive contributions from \texttt{pct\_papillary} and \texttt{pct\_lepidic}, yielding an EGFR-negative prediction. This separation between case composition and feature importance is highlighted in the interface via the ``Distribución vs SHAP'' note, clarifying that SHAP explains the model's decision logic rather than merely reflecting the case's pattern counts.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{shap_ui_egfr_screenshot.png}
+  \caption{SHAP explainability interface (LCHAI~v1.2) for EGFR mutation prediction. Top: case morphologic profile (pattern composition) and EGFR prediction (NEG, score 0.02). Middle: SHAP bar (global feature importance) and beeswarm (feature impact distribution). Bottom: SHAP force plot for this case, showing how high \texttt{pct\_solid} and \texttt{pct\_mucinous} push the prediction to EGFR-negative. The ``Distribución vs SHAP'' note clarifies that pattern composition (case distribution) and SHAP importance (model sensitivity) are distinct. Research use only; evidence source THESIS INTERNAL.}
+  \label{fig:shap_ui_egfr_screenshot}
+\end{figure}

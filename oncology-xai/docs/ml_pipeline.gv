@@ -1,0 +1,67 @@
+// LCHAI v1.2 — ML Pipeline Data Flow (Graphviz)
+// Render: dot -Tpng ml_pipeline.gv -o ml_pipeline.png
+
+digraph ML_Pipeline {
+  rankdir=LR;
+  splines=polyline;
+  node [fontname="Helvetica", fontsize=10];
+  edge [fontname="Helvetica", fontsize=9];
+
+  subgraph cluster_input {
+    label="Input";
+    style=rounded;
+    bgcolor="#E3F2FD";
+    wsi [label="Whole-slide image\n(H&E)", shape=note];
+  }
+
+  subgraph cluster_inference {
+    label="Inference Pipeline";
+    style=rounded;
+    bgcolor="#E8F5E9";
+
+    tiles    [label="Tile extraction\n384px, no overlap", shape=box];
+    backbone [label="CTransPath\nSwin Tiny", shape=box];
+    embed    [label="Projection\n768→512", shape=box];
+    loss     [label="FuzzyArcLoss V3\nSub-centers", shape=box];
+    pattern  [label="Pattern composition\n6 classes", shape=box];
+    profile  [label="Morphologic profile\nn_tiles + pct_*", shape=box];
+    xgb      [label="XGBoost\nper-gene (EGFR, TP53, …)", shape=box];
+    shap     [label="SHAP\nbar, beeswarm, force", shape=box];
+  }
+
+  subgraph cluster_output {
+    label="Output";
+    style=rounded;
+    bgcolor="#FFF3E0";
+    overlay [label="ROI overlay\npattern map", shape=note];
+    table_p [label="Pattern composition\n(table)", shape=note];
+    table_m [label="Mutation predictions\n(table)", shape=note];
+    xai     [label="SHAP artifacts\n(images)", shape=note];
+  }
+
+  subgraph cluster_ontology {
+    label="Explanation Layer";
+    style=rounded;
+    bgcolor="#F3E5F5";
+    kg    [label="Knowledge graph\n(curated + case filter)", shape=box];
+    llm   [label="LLM explanation\n(natural language)", shape=box];
+  }
+
+  wsi -> tiles;
+  tiles -> backbone;
+  backbone -> embed;
+  embed -> loss;
+  loss -> pattern;
+  pattern -> profile;
+  profile -> xgb;
+  xgb -> shap;
+
+  pattern -> overlay [label="overlay"];
+  pattern -> table_p;
+  xgb -> table_m;
+  shap -> xai;
+
+  table_p -> kg [label="case inputs"];
+  table_m -> kg;
+  kg -> llm [label="graph summary"];
+}

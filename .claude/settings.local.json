@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Test-Path ''d:\\\\Dropbox\\\\PHD\\\\LCHAI v1''\")",
+      "Bash(powershell -Command \"Get-Item -Path ''d:\\\\Dropbox\\\\PHD\\\\LCHAI v1'' | Select-Object FullName, Exists\")",
+      "Bash(powershell:*)"
+    ]
+  }
+}

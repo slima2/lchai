@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:8000']
+  - job_name: 'case-service'
+    static_configs:
+      - targets: ['case-service:8001']
+  - job_name: 'image-service'
+    static_configs:
+      - targets: ['image-service:8002']
+  - job_name: 'inference-service'
+    static_configs:
+      - targets: ['inference-service:8003']
+  - job_name: 'ehr-service'
+    static_configs:
+      - targets: ['ehr-service:8004']
+  - job_name: 'graph-service'
+    static_configs:
+      - targets: ['graph-service:8005']
+  - job_name: 'ontology-admin-service'
+    static_configs:
+      - targets: ['ontology-admin-service:8006']
+  - job_name: 'audit-service'
+    static_configs:
+      - targets: ['audit-service:8007']

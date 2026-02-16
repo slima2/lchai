@@ -1,0 +1,63 @@
+{
+  "realm": "oncology",
+  "enabled": true,
+  "sslRequired": "external",
+  "roles": {
+    "realm": [
+      { "name": "clinician", "description": "Clinical user — patients, cases, images, inference, EHR, graph, SHAP" },
+      { "name": "admin", "description": "Admin — ontology management, deep search, policies" },
+      { "name": "auditor", "description": "Auditor — read-only audit trail" }
+    ]
+  },
+  "users": [
+    {
+      "username": "clinician1",
+      "enabled": true,
+      "email": "clinician1@lchai.local",
+      "firstName": "Dr.",
+      "lastName": "Clinician",
+      "credentials": [{ "type": "password", "value": "clinician1", "temporary": false }],
+      "realmRoles": ["clinician"]
+    },
+    {
+      "username": "admin1",
+      "enabled": true,
+      "email": "admin1@lchai.local",
+      "firstName": "System",
+      "lastName": "Admin",
+      "credentials": [{ "type": "password", "value": "admin1", "temporary": false }],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "auditor1",
+      "enabled": true,
+      "email": "auditor1@lchai.local",
+      "firstName": "Audit",
+      "lastName": "User",
+      "credentials": [{ "type": "password", "value": "auditor1", "temporary": false }],
+      "realmRoles": ["auditor"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "oncology-api",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "oncology-secret",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "serviceAccountsEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"]
+    },
+    {
+      "clientId": "oncology-webapp",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"]
+    }
+  ]
+}

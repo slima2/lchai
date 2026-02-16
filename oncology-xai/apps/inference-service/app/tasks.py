@@ -1,0 +1,221 @@
+"""Celery tasks for inference."""
+
+from __future__ import annotations
+
+import io
+import hashlib
+import json
+import logging
+from datetime import datetime
+from uuid import uuid4
+
+from app.celery_app import celery
+from app.config import settings
+from app.database import get_sync_db
+from app.models import (
+    MLJobDB, ResultBundleDB, PatternResultDB,
+    GeneticResultDB, XAIArtifactDB, MorphologicProfileDB,
+)
+from app.roi_inference_ctranspath_fuzzyarcloss_v3 import (
+    InferenceConfig, run_inference,
+)
+
+from oncology_common.storage import StorageClient
+from event_contracts import EventEnvelope, EventPublisher
+
+logger = logging.getLogger(__name__)
+
+
+def _storage() -> StorageClient:
+    return StorageClient(
+        endpoint=settings.s3_endpoint,
+        access_key=settings.s3_access_key,
+        secret_key=settings.s3_secret_key,
+        bucket=settings.s3_bucket,
+    )
+
+
+@celery.task(bind=True, name="inference.process_image", max_retries=2)
+def process_image_task(self, job_id: str, image_id: str, case_id: str, thresholds: dict | None = None):
+    """Run full inference pipeline for an image."""
+    db = get_sync_db()
+    storage = _storage()
+
+    try:
+        # Update job → RUNNING
+        job = db.query(MLJobDB).filter_by(id=job_id).first()
+        if not job:
+            raise ValueError(f"Job {job_id} not found")
+        job.status = "RUNNING"
+        job.started_at = datetime.utcnow()
+        job.celery_task_id = self.request.id
+        db.commit()
+
+        # Download image from MinIO and get format for decode
+        from sqlalchemy import text
+        row = db.execute(
+            text("SELECT storage_uri, format FROM images WHERE id = :id"),
+            {"id": image_id},
+        ).fetchone()
+
+        image_format = (row[1] or "").strip().lower() if row and row[1] else None
+        if row and row[0]:
+            uri = row[0]
+            key = uri.replace(f"s3://{settings.s3_bucket}/", "")
+            if not image_format and "." in key:
+                image_format = key.rsplit(".", 1)[-1].lower()
+            image_bytes = storage.download_bytes(key)
+        else:
+            # If no image in DB yet (e.g. mock), use placeholder
+            from PIL import Image as PILImage
+            img = PILImage.new("RGB", (448, 448), (200, 200, 200))
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            image_bytes = buf.getvalue()
+
+        # Build config
+        thr = thresholds or {}
+        config = InferenceConfig(
+            image_uri=f"image:{image_id}",
+            image_format=image_format,
+            model_backend=settings.model_backend,
+            ctranspath_checkpoint=settings.ctranspath_checkpoint,
+            fuzzyarc_checkpoint=settings.fuzzyarc_checkpoint,
+            mutation_model_dir=settings.mutation_model_dir,
+            pattern_threshold=thr.get("pattern", settings.pattern_threshold),
+            mutation_threshold=thr.get("mutation", settings.mutation_threshold),
+            shap_enabled=settings.shap_enabled,
+        )
+
+        # Run inference
+        result = run_inference(image_bytes, config)
+
+        # Persist artifacts to MinIO
+        rb_id = str(uuid4())
+        prefix = f"results/{case_id}/{rb_id}"
+
+        overlay_key = f"{prefix}/roi_overlay_combined.png"
+        storage.upload_bytes(overlay_key, result.overlay_combined_bytes, "image/png")
+
+        comp_json = json.dumps(result.pattern_percentages).encode()
+        storage.upload_bytes(f"{prefix}/pattern_composition.json", comp_json, "application/json")
+
+        if result.embedding is not None:
+            import numpy as np
+            emb_buf = io.BytesIO()
+            np.savez_compressed(emb_buf, embedding=result.embedding)
+            storage.upload_bytes(f"{prefix}/embedding.npz", emb_buf.getvalue(), "application/octet-stream")
+
+        metrics_json = json.dumps(result.metrics).encode()
+        storage.upload_bytes(f"{prefix}/metrics.json", metrics_json, "application/json")
+
+        # Persist ResultBundle to DB
+        bundle = ResultBundleDB(
+            id=rb_id,
+            case_id=case_id,
+            image_id=image_id,
+            job_id=job_id,
+            model_profile="ctranspath_fuzzyarcloss_v3_subcenters",
+            model_version="v1.0.0-mock" if config.model_backend == "mock" else "v1.0.0",
+            thresholds={"pattern": config.pattern_threshold, "mutation": config.mutation_threshold},
+            pattern_composition=result.pattern_percentages,
+            predominant_pattern=result.predominant_pattern,
+            evidence_source="THESIS_INTERNAL",
+            intended_use="research / decision support (non-diagnostic)",
+        )
+        db.add(bundle)
+        db.flush()
+
+        # Pattern results
+        for p in result.pattern_scores:
+            pr = PatternResultDB(
+                result_bundle_id=rb_id,
+                pattern=p,
+                score=result.pattern_scores[p],
+                percentage=result.pattern_percentages.get(p, 0.0),
+                is_conclusive=result.is_conclusive.get(p, False),
+                overlay_uri=f"s3://{settings.s3_bucket}/{overlay_key}",
+            )
+            db.add(pr)
+
+        # Genetic results
+        for gene in result.mutation_scores:
+            gr = GeneticResultDB(
+                result_bundle_id=rb_id,
+                mutation=gene,
+                score=result.mutation_scores[gene],
+                status=result.mutation_status.get(gene, "INCONCLUSIVE"),
+            )
+            db.add(gr)
+
+        # Morphologic profile
+        mp = MorphologicProfileDB(
+            result_bundle_id=rb_id,
+            n_tiles_total=result.n_tiles,
+            pct_lepidic=result.morphologic_profile.get("pct_lepidic", 0.0),
+            pct_acinar=result.morphologic_profile.get("pct_acinar", 0.0),
+            pct_papillary=result.morphologic_profile.get("pct_papillary", 0.0),
+            pct_micropapillary=result.morphologic_profile.get("pct_micropapillary", 0.0),
+            pct_solid=result.morphologic_profile.get("pct_solid", 0.0),
+            pct_mucinous=result.morphologic_profile.get("pct_mucinous", 0.0),
+        )
+        db.add(mp)
+
+        # SHAP artifacts
+        for name, data in result.shap_artifacts.items():
+            shap_key = f"{prefix}/xai/{name}"
+            storage.upload_bytes(shap_key, data, "image/png")
+            gene = name.split("_")[1] if "_" in name else None
+            art = XAIArtifactDB(
+                result_bundle_id=rb_id,
+                artifact_type="shap",
+                gene=gene,
+                uri=f"s3://{settings.s3_bucket}/{shap_key}",
+                hash=hashlib.sha256(data).hexdigest(),
+            )
+            db.add(art)
+
+        # Update job → COMPLETED
+        job.status = "COMPLETED"
+        job.result_bundle_id = rb_id
+        job.ended_at = datetime.utcnow()
+        job.progress = 1.0
+        db.commit()
+
+        # Emit event
+        try:
+            pub = EventPublisher(settings.rabbitmq_url)
+            pub.publish(EventEnvelope(
+                event_type="inference.completed",
+                producer="inference-service",
+                case_id=case_id,
+                payload={
+                    "job_id": job_id,
+                    "result_bundle_id": rb_id,
+                    "image_id": image_id,
+                    "entity_type": "result_bundle",
+                    "entity_id": rb_id,
+                    "action": "inference.completed",
+                },
+            ))
+        except Exception:
+            logger.exception("Failed to publish inference.completed event")
+
+        return {"job_id": job_id, "result_bundle_id": rb_id, "status": "COMPLETED"}
+
+    except Exception as e:
+        logger.exception("Inference task failed for job %s", job_id)
+        db.rollback()
+        job = db.query(MLJobDB).filter_by(id=job_id).first()
+        if job:
+            job.status = "FAILED"
+            job.error_code = type(e).__name__
+            job.error_detail = str(e)
+            job.ended_at = datetime.utcnow()
+            db.commit()
+        raise
+    finally:
+        db.close()
+
+
+import io  # noqa: E402 — needed by task body

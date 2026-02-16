@@ -1,0 +1,124 @@
+// LCHAI v1.2 — System Architecture (Graphviz)
+// Render: dot -Tpng system_architecture.gv -o system_architecture.png
+//         dot -Tsvg system_architecture.gv -o system_architecture.svg
+
+digraph LCHAI_System {
+  rankdir=TB;
+  splines=polyline;
+  node [fontname="Helvetica", fontsize=10];
+  edge [fontname="Helvetica", fontsize=9];
+
+  // ─── Subgraph: Frontend ─────────────────────────────────────────────
+  subgraph cluster_frontend {
+    label="Frontend";
+    labelloc=t;
+    style=rounded;
+    bgcolor="#E8F4FD";
+
+    webapp [label="React Webapp\n(LCHAI v1.2)\n:3000", shape=box, style=filled, fillcolor="#B3D9FF"];
+  }
+
+  // ─── Subgraph: API Layer ─────────────────────────────────────────────
+  subgraph cluster_gateway {
+    label="API Layer";
+    labelloc=t;
+    style=rounded;
+    bgcolor="#FFF4E6";
+
+    gateway [label="API Gateway\nJWT + RBAC + Proxy\n:8000", shape=box, style=filled, fillcolor="#FFE0B2"];
+  }
+
+  // ─── Subgraph: Application Services ─────────────────────────────────
+  subgraph cluster_services {
+    label="Application Services";
+    labelloc=t;
+    style=rounded;
+    bgcolor="#E8F5E9";
+
+    case_svc   [label="case-service\npatients, cases\n:8001", shape=box, style=filled, fillcolor="#C8E6C9"];
+    image_svc  [label="image-service\nimages, upload\n:8002", shape=box, style=filled, fillcolor="#C8E6C9"];
+    infer_svc  [label="inference-service\nML jobs, patterns,\nmutations, SHAP\n:8003", shape=box, style=filled, fillcolor="#C8E6C9"];
+    ehr_svc    [label="ehr-service\nEHR docs, NER\n:8004", shape=box, style=filled, fillcolor="#C8E6C9"];
+    graph_svc  [label="graph-service\nKG, SPARQL, explain\n:8005", shape=box, style=filled, fillcolor="#C8E6C9"];
+    ont_svc    [label="ontology-admin\nDeepSearch, KG versions\n:8006", shape=box, style=filled, fillcolor="#C8E6C9"];
+    audit_svc  [label="audit-service\nevents\n:8007", shape=box, style=filled, fillcolor="#C8E6C9"];
+  }
+
+  // ─── Subgraph: Data & Storage ───────────────────────────────────────
+  subgraph cluster_data {
+    label="Data & Storage";
+    labelloc=t;
+    style=rounded;
+    bgcolor="#F3E5F5";
+
+    postgres [label="PostgreSQL 16\n:5432", shape=cylinder, style=filled, fillcolor="#E1BEE7"];
+    minio    [label="MinIO\nS3 (images, tiles,\noverlays, xai)\n:9000", shape=cylinder, style=filled, fillcolor="#E1BEE7"];
+    fuseki   [label="Apache Fuseki\nSPARQL triplestore\n:3030", shape=cylinder, style=filled, fillcolor="#E1BEE7"];
+  }
+
+  // ─── Subgraph: Messaging & Cache ────────────────────────────────────
+  subgraph cluster_messaging {
+    label="Messaging & Cache";
+    labelloc=t;
+    style=rounded;
+    bgcolor="#FFF8E1";
+
+    rabbitmq [label="RabbitMQ\nEvent bus\n:5672", shape=box, style=filled, fillcolor="#FFF59D"];
+    redis   [label="Redis\nCelery backend\n:6379", shape=box, style=filled, fillcolor="#FFF59D"];
+  }
+
+  // ─── Subgraph: Auth & Observability ──────────────────────────────────
+  subgraph cluster_observability {
+    label="Auth & Observability";
+    labelloc=t;
+    style=rounded;
+    bgcolor="#ECEFF1";
+
+    keycloak  [label="Keycloak\nOIDC/JWT\n:8080", shape=box, style=filled, fillcolor="#CFD8DC"];
+    jaeger    [label="Jaeger\nTracing\n:16686", shape=box, style=filled, fillcolor="#CFD8DC"];
+    prometheus [label="Prometheus\nMetrics\n:9090", shape=box, style=filled, fillcolor="#CFD8DC"];
+  }
+
+  // ─── Edges: Frontend → Gateway ──────────────────────────────────────
+  webapp -> gateway [label="HTTP", color="#1976D2"];
+
+  // ─── Edges: Gateway → Services ───────────────────────────────────────
+  gateway -> case_svc  [label="proxy"];
+  gateway -> image_svc [label="proxy"];
+  gateway -> infer_svc [label="proxy"];
+  gateway -> ehr_svc   [label="proxy"];
+  gateway -> graph_svc  [label="proxy"];
+  gateway -> ont_svc   [label="proxy"];
+  gateway -> keycloak  [label="JWT validate"];
+
+  // ─── Edges: Services → PostgreSQL ───────────────────────────────────
+  case_svc  -> postgres [label="SQL"];
+  image_svc -> postgres [label="SQL"];
+  infer_svc  -> postgres [label="SQL"];
+  ehr_svc   -> postgres [label="SQL"];
+  graph_svc -> postgres [label="SQL"];
+  ont_svc   -> postgres [label="SQL"];
+  audit_svc -> postgres [label="SQL"];
+  keycloak  -> postgres [label="realm DB"];
+
+  // ─── Edges: Services → Object Storage ────────────────────────────────
+  image_svc -> minio [label="store"];
+  infer_svc -> minio  [label="read/write"];
+
+  // ─── Edges: Services → Fuseki ────────────────────────────────────────
+  graph_svc -> fuseki [label="SPARQL"];
+
+  // ─── Edges: Messaging ────────────────────────────────────────────────
+  case_svc  -> rabbitmq [label="events"];
+  image_svc -> rabbitmq [label="events"];
+  infer_svc -> rabbitmq [label="jobs"];
+  ehr_svc   -> rabbitmq [label="events"];
+  gateway   -> rabbitmq [label="audit"];
+  infer_svc -> redis    [label="Celery"];
+  audit_svc -> rabbitmq [label="consume"];
+
+  // ─── Edges: Observability (optional, lighter) ────────────────────────
+  case_svc   -> jaeger [style=dashed, color="#78909C"];
+  infer_svc  -> jaeger [style=dashed, color="#78909C"];
+  gateway    -> prometheus [style=dashed, color="#78909C"];
+}

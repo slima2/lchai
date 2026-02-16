@@ -1,0 +1,16 @@
+@prefix :      <http://base/#> .
+@prefix tdb:   <http://jena.hpl.hp.com/2008/tdb#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix ja:    <http://jena.hpl.hp.com/2005/11/Assembler#> .
+@prefix fuseki: <http://jena.apache.org/fuseki#> .
+
+:service_oncology a fuseki:Service ;
+    fuseki:name "oncology" ;
+    fuseki:serviceQuery "sparql" ;
+    fuseki:serviceUpdate "update" ;
+    fuseki:serviceUpload "upload" ;
+    fuseki:serviceReadWriteGraphStore "data" ;
+    fuseki:dataset :dataset_oncology .
+
+:dataset_oncology a tdb:DatasetTDB ;
+    tdb:location "/fuseki/databases/oncology" .
