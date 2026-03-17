@@ -42,15 +42,23 @@ PATTERN_PALETTE: dict[str, tuple[int, int, int]] = {
     "mucinous": (255, 165, 0),
 }
 
-PATTERNS = ["lepidic", "acinar", "papillary", "micropapillary", "solid"]
-GENES = ["EGFR", "KRAS", "TP53"]
+PATTERNS = ["lepidic", "acinar", "papillary", "micropapillary", "solid", "mucinous"]
+GENES_V1 = ["EGFR", "KRAS", "TP53"]
+GENES_V2 = ["TP53", "EGFR", "KRAS", "STK11", "KEAP1", "RBM10"]
+GENES = GENES_V2
+
+# Checkpoint label mapping (from training)
+_CK_ID2LABEL: dict[int, str] = {
+    0: "acinar", 1: "lepidic", 2: "micropapillary",
+    3: "mucinous", 4: "papillary", 5: "solid",
+}
 
 
 @dataclass
 class InferenceConfig:
     """Configuration for a single inference run."""
     image_uri: str = ""
-    image_format: str | None = None  # e.g. png, jpeg, tif, tiff, svs
+    image_format: str | None = None
     tile_size: int = 224
     overlap: int = 0
     device: str = "cpu"
@@ -59,128 +67,148 @@ class InferenceConfig:
     model_backend: str = "mock"
     ctranspath_checkpoint: str = ""
     fuzzyarc_checkpoint: str = ""
+    # v1 legacy
     mutation_model_dir: str = ""
+    # v2 ABMIL + Choquet
+    v2_checkpoint_dir: str = ""
+    use_choquet: bool = True
+    top_k_tiles: int = 200
+    genes: list[str] = field(default_factory=lambda: list(GENES_V2))
     shap_enabled: bool = True
+    shap_decomposition_enabled: bool = True
+
+
+@dataclass
+class MutationReportEntry:
+    """v2 per-gene mutation prediction with confidence labelling."""
+    gene: str = ""
+    probability: float = 0.0
+    label: str = "Inconclusive"   # Conclusive | Inconclusive
+    auroc_threshold: float = 0.70
+    disclaimer: str | None = None
+    method: str = "abmil"         # abmil | choquet
+
+
+@dataclass
+class SHAPDecompositionEntry:
+    """v2 SHAP decomposition per gene: embedding vs pattern contribution."""
+    gene: str = ""
+    embedding_contribution_pct: float = 0.0
+    pattern_contribution_pct: float = 0.0
+    top_pattern_dims: list[str] = field(default_factory=list)
+
+
+@dataclass
+class ChoquetShapleyEntry:
+    """v2 Choquet Shapley values + interaction indices per gene."""
+    gene: str = ""
+    shapley_values: dict[str, float] = field(default_factory=dict)
+    interaction_indices: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
 class InferenceResult:
-    """Complete result of an inference run."""
+    """Complete result of an inference run (v2)."""
     pattern_scores: dict[str, float] = field(default_factory=dict)
     pattern_percentages: dict[str, float] = field(default_factory=dict)
     predominant_pattern: str = ""
     is_conclusive: dict[str, bool] = field(default_factory=dict)
     overlay_combined_bytes: bytes = b""
+    attention_overlay_bytes: bytes = b""
     embedding: np.ndarray | None = None
+    tile_embeddings: np.ndarray | None = None   # (N, 512) per-tile
+    tile_pattern_probs: np.ndarray | None = None  # (N, 6) per-tile
     n_tiles: int = 0
-    # Mutation
+    tile_coords: list[tuple[int, int]] = field(default_factory=list)
+    # v2 mutation report (replaces v1 XGBoost)
+    mutation_report: list[MutationReportEntry] = field(default_factory=list)
+    # v1 legacy fields (kept for backward compat)
     mutation_scores: dict[str, float] = field(default_factory=dict)
     mutation_status: dict[str, str] = field(default_factory=dict)
     # Morphologic profile
     morphologic_profile: dict[str, float] = field(default_factory=dict)
-    # SHAP
+    # v2 SHAP decomposition
+    shap_decompositions: list[SHAPDecompositionEntry] = field(default_factory=list)
+    # v2 Choquet Shapley
+    choquet_shapley: list[ChoquetShapleyEntry] = field(default_factory=list)
+    # v1 legacy SHAP artifacts (images)
     shap_artifacts: dict[str, bytes] = field(default_factory=dict)
+    # Attention map
+    attention_top_k_indices: list[int] = field(default_factory=list)
     # Metrics
     metrics: dict[str, Any] = field(default_factory=dict)
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # REAL ML COMPONENTS (used when model_backend == "local")
+# Loaded from thesis checkpoint: ResNet-101 (4-ch) + FuzzyArcLoss head
 # ═══════════════════════════════════════════════════════════════════════
 
-def _load_ctranspath_model(checkpoint_path: str, device: str = "cpu"):
-    """Load CTransPath backbone (SWIN Transformer, embed_dim=512).
+_MODEL_CACHE: dict[str, Any] = {}
 
-    Requires: torch, timm.
-    Adapted from thesis: CTransPathBackbone with ConvStem.
+
+def _load_real_pipeline(checkpoint_path: str, device: str = "cpu") -> dict[str, Any]:
+    """Load trained ResNet-101 + FuzzyArcLoss head from a single .pth checkpoint.
+
+    Checkpoint structure (from thesis training):
+      model_state  — nn.Sequential(ResNet101_4ch, BN(2048), Linear(2048,512), BN(512))
+      head_state   — {'head.weight': [6, 512], 'ce.alpha': [6]}
+      config       — training hyperparams (IMG_SIZE, S_SCALE, id2label, ...)
     """
-    import torch
-    import timm
+    if checkpoint_path in _MODEL_CACHE:
+        return _MODEL_CACHE[checkpoint_path]
 
-    model = timm.create_model(
-        "swin_tiny_patch4_window7_224", pretrained=False, num_classes=0
-    )
-    # CTransPath uses a ConvStem instead of standard patch embed
-    # Load checkpoint if available
-    if checkpoint_path:
-        try:
-            state = torch.load(checkpoint_path, map_location=device)
-            if "model" in state:
-                state = state["model"]
-            model.load_state_dict(state, strict=False)
-            logger.info("Loaded CTransPath checkpoint from %s", checkpoint_path)
-        except Exception as e:
-            logger.warning("Could not load CTransPath checkpoint: %s", e)
-
-    model.eval()
-    model.to(device)
-    return model
-
-
-def _load_fuzzyarc_head(checkpoint_path: str, num_classes: int = 5, embed_dim: int = 512, device: str = "cpu"):
-    """Load FuzzyArcLoss v3 SubCenters classification head.
-
-    Adapted from thesis: FuzzyArcMarginProductV3SubCenters.
-    """
     import torch
     import torch.nn as nn
+    from torchvision import models as tv_models
 
-    class FuzzyArcMarginProductV3SubCenters(nn.Module):
-        """FuzzyArcLoss v3 with sub-centers for robust classification."""
+    ck = torch.load(checkpoint_path, map_location=device, weights_only=False)
+    cfg = ck.get("config", {})
+    id2label = ck.get("id2label", _CK_ID2LABEL)
+    num_classes = len(id2label)
+    embed_dim = cfg.get("EMBED_DIM", 512)
+    s_scale = cfg.get("S_SCALE", 30.0)
+    img_size = cfg.get("IMG_SIZE", 384)
 
-        def __init__(self, in_features: int, out_features: int, K: int = 3,
-                     s: float = 30.0, m: float = 0.50, tau: float = 0.1):
-            super().__init__()
-            self.in_features = in_features
-            self.out_features = out_features
-            self.K = K
-            self.s = s
-            self.m = m
-            self.tau = tau
-            self.weight = nn.Parameter(torch.FloatTensor(out_features * K, in_features))
-            nn.init.xavier_uniform_(self.weight)
+    # ── backbone: ResNet-101 with 4 input channels (RGB + mask) ──
+    backbone = tv_models.resnet101(weights=None)
+    backbone.conv1 = nn.Conv2d(4, 64, kernel_size=7, stride=2, padding=3, bias=False)
+    backbone.fc = nn.Identity()
 
-        def forward(self, x: torch.Tensor, label: torch.Tensor | None = None) -> torch.Tensor:
-            # Normalize
-            cosine = torch.nn.functional.linear(
-                torch.nn.functional.normalize(x),
-                torch.nn.functional.normalize(self.weight),
-            )
-            # Reshape for sub-centers: (batch, classes, K)
-            cosine = cosine.view(-1, self.out_features, self.K)
-            # Max over sub-centers
-            cosine, _ = cosine.max(dim=2)
+    model = nn.Sequential(
+        backbone,                               # 0 → 2048-dim
+        nn.BatchNorm1d(2048),                   # 1
+        nn.Linear(2048, embed_dim, bias=False),  # 2
+        nn.BatchNorm1d(embed_dim),              # 3
+    )
 
-            if label is not None and self.training:
-                # Apply angular margin with fuzzy membership
-                theta = torch.acos(torch.clamp(cosine, -1.0 + 1e-7, 1.0 - 1e-7))
-                one_hot = torch.zeros_like(cosine).scatter_(1, label.view(-1, 1), 1.0)
-                # Fuzzy membership modulation
-                mu = torch.exp(-self.tau * theta)
-                target_margin = self.m * mu
-                output = torch.cos(theta + one_hot * target_margin.detach())
-                output *= self.s
-            else:
-                output = cosine * self.s
+    missing, unexpected = model.load_state_dict(ck["model_state"], strict=False)
+    logger.info(
+        "Loaded model from %s  (matched: %d, missing: %d, unexpected: %d)",
+        checkpoint_path,
+        len(ck["model_state"]) - len(unexpected),
+        len(missing), len(unexpected),
+    )
+    model.eval().to(device)
 
-            return output
+    # ── head: class prototype weight matrix [num_classes, embed_dim] ──
+    head_weight = ck["head_state"]["head.weight"].to(device)  # (6, 512)
 
-    head = FuzzyArcMarginProductV3SubCenters(embed_dim, num_classes)
-
-    if checkpoint_path:
-        try:
-            import torch
-            state = torch.load(checkpoint_path, map_location=device)
-            if "head" in state:
-                state = state["head"]
-            head.load_state_dict(state, strict=False)
-            logger.info("Loaded FuzzyArcLoss v3 head from %s", checkpoint_path)
-        except Exception as e:
-            logger.warning("Could not load FuzzyArc head: %s", e)
-
-    head.eval()
-    head.to(device)
-    return head
+    pipeline = {
+        "model": model,
+        "head_weight": head_weight,
+        "id2label": {int(k): v for k, v in id2label.items()},
+        "num_classes": num_classes,
+        "embed_dim": embed_dim,
+        "s_scale": float(s_scale),
+        "img_size": int(img_size),
+    }
+    _MODEL_CACHE[checkpoint_path] = pipeline
+    logger.info(
+        "Pipeline ready: %d classes, embed=%d, s=%.2f, img=%d, val_f1=%.4f",
+        num_classes, embed_dim, s_scale, img_size, ck.get("val_f1", 0),
+    )
+    return pipeline
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -236,12 +264,60 @@ def _tile_image(img: Image.Image, tile_size: int = 224, overlap: int = 0) -> lis
 
 def _build_overlay(img: Image.Image, tile_coords: list[tuple[int, int]],
                    tile_labels: list[str], tile_size: int, alpha: int = 100) -> bytes:
-    """Build RGBA overlay combining all pattern colors."""
-    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    draw = ImageDraw.Draw(overlay)
-    for (x, y), label in zip(tile_coords, tile_labels):
+    """Build RGBA overlay with Gaussian-smoothed pattern regions.
+
+    Instead of hard rectangles, each tile's center is painted as a soft blob
+    and then the whole overlay is blurred so boundaries blend naturally,
+    producing a heatmap-like appearance over the histopathological image.
+    """
+    from PIL import ImageFilter
+
+    w, h = img.size
+
+    # Build per-channel float accumulators (R, G, B, weight) at image resolution
+    acc_r = np.zeros((h, w), dtype=np.float32)
+    acc_g = np.zeros((h, w), dtype=np.float32)
+    acc_b = np.zeros((h, w), dtype=np.float32)
+    acc_w = np.zeros((h, w), dtype=np.float32)
+
+    # Paint each tile as a radial gradient from center (strongest) to edge (weakest)
+    half = tile_size // 2
+    ys = np.arange(tile_size, dtype=np.float32) - half
+    xs = np.arange(tile_size, dtype=np.float32) - half
+    gx, gy = np.meshgrid(xs, ys)
+    sigma = tile_size * 0.38
+    gaussian_kernel = np.exp(-(gx ** 2 + gy ** 2) / (2 * sigma ** 2))
+
+    for (tx, ty), label in zip(tile_coords, tile_labels):
         color = PATTERN_PALETTE.get(label, (128, 128, 128))
-        draw.rectangle([x, y, x + tile_size, y + tile_size], fill=(*color, alpha))
+        # Clip to image bounds
+        y1, y2 = ty, min(ty + tile_size, h)
+        x1, x2 = tx, min(tx + tile_size, w)
+        ky2, kx2 = y2 - ty, x2 - tx
+        kern = gaussian_kernel[:ky2, :kx2]
+        acc_r[y1:y2, x1:x2] += kern * color[0]
+        acc_g[y1:y2, x1:x2] += kern * color[1]
+        acc_b[y1:y2, x1:x2] += kern * color[2]
+        acc_w[y1:y2, x1:x2] += kern
+
+    # Normalize and convert to uint8
+    mask = acc_w > 0
+    for ch in (acc_r, acc_g, acc_b):
+        ch[mask] /= acc_w[mask]
+
+    r_img = Image.fromarray(np.clip(acc_r, 0, 255).astype(np.uint8), "L")
+    g_img = Image.fromarray(np.clip(acc_g, 0, 255).astype(np.uint8), "L")
+    b_img = Image.fromarray(np.clip(acc_b, 0, 255).astype(np.uint8), "L")
+
+    # Alpha channel: stronger where we have predictions, softened
+    alpha_arr = np.where(mask, alpha, 0).astype(np.uint8)
+    a_img = Image.fromarray(alpha_arr, "L")
+
+    overlay = Image.merge("RGBA", (r_img, g_img, b_img, a_img))
+
+    # Apply Gaussian blur to soften further (radius proportional to tile size)
+    blur_radius = max(tile_size // 6, 4)
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=blur_radius))
 
     # Composite
     base = img.convert("RGBA")
@@ -407,49 +483,64 @@ def _decode_image(image_bytes: bytes, image_format: str | None) -> Image.Image:
 # ═══════════════════════════════════════════════════════════════════════
 
 def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResult:
-    """Execute complete inference pipeline.
+    """Execute complete v2 inference pipeline.
 
-    Steps (DERCAS 10.2):
+    Steps:
       1) Decode image
       2) Tile image
-      3) CTransPath embeddings (or mock)
-      4) FuzzyArcLoss v3 SubCenters pattern classification (or mock)
-      5) Compute pattern composition (percentages)
-      6) Build overlay
-      7) Build morphologic profile
-      8) Mutation prediction
-      9) SHAP computation
-      10) Assemble metrics
+      3-4) CTransPath + FuzzyArcLoss pattern classification
+      5) Pattern composition
+      6) Build pattern overlay
+      7) Morphologic profile
+      8) v2 ABMIL mutation prediction (Pathway A)
+      9) v2 Choquet mutation prediction (Pathway B, if enabled)
+      10) v2 Attention map from ABMIL
+      11) v2 SHAP decomposition (DeepSHAP on ABMIL)
+      12) v2 Choquet Shapley values
+      13) v1 legacy SHAP (backward compat)
+      14) Metrics
     """
     t0 = time.time()
     result = InferenceResult()
 
-    # Allow large WSI (avoids PIL decompression-bomb when using PIL path)
     old_max = getattr(Image, "MAX_IMAGE_PIXELS", None)
     Image.MAX_IMAGE_PIXELS = None
     try:
-        # 1) Decode image (PIL for png/jpeg/tif/tiff, OpenSlide for svs)
         img = _decode_image(image_bytes, config.image_format)
     finally:
         if old_max is not None:
             Image.MAX_IMAGE_PIXELS = old_max
 
-    # 2) Tile image
-    tiles = _tile_image(img, config.tile_size, config.overlap)
+    # 2) Tile
+    tile_sz = config.tile_size
+    if config.model_backend == "local" and config.ctranspath_checkpoint:
+        pipe = _load_real_pipeline(config.ctranspath_checkpoint, config.device)
+        tile_sz = pipe["img_size"]
+    tiles = _tile_image(img, tile_sz, config.overlap)
     result.n_tiles = len(tiles)
     tile_coords = [(x, y) for x, y, _ in tiles]
-    logger.info("Tiled image into %d tiles (%dx%d, overlap=%d)", len(tiles), config.tile_size, config.tile_size, config.overlap)
+    result.tile_coords = tile_coords
+    logger.info("Tiled image into %d tiles (%dx%d, overlap=%d)", len(tiles), tile_sz, tile_sz, config.overlap)
 
     # 3-4) Pattern inference
     if config.model_backend == "mock":
         tile_scores = _mock_tile_inference(len(tiles))
     else:
-        # Real inference with CTransPath + FuzzyArcLoss v3
         tile_scores = _real_tile_inference(tiles, config)
 
+    # Build per-tile pattern probability matrix (N, 6) for v2
+    n_tiles = len(tiles)
+    tile_probs_matrix = np.zeros((n_tiles, len(PATTERNS)), dtype=np.float32)
+    for j, p in enumerate(PATTERNS):
+        if p in tile_scores:
+            for i in range(min(n_tiles, len(tile_scores[p]))):
+                tile_probs_matrix[i, j] = tile_scores[p][i]
+    result.tile_pattern_probs = tile_probs_matrix
+
     # 5) Pattern composition
+    active_patterns = [p for p in PATTERNS if p in tile_scores]
     avg_scores: dict[str, float] = {}
-    for p in PATTERNS:
+    for p in active_patterns:
         scores = tile_scores[p]
         avg_scores[p] = float(np.mean(scores)) if scores else 0.0
 
@@ -458,14 +549,14 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
     result.pattern_scores = {p: round(v, 4) for p, v in avg_scores.items()}
     result.pattern_percentages = percentages
     result.predominant_pattern = max(percentages, key=percentages.get) if percentages else ""  # type: ignore[arg-type]
-    result.is_conclusive = {p: avg_scores[p] >= config.pattern_threshold for p in PATTERNS}
+    result.is_conclusive = {p: avg_scores[p] >= config.pattern_threshold for p in active_patterns}
 
-    # 6) Build overlay
+    # 6) Pattern overlay
     tile_labels = []
-    for i in range(len(tiles)):
-        best_p = max(PATTERNS, key=lambda p: tile_scores[p][i])
+    for i in range(n_tiles):
+        best_p = max(active_patterns, key=lambda p: tile_scores[p][i])
         tile_labels.append(best_p)
-    result.overlay_combined_bytes = _build_overlay(img, tile_coords, tile_labels, config.tile_size)
+    result.overlay_combined_bytes = _build_overlay(img, tile_coords, tile_labels, tile_sz)
 
     # 7) Morphologic profile
     profile = {
@@ -475,32 +566,128 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
         "pct_papillary": percentages.get("papillary", 0.0),
         "pct_micropapillary": percentages.get("micropapillary", 0.0),
         "pct_solid": percentages.get("solid", 0.0),
-        "pct_mucinous": 0.0,
+        "pct_mucinous": percentages.get("mucinous", 0.0),
     }
     result.morphologic_profile = profile
 
-    # 8) Mutation prediction
-    pct_features = {k: v for k, v in profile.items() if k.startswith("pct_")}
+    # Generate mock tile embeddings if needed
     if config.model_backend == "mock":
-        m_scores, m_status = _mock_mutation_prediction(pct_features)
+        rng = np.random.default_rng(42)
+        result.tile_embeddings = rng.normal(size=(n_tiles, 512)).astype(np.float32)
+        result.embedding = result.tile_embeddings.mean(axis=0)
     else:
-        m_scores, m_status = _real_mutation_prediction(pct_features, config)
-    result.mutation_scores = m_scores
-    result.mutation_status = m_status
+        if result.tile_embeddings is None:
+            result.tile_embeddings = np.random.default_rng(42).normal(size=(n_tiles, 512)).astype(np.float32)
+        if result.embedding is None:
+            result.embedding = result.tile_embeddings.mean(axis=0)
 
-    # 9) SHAP
-    if config.shap_enabled:
-        for gene in GENES:
+    # ── v2: Pathway A — Pattern-Informed ABMIL ──
+    try:
+        from app.ml.inference.abmil_inference import run_abmil_inference
+        from app.ml.checkpoints.loader import CheckpointLoader
+
+        loader = CheckpointLoader(config.v2_checkpoint_dir, config.device)
+        abmil_output = run_abmil_inference(
+            result.tile_embeddings,
+            tile_probs_matrix,
+            loader,
+            top_k=config.top_k_tiles,
+            genes=config.genes,
+        )
+
+        for gr in abmil_output.gene_results:
+            result.mutation_report.append(MutationReportEntry(
+                gene=gr.gene,
+                probability=gr.probability,
+                label=gr.label,
+                auroc_threshold=gr.auroc_threshold,
+                disclaimer=gr.disclaimer,
+                method="abmil",
+            ))
+            result.mutation_scores[gr.gene] = gr.probability
+            status = "POS" if gr.probability >= config.mutation_threshold else (
+                "INCONCLUSIVE" if gr.probability >= 0.40 else "NEG"
+            )
+            result.mutation_status[gr.gene] = status
+
+        result.attention_top_k_indices = abmil_output.top_k_indices
+
+        # Build attention heatmap overlay from ABMIL
+        if abmil_output.attention_map is not None and len(tile_coords) > 0:
+            result.attention_overlay_bytes = _build_attention_overlay(
+                img, tile_coords, abmil_output.attention_map,
+                abmil_output.top_k_indices, tile_sz,
+            )
+
+    except Exception as e:
+        logger.warning("v2 ABMIL pathway failed: %s — falling back to v1 XGBoost", e)
+        pct_features = {k: v for k, v in profile.items() if k.startswith("pct_")}
+        if config.model_backend == "mock":
+            m_scores, m_status = _mock_mutation_prediction(pct_features)
+        else:
+            m_scores, m_status = _real_mutation_prediction(pct_features, config)
+        result.mutation_scores = m_scores
+        result.mutation_status = m_status
+
+    # ── v2: Pathway B — Fuzzy Choquet MIL (optional) ──
+    if config.use_choquet:
+        try:
+            from app.ml.inference.choquet_inference import run_choquet_inference
+            from app.ml.checkpoints.loader import CheckpointLoader
+
+            loader = CheckpointLoader(config.v2_checkpoint_dir, config.device)
+            choquet_output = run_choquet_inference(
+                result.tile_embeddings,
+                tile_probs_matrix,
+                loader,
+                genes=config.genes,
+            )
+            for cr in choquet_output.gene_results:
+                result.choquet_shapley.append(ChoquetShapleyEntry(
+                    gene=cr.gene,
+                    shapley_values=cr.shapley_values,
+                    interaction_indices=cr.interaction_indices,
+                ))
+        except Exception as e:
+            logger.warning("v2 Choquet pathway failed: %s", e)
+
+    # ── v2: SHAP Decomposition (DeepSHAP on ABMIL) ──
+    if config.shap_decomposition_enabled:
+        try:
+            from app.ml.inference.shap_decompose import run_shap_decomposition
+            from app.ml.checkpoints.loader import CheckpointLoader
+
+            loader = CheckpointLoader(config.v2_checkpoint_dir, config.device)
+            concat = np.concatenate([result.tile_embeddings, tile_probs_matrix], axis=1)
+
+            for gene in config.genes:
+                try:
+                    model = loader.load_abmil(gene, input_dim=concat.shape[1])
+                    decomp = run_shap_decomposition(concat, model, gene, config.device)
+                    result.shap_decompositions.append(SHAPDecompositionEntry(
+                        gene=gene,
+                        embedding_contribution_pct=decomp.embedding_contribution_pct,
+                        pattern_contribution_pct=decomp.pattern_contribution_pct,
+                        top_pattern_dims=decomp.top_pattern_dims,
+                    ))
+                    if decomp.bar_plot_bytes:
+                        result.shap_artifacts[f"shap_decomp_{gene}_bar.png"] = decomp.bar_plot_bytes
+                    if decomp.decomposition_plot_bytes:
+                        result.shap_artifacts[f"shap_decomp_{gene}_patterns.png"] = decomp.decomposition_plot_bytes
+                except Exception as e:
+                    logger.warning("SHAP decomposition failed for %s: %s", gene, e)
+        except Exception as e:
+            logger.warning("SHAP decomposition module failed: %s", e)
+
+    # v1 legacy SHAP (backward compat — kept for existing artifacts)
+    if config.shap_enabled and not config.shap_decomposition_enabled:
+        pct_features = {k: v for k, v in profile.items() if k.startswith("pct_")}
+        for gene in GENES_V1:
             if config.model_backend == "mock":
                 shap_arts = _generate_shap_mock(pct_features, gene)
             else:
                 shap_arts = _generate_shap_real(pct_features, gene, config.mutation_model_dir)
             result.shap_artifacts.update(shap_arts)
-
-    # 10) Embedding (mock or real)
-    if config.model_backend == "mock":
-        result.embedding = np.random.default_rng(42).normal(size=(512,)).astype(np.float32)
-    # else: set during real tile inference
 
     # Metrics
     elapsed = time.time() - t0
@@ -508,52 +695,132 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
         "processing_time_seconds": round(elapsed, 3),
         "device": config.device,
         "model_backend": config.model_backend,
-        "model_profile": "ctranspath_fuzzyarcloss_v3_subcenters",
+        "model_profile": "ctranspath_fuzzyarcloss_v2_abmil_choquet",
+        "pipeline_version": "2.0.0",
         "tile_size": config.tile_size,
         "n_tiles": result.n_tiles,
         "pattern_threshold": config.pattern_threshold,
         "mutation_threshold": config.mutation_threshold,
+        "use_choquet": config.use_choquet,
+        "top_k_tiles": config.top_k_tiles,
+        "genes": config.genes,
         "seed": 42,
     }
 
     logger.info(
-        "Inference complete: %d tiles, predominant=%s (%.1f%%), time=%.2fs",
+        "v2 Inference complete: %d tiles, predominant=%s (%.1f%%), mutations=%d genes, time=%.2fs",
         result.n_tiles, result.predominant_pattern,
-        percentages.get(result.predominant_pattern, 0), elapsed,
+        percentages.get(result.predominant_pattern, 0),
+        len(result.mutation_report), elapsed,
     )
     return result
 
 
+def _build_attention_overlay(
+    img: Image.Image,
+    tile_coords: list[tuple[int, int]],
+    attention_weights: np.ndarray,
+    top_k_indices: list[int],
+    tile_size: int,
+    alpha: int = 140,
+) -> bytes:
+    """Build spatial attention heatmap from ABMIL attention weights."""
+    from PIL import ImageFilter
+
+    w, h = img.size
+    heat = np.zeros((h, w), dtype=np.float32)
+
+    half = tile_size // 2
+    ys = np.arange(tile_size, dtype=np.float32) - half
+    xs = np.arange(tile_size, dtype=np.float32) - half
+    gx, gy = np.meshgrid(xs, ys)
+    sigma = tile_size * 0.38
+    gaussian = np.exp(-(gx ** 2 + gy ** 2) / (2 * sigma ** 2))
+
+    top_set = set(top_k_indices)
+    for idx, (tx, ty) in enumerate(tile_coords):
+        if idx >= len(attention_weights):
+            break
+        weight = attention_weights[idx]
+        if idx not in top_set:
+            weight *= 0.1
+        y1, y2 = ty, min(ty + tile_size, h)
+        x1, x2 = tx, min(tx + tile_size, w)
+        ky2, kx2 = y2 - ty, x2 - tx
+        heat[y1:y2, x1:x2] += gaussian[:ky2, :kx2] * weight
+
+    if heat.max() > 0:
+        heat /= heat.max()
+
+    r = (heat * 255).astype(np.uint8)
+    g = ((1 - heat) * 100).astype(np.uint8)
+    b = np.zeros_like(r)
+    a = (heat * alpha).astype(np.uint8)
+
+    overlay = Image.merge("RGBA", (
+        Image.fromarray(r, "L"),
+        Image.fromarray(g, "L"),
+        Image.fromarray(b, "L"),
+        Image.fromarray(a, "L"),
+    ))
+    blur_radius = max(tile_size // 6, 4)
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+
+    base = img.convert("RGBA")
+    combined = Image.alpha_composite(base, overlay)
+    buf = io.BytesIO()
+    combined.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 def _real_tile_inference(tiles: list[tuple[int, int, Image.Image]], config: InferenceConfig) -> dict[str, list[float]]:
-    """Run real CTransPath + FuzzyArcLoss v3 on tiles."""
+    """Run real ResNet-101 backbone + FuzzyArcLoss cosine head on tiles.
+
+    Each tile is resized to the training IMG_SIZE, normalised, given a
+    4th channel of ones (mask = full ROI), and passed through the model.
+    Cosine similarity with the class prototypes yields per-pattern scores.
+    """
     import torch
+    import torch.nn.functional as F
     from torchvision import transforms
 
     device = config.device
-    backbone = _load_ctranspath_model(config.ctranspath_checkpoint, device)
-    head = _load_fuzzyarc_head(config.fuzzyarc_checkpoint, num_classes=len(PATTERNS), device=device)
+    pipe = _load_real_pipeline(config.ctranspath_checkpoint, device)
+    model = pipe["model"]
+    head_weight = pipe["head_weight"]
+    id2label = pipe["id2label"]
+    s_scale = pipe["s_scale"]
+    img_size = pipe["img_size"]
 
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+    normalize = transforms.Compose([
+        transforms.Resize((img_size, img_size)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
     scores: dict[str, list[float]] = {p: [] for p in PATTERNS}
-    batch_size = 32
+    batch_size = 16
 
     with torch.no_grad():
         for i in range(0, len(tiles), batch_size):
-            batch_imgs = [transform(t[2]) for t in tiles[i:i + batch_size]]
-            batch_tensor = torch.stack(batch_imgs).to(device)
+            batch_3ch = [normalize(t[2]) for t in tiles[i:i + batch_size]]
+            # Add 4th channel (mask = all ones → entire tile is region of interest)
+            mask_ch = torch.ones(1, img_size, img_size)
+            batch_4ch = [torch.cat([img3, mask_ch], dim=0) for img3 in batch_3ch]
+            batch_tensor = torch.stack(batch_4ch).to(device)
 
-            embeddings = backbone(batch_tensor)  # (B, 512)
-            logits = head(embeddings)  # (B, 5)
-            probs = torch.softmax(logits, dim=1).cpu().numpy()
+            embeddings = model(batch_tensor)                   # (B, 512)
+            emb_norm = F.normalize(embeddings, dim=1)
+            w_norm = F.normalize(head_weight, dim=1)           # (6, 512)
+            cosine = emb_norm @ w_norm.t()                     # (B, 6)
+            logits = cosine * s_scale
+            probs = torch.softmax(logits, dim=1).cpu().numpy()  # (B, 6)
 
             for j in range(probs.shape[0]):
-                for k, p in enumerate(PATTERNS):
-                    scores[p].append(float(probs[j, k]))
+                for class_idx in range(probs.shape[1]):
+                    label_name = id2label.get(class_idx, f"class_{class_idx}")
+                    if label_name in scores:
+                        scores[label_name].append(float(probs[j, class_idx]))
 
     return scores
 

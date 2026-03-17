@@ -40,6 +40,10 @@ class ResultBundleDB(Base):
     pattern_composition: Mapped[dict] = mapped_column(JSON, default=dict)
     predominant_pattern: Mapped[str | None] = mapped_column(String(50))
     summary_json: Mapped[dict | None] = mapped_column(JSON)
+    # v2 fields
+    pipeline_version: Mapped[str | None] = mapped_column(String(20), default="2.0.0")
+    use_choquet: Mapped[bool | None] = mapped_column(Boolean, default=True)
+    attention_overlay_uri: Mapped[str | None] = mapped_column(String(1024))
     evidence_source: Mapped[str] = mapped_column(String(50), default="THESIS_INTERNAL")
     intended_use: Mapped[str] = mapped_column(String(200), default="research / decision support (non-diagnostic)")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
@@ -73,6 +77,19 @@ class GeneticResultDB(Base):
     mutation: Mapped[str] = mapped_column(String(20), nullable=False)
     score: Mapped[float] = mapped_column(Float, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
+    # v2 confidence calibration
+    confidence_label: Mapped[str | None] = mapped_column(String(20))  # Conclusive | Inconclusive
+    auroc_threshold: Mapped[float | None] = mapped_column(Float)
+    prediction_method: Mapped[str | None] = mapped_column(String(20))  # abmil | choquet | xgboost
+    disclaimer: Mapped[str | None] = mapped_column(Text)
+    # v2 SHAP decomposition
+    shap_embedding_pct: Mapped[float | None] = mapped_column(Float)
+    shap_pattern_pct: Mapped[float | None] = mapped_column(Float)
+    shap_top_patterns: Mapped[dict | None] = mapped_column(JSON)
+    # v2 Choquet Shapley
+    choquet_shapley_values: Mapped[dict | None] = mapped_column(JSON)
+    choquet_interaction_indices: Mapped[dict | None] = mapped_column(JSON)
+    #
     evidence_source: Mapped[str] = mapped_column(String(50), default="THESIS_INTERNAL")
     intended_use: Mapped[str] = mapped_column(String(200), default="research / decision support (non-diagnostic)")
     evidence_uri: Mapped[str | None] = mapped_column(String(1024))

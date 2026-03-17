@@ -1,0 +1,415 @@
+// LCHAI v1.2 — Full System Architecture
+// Lung Cancer Histologic Analysis with AI — Explainable AI Platform
+// Render:  dot -Tpng  lchai_full_system.gv -o lchai_full_system.png -Gdpi=150
+//          dot -Tsvg  lchai_full_system.gv -o lchai_full_system.svg
+//          dot -Tpdf  lchai_full_system.gv -o lchai_full_system.pdf
+
+digraph LCHAI_v12 {
+  compound=true;
+  rankdir=TB;
+  splines=polyline;
+  nodesep=0.6;
+  ranksep=0.8;
+  pad=0.4;
+
+  graph [fontname="Segoe UI", fontsize=16,
+         label=<<B>LCHAI v2.0 — Lung Cancer Histologic Analysis with AI</B><BR/>
+                <FONT POINT-SIZE="11">Microservice Architecture · ABMIL + Choquet MIL · Explainable AI · Oncology Decision Support</FONT>>,
+         labelloc=t, labeljust=c];
+  node  [fontname="Segoe UI", fontsize=10, shape=box,
+         style="rounded,filled", margin="0.2,0.12"];
+  edge  [fontname="Segoe UI", fontsize=8, color="#555555"];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  LAYER 1 — User
+  // ═══════════════════════════════════════════════════════════════════
+  subgraph cluster_user {
+    label=<<B>Actors</B>>;
+    labelloc=t; style="rounded,dashed"; color="#888888";
+    bgcolor="#FAFAFA";
+
+    user_clin [label="Oncologist /\nPathologist",
+               shape=ellipse, fillcolor="#BBDEFB", color="#1565C0"];
+    user_admin [label="Admin /\nAuditor",
+                shape=ellipse, fillcolor="#C8E6C9", color="#2E7D32"];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  LAYER 2 — Frontend
+  // ═══════════════════════════════════════════════════════════════════
+  subgraph cluster_frontend {
+    label=<<B>Frontend</B>  <FONT POINT-SIZE="9">(React 18 + Vite + Tailwind)</FONT>>;
+    labelloc=t; style=rounded; bgcolor="#E3F2FD"; color="#90CAF9";
+
+    webapp [label=<<B>Webapp :3000</B><BR/>
+      <FONT POINT-SIZE="9">CaseSelector · ImagePanel · EHRPanel<BR/>
+      GraphPanel · ShapPanel · AdminPanel</FONT>>,
+      fillcolor="#BBDEFB", color="#1E88E5"];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  LAYER 3 — API Gateway
+  // ═══════════════════════════════════════════════════════════════════
+  subgraph cluster_gateway {
+    label=<<B>API Layer</B>>;
+    labelloc=t; style=rounded; bgcolor="#FFF3E0"; color="#FFCC80";
+
+    gateway [label=<<B>API Gateway :8000</B><BR/>
+      <FONT POINT-SIZE="9">FastAPI · JWT validation · RBAC<BR/>
+      Reverse proxy → 7 services</FONT>>,
+      fillcolor="#FFE0B2", color="#FB8C00"];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  LAYER 4 — Application Services
+  // ═══════════════════════════════════════════════════════════════════
+  subgraph cluster_services {
+    label=<<B>Application Services</B>  <FONT POINT-SIZE="9">(FastAPI + SQLAlchemy 2.0 async)</FONT>>;
+    labelloc=t; style=rounded; bgcolor="#E8F5E9"; color="#A5D6A7";
+
+    case_svc [label=<<B>case-service :8001</B><BR/>
+      <FONT POINT-SIZE="9">Patients &amp; Cases CRUD<BR/>
+      <I>tables: patients, cases</I></FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+
+    image_svc [label=<<B>image-service :8002</B><BR/>
+      <FONT POINT-SIZE="9">Image upload · SHA-256<BR/>
+      Presigned URLs<BR/>
+      <I>tables: images</I></FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+
+    infer_svc [label=<<B>inference-service :8003</B><BR/>
+      <FONT POINT-SIZE="9">ML pipeline orchestrator<BR/>
+      Job management<BR/>
+      <I>tables: ml_jobs, result_bundles,<BR/>
+      pattern_results, genetic_results,<BR/>
+      xai_artifacts, morphologic_profiles</I></FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+
+    infer_worker [label=<<B>inference-worker</B><BR/>
+      <FONT POINT-SIZE="9">Celery worker · concurrency=1<BR/>
+      Executes ML pipeline</FONT>>,
+      fillcolor="#E1BEE7", color="#8E24AA"];
+
+    ehr_svc [label=<<B>ehr-service :8004</B><BR/>
+      <FONT POINT-SIZE="9">EHR ingestion · Regex NER<BR/>
+      Ontology mapping (NCIt/MONDO)<BR/>
+      <I>tables: ehr_documents,<BR/>
+      ehr_entities, ehr_mappings</I></FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+
+    graph_svc [label=<<B>graph-service :8005</B><BR/>
+      <FONT POINT-SIZE="9">Knowledge graph assembly<BR/>
+      SPARQL queries · LLM explain<BR/>
+      <I>tables: case_graph_snapshots</I></FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+
+    ont_svc [label=<<B>ontology-admin :8006</B><BR/>
+      <FONT POINT-SIZE="9">Ontology versioning · Proposals<BR/>
+      DeepSearch (PubMed/arXiv/SS)<BR/>
+      KG snapshots &amp; changelog<BR/>
+      <I>tables: ontology_versions,<BR/>
+      proposals, deep_search_jobs,<BR/>
+      discovered_relations, kg_snapshots</I></FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+
+    audit_svc [label=<<B>audit-service :8007</B><BR/>
+      <FONT POINT-SIZE="9">Event consumer · Idempotent log<BR/>
+      <I>tables: audit_events</I></FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  LAYER 4b — Shared Packages
+  // ═══════════════════════════════════════════════════════════════════
+  subgraph cluster_packages {
+    label=<<B>Shared Packages</B>  <FONT POINT-SIZE="9">(packages/)</FONT>>;
+    labelloc=t; style="rounded,dashed"; bgcolor="#F5F5F5"; color="#BDBDBD";
+
+    pkg_common [label=<<B>oncology-common</B><BR/>
+      <FONT POINT-SIZE="9">JWT · Storage · Pydantic models<BR/>
+      Middleware · OTel · DB base</FONT>>,
+      fillcolor="#EEEEEE", color="#9E9E9E"];
+
+    pkg_events [label=<<B>event-contracts</B><BR/>
+      <FONT POINT-SIZE="9">EventEnvelope · Publisher<BR/>
+      BaseConsumer · Topic exchange</FONT>>,
+      fillcolor="#EEEEEE", color="#9E9E9E"];
+
+    pkg_workflows [label=<<B>langgraph-workflows</B><BR/>
+      <FONT POINT-SIZE="9">5 LangGraph state machines</FONT>>,
+      fillcolor="#EEEEEE", color="#9E9E9E"];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  LAYER 5 — ML Pipeline (inside inference-worker)
+  // ═══════════════════════════════════════════════════════════════════
+  subgraph cluster_ml {
+    label=<<B>ML Pipeline</B>  <FONT POINT-SIZE="9">(ROI → Pattern → Mutation → XAI)</FONT>>;
+    labelloc=t; style=rounded; bgcolor="#FFF8E1"; color="#FFE082";
+
+    ml_tile [label="Tile Extraction\n384px, no overlap",
+             fillcolor="#FFF9C4", color="#F9A825"];
+    ml_ctrans [label="CTransPath\nSwin Tiny + ConvStem\n768→512 embed",
+               fillcolor="#FFF9C4", color="#F9A825"];
+    ml_fuzzy [label="FuzzyArcLoss v3\nK=3 sub-centers\n6 pattern classes",
+              fillcolor="#FFF9C4", color="#F9A825"];
+    ml_comp [label="Pattern\nComposition\n(6 histologic types)",
+             fillcolor="#FFF9C4", color="#F9A825"];
+    ml_morph [label="Morphologic\nProfile\nn_tiles + pct_*",
+              fillcolor="#FFF9C4", color="#F9A825"];
+    ml_abmil [label="Pattern-Informed ABMIL\nconcat(emb₅₁₂, pat₆) = 518-d\nGated Attention",
+              fillcolor="#FFF9C4", color="#F9A825"];
+    ml_choquet [label="Fuzzy Choquet MIL\n21 params (6 Shapley + 15 interact)\n6 genes",
+                fillcolor="#FFF9C4", color="#F9A825"];
+    ml_shap [label="DeepSHAP Decomposition\nEmb dims vs Pattern dims\nChoquet Shapley Values",
+             fillcolor="#FFF9C4", color="#F9A825"];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  LAYER 5b — LangGraph Workflows
+  // ═══════════════════════════════════════════════════════════════════
+  subgraph cluster_langgraph {
+    label=<<B>LangGraph Workflows</B>  <FONT POINT-SIZE="9">(LangChain Core + Anthropic / OpenAI)</FONT>>;
+    labelloc=t; style=rounded; bgcolor="#EDE7F6"; color="#B39DDB";
+
+    wf_image [label="ImageAnalysisGraph\n14 nodes",
+              fillcolor="#D1C4E9", color="#7E57C2"];
+    wf_ehr   [label="EHRToOntologyGraph\n7 nodes",
+              fillcolor="#D1C4E9", color="#7E57C2"];
+    wf_graph [label="GraphAssemblerGraph\n6 nodes",
+              fillcolor="#D1C4E9", color="#7E57C2"];
+    wf_explain [label="ExplanationComposer\n6 nodes + guardrails",
+                fillcolor="#D1C4E9", color="#7E57C2"];
+    wf_onto  [label="OntologyUpdateWorkflow\n12 nodes + HITL",
+              fillcolor="#D1C4E9", color="#7E57C2"];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  LAYER 6 — Infrastructure: Data Stores
+  // ═══════════════════════════════════════════════════════════════════
+  subgraph cluster_datastores {
+    label=<<B>Data Stores</B>>;
+    labelloc=t; style=rounded; bgcolor="#F3E5F5"; color="#CE93D8";
+
+    postgres [label=<<B>PostgreSQL 16 :5432</B><BR/>
+      <FONT POINT-SIZE="9">19 tables across 7 services</FONT>>,
+      shape=cylinder, fillcolor="#E1BEE7", color="#8E24AA"];
+
+    minio [label=<<B>MinIO :9000</B><BR/>
+      <FONT POINT-SIZE="9">S3: images, tiles, overlays,<BR/>
+      xai artifacts, ehr docs</FONT>>,
+      shape=cylinder, fillcolor="#E1BEE7", color="#8E24AA"];
+
+    fuseki [label=<<B>Apache Fuseki :3030</B><BR/>
+      <FONT POINT-SIZE="9">SPARQL triplestore<BR/>
+      NCIt + MONDO ontologies</FONT>>,
+      shape=cylinder, fillcolor="#E1BEE7", color="#8E24AA"];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  LAYER 6 — Infrastructure: Messaging
+  // ═══════════════════════════════════════════════════════════════════
+  subgraph cluster_messaging {
+    label=<<B>Messaging &amp; Cache</B>>;
+    labelloc=t; style=rounded; bgcolor="#FFF8E1"; color="#FFE082";
+
+    rabbitmq [label=<<B>RabbitMQ :5672</B><BR/>
+      <FONT POINT-SIZE="9">Topic exchange: oncology.events<BR/>
+      Event bus + Celery broker</FONT>>,
+      shape=hexagon, fillcolor="#FFF9C4", color="#F9A825"];
+
+    redis [label=<<B>Redis :6379</B><BR/>
+      <FONT POINT-SIZE="9">Celery result backend</FONT>>,
+      shape=hexagon, fillcolor="#FFF9C4", color="#F9A825"];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  LAYER 6 — Infrastructure: Auth & Observability
+  // ═══════════════════════════════════════════════════════════════════
+  subgraph cluster_auth_obs {
+    label=<<B>Auth &amp; Observability</B>>;
+    labelloc=t; style=rounded; bgcolor="#ECEFF1"; color="#B0BEC5";
+
+    keycloak [label=<<B>Keycloak :8080</B><BR/>
+      <FONT POINT-SIZE="9">OIDC / JWT · Realm "oncology"<BR/>
+      Roles: clinician, admin, auditor</FONT>>,
+      fillcolor="#CFD8DC", color="#546E7A"];
+
+    jaeger [label=<<B>Jaeger :16686</B><BR/>
+      <FONT POINT-SIZE="9">Distributed tracing<BR/>
+      (OpenTelemetry)</FONT>>,
+      fillcolor="#CFD8DC", color="#546E7A"];
+
+    prometheus [label=<<B>Prometheus :9090</B><BR/>
+      <FONT POINT-SIZE="9">Metrics scrape 15s</FONT>>,
+      fillcolor="#CFD8DC", color="#546E7A"];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  LAYER 7 — External APIs (DeepSearch targets)
+  // ═══════════════════════════════════════════════════════════════════
+  subgraph cluster_external {
+    label=<<B>External Sources</B>  <FONT POINT-SIZE="9">(DeepSearch)</FONT>>;
+    labelloc=t; style="rounded,dashed"; bgcolor="#FAFAFA"; color="#BDBDBD";
+
+    pubmed [label="PubMed\nAPI", shape=oval, fillcolor="#E0E0E0", color="#757575"];
+    arxiv  [label="arXiv\nAPI", shape=oval, fillcolor="#E0E0E0", color="#757575"];
+    semsch [label="Semantic\nScholar API", shape=oval, fillcolor="#E0E0E0", color="#757575"];
+    llm_api [label="LLM API\n(Anthropic / OpenAI)",
+             shape=oval, fillcolor="#FFCDD2", color="#E53935"];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  EDGES — User → Frontend → Gateway
+  // ═══════════════════════════════════════════════════════════════════
+  user_clin  -> webapp [label="browser", color="#1565C0"];
+  user_admin -> webapp [label="browser", color="#2E7D32"];
+  webapp -> gateway    [label="HTTP /api/v1/*", color="#1976D2", penwidth=1.5];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  EDGES — Gateway → Services
+  // ═══════════════════════════════════════════════════════════════════
+  gateway -> case_svc   [label="patients, cases"];
+  gateway -> image_svc  [label="images"];
+  gateway -> infer_svc  [label="jobs, results"];
+  gateway -> ehr_svc    [label="ehr"];
+  gateway -> graph_svc  [label="graph"];
+  gateway -> ont_svc    [label="ontologies"];
+  gateway -> audit_svc  [label="audit"];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  EDGES — Gateway → Auth
+  // ═══════════════════════════════════════════════════════════════════
+  gateway -> keycloak [label="JWKS\nvalidation", style=dashed, color="#546E7A"];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  EDGES — Services → Data Stores
+  // ═══════════════════════════════════════════════════════════════════
+  case_svc   -> postgres [label="SQL", color="#8E24AA"];
+  image_svc  -> postgres [color="#8E24AA"];
+  infer_svc  -> postgres [color="#8E24AA"];
+  ehr_svc    -> postgres [color="#8E24AA"];
+  graph_svc  -> postgres [color="#8E24AA"];
+  ont_svc    -> postgres [color="#8E24AA"];
+  audit_svc  -> postgres [color="#8E24AA"];
+
+  image_svc    -> minio [label="store/fetch", color="#8E24AA"];
+  infer_worker -> minio [label="tiles, overlays,\nSHAP PNGs", color="#8E24AA"];
+
+  ehr_svc   -> fuseki [label="SPARQL\nlookup", color="#8E24AA"];
+  graph_svc -> fuseki [label="SPARQL\nconstruct", color="#8E24AA"];
+  ont_svc   -> fuseki [label="SPARQL\nupdate", color="#8E24AA"];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  EDGES — Services → Messaging
+  // ═══════════════════════════════════════════════════════════════════
+  infer_svc    -> rabbitmq [label="submit job", color="#F9A825"];
+  infer_worker -> rabbitmq [label="inference.\ncompleted", color="#F9A825"];
+  infer_svc    -> redis    [label="Celery", color="#F9A825"];
+  infer_worker -> redis    [label="Celery", color="#F9A825"];
+  ehr_svc      -> rabbitmq [label="ehr.ingested", color="#F9A825"];
+  graph_svc    -> rabbitmq [label="graph.built", color="#F9A825"];
+  ont_svc      -> rabbitmq [label="ontology.\nupdated", color="#F9A825"];
+  rabbitmq     -> audit_svc [label="consume all\nevents", color="#E65100",
+                              penwidth=1.5, style=bold];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  EDGES — Celery: inference-service ↔ worker
+  // ═══════════════════════════════════════════════════════════════════
+  infer_svc -> infer_worker [label="Celery task\n(via RabbitMQ+Redis)",
+                              color="#8E24AA", style=bold, penwidth=1.5];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  EDGES — ML Pipeline internal flow
+  // ═══════════════════════════════════════════════════════════════════
+  ml_tile   -> ml_ctrans [color="#E65100"];
+  ml_ctrans -> ml_fuzzy  [color="#E65100"];
+  ml_fuzzy  -> ml_comp   [color="#E65100"];
+  ml_comp   -> ml_morph  [color="#E65100"];
+  ml_morph  -> ml_abmil   [color="#E65100"];
+  ml_morph  -> ml_choquet [color="#E65100"];
+  ml_abmil  -> ml_shap   [color="#E65100"];
+  ml_choquet -> ml_shap   [color="#E65100"];
+
+  infer_worker -> ml_tile [label="execute",
+                            lhead=cluster_ml, color="#8E24AA", style=dashed];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  EDGES — Services → LangGraph Workflows
+  // ═══════════════════════════════════════════════════════════════════
+  infer_svc -> wf_image   [label="runs", style=dashed, color="#7E57C2"];
+  ehr_svc   -> wf_ehr     [label="runs", style=dashed, color="#7E57C2"];
+  graph_svc -> wf_graph   [label="runs", style=dashed, color="#7E57C2"];
+  graph_svc -> wf_explain [label="runs", style=dashed, color="#7E57C2"];
+  ont_svc   -> wf_onto    [label="runs", style=dashed, color="#7E57C2"];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  EDGES — Workflows / Services → LLM
+  // ═══════════════════════════════════════════════════════════════════
+  wf_explain -> llm_api [label="generate\nexplanation", color="#E53935", style=dashed];
+  wf_onto    -> llm_api [label="extract\nrelations", color="#E53935", style=dashed];
+  graph_svc  -> llm_api [label="NL explain", color="#E53935", style=dashed];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  EDGES — DeepSearch → External APIs
+  // ═══════════════════════════════════════════════════════════════════
+  ont_svc -> pubmed [label="search", color="#757575", style=dashed];
+  ont_svc -> arxiv  [label="search", color="#757575", style=dashed];
+  ont_svc -> semsch [label="search", color="#757575", style=dashed];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  EDGES — Observability (subtle)
+  // ═══════════════════════════════════════════════════════════════════
+  case_svc  -> jaeger [style=dotted, color="#B0BEC5", arrowsize=0.6];
+  infer_svc -> jaeger [style=dotted, color="#B0BEC5", arrowsize=0.6];
+  graph_svc -> jaeger [style=dotted, color="#B0BEC5", arrowsize=0.6];
+  gateway   -> jaeger [style=dotted, color="#B0BEC5", arrowsize=0.6];
+
+  gateway     -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
+  case_svc    -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
+  infer_svc   -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
+  ehr_svc     -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
+  graph_svc   -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
+  ont_svc     -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
+  audit_svc   -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
+  image_svc   -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  EDGES — Shared packages (used by all services)
+  // ═══════════════════════════════════════════════════════════════════
+  pkg_common    -> case_svc  [style=dotted, color="#9E9E9E", arrowsize=0.5,
+                               arrowhead=none, label="imports"];
+  pkg_events    -> audit_svc [style=dotted, color="#9E9E9E", arrowsize=0.5,
+                               arrowhead=none, label="imports"];
+  pkg_workflows -> infer_svc [style=dotted, color="#9E9E9E", arrowsize=0.5,
+                               arrowhead=none, label="imports"];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  LEGEND
+  // ═══════════════════════════════════════════════════════════════════
+  subgraph cluster_legend {
+    label=<<B>Legend</B>>;
+    labelloc=t; style=rounded; bgcolor="#FAFAFA"; color="#E0E0E0";
+    rankdir=LR;
+
+    leg_sync   [label="Synchronous\nHTTP / SQL", shape=plaintext, fontsize=9];
+    leg_async  [label="Async event\n(RabbitMQ)", shape=plaintext, fontsize=9];
+    leg_wf     [label="Workflow\n(LangGraph)", shape=plaintext, fontsize=9];
+    leg_obs    [label="Observability\n(traces/metrics)", shape=plaintext, fontsize=9];
+
+    leg_s1 [shape=point, width=0.01];
+    leg_s2 [shape=point, width=0.01];
+    leg_s3 [shape=point, width=0.01];
+    leg_s4 [shape=point, width=0.01];
+    leg_e1 [shape=point, width=0.01];
+    leg_e2 [shape=point, width=0.01];
+    leg_e3 [shape=point, width=0.01];
+    leg_e4 [shape=point, width=0.01];
+
+    leg_sync  -> leg_s1 [style=invis]; leg_s1 -> leg_e1 [color="#555555", penwidth=1.2];
+    leg_async -> leg_s2 [style=invis]; leg_s2 -> leg_e2 [color="#F9A825", penwidth=1.2, style=bold];
+    leg_wf    -> leg_s3 [style=invis]; leg_s3 -> leg_e3 [color="#7E57C2", style=dashed];
+    leg_obs   -> leg_s4 [style=invis]; leg_s4 -> leg_e4 [color="#B0BEC5", style=dotted];
+  }
+}

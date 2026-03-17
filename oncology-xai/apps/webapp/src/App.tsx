@@ -79,8 +79,8 @@ export default function App() {
       {/* Header */}
       <header className="bg-blue-900 text-white px-6 py-3 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold">LCHAI v1.2</h1>
-          <p className="text-xs text-blue-200">Lung Cancer Histologic Analysis with AI</p>
+          <h1 className="text-xl font-bold">LCHAI v2.0</h1>
+          <p className="text-xs text-blue-200">Lung Cancer Histologic Analysis with AI — ABMIL + Choquet MIL</p>
         </div>
         <div className="text-xs text-blue-300">
           Research tool — NOT for clinical diagnosis
@@ -150,8 +150,9 @@ export default function App() {
 
       {/* Footer disclaimer */}
       <footer className="bg-gray-100 border-t px-6 py-3 text-xs text-gray-500 text-center">
-        DISCLAIMER: This system is a research tool (THESIS_INTERNAL evidence).
-        It does NOT provide clinical diagnoses. Always confirm with standard molecular testing.
+        DISCLAIMER: LCHAI v2.0 is a research tool (THESIS_INTERNAL evidence).
+        Mutation predictions use ABMIL + Fuzzy Choquet MIL (Artifacts 2 &amp; 3).
+        Inconclusive genes (AUROC &lt; 0.70) require molecular testing. NOT for clinical diagnosis.
       </footer>
     </div>
   );

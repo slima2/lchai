@@ -1,6 +1,8 @@
 FROM python:3.12-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN sed -i 's|http://deb.debian.org|https://cdn-aws.deb.debian.org|g' /etc/apt/sources.list.d/*.sources 2>/dev/null; \
+    sed -i 's|http://deb.debian.org|https://cdn-aws.deb.debian.org|g' /etc/apt/sources.list 2>/dev/null; \
+    apt-get update && apt-get install -y --no-install-recommends \
     libgl1 libglib2.0-0 libopenslide0 && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /srv
@@ -11,6 +13,8 @@ COPY packages/langgraph-workflows /srv/packages/langgraph-workflows
 RUN pip install --no-cache-dir /srv/packages/common /srv/packages/event-contracts /srv/packages/langgraph-workflows
 
 COPY apps/inference-service/pyproject.toml .
+# Invalidate cache when app code changes: pass --build-arg CACHEBUST=$(date) or similar
+ARG CACHEBUST=
 COPY apps/inference-service/app/ app/
 COPY apps/inference-service/alembic.ini .
 COPY apps/inference-service/alembic/ alembic/

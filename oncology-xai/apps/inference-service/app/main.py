@@ -24,8 +24,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="LCHAI Inference Service",
-    description="ML pipeline: CTransPath + FuzzyArcLoss v3 SubCenters + SHAP",
+    title="LCHAI Inference Service v2",
+    description="ML pipeline v2: CTransPath + FuzzyArcLoss v2 + Pattern-Informed ABMIL + Fuzzy Choquet MIL + DeepSHAP",
     version=settings.version,
     lifespan=lifespan,
 )

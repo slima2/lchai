@@ -29,13 +29,14 @@ export const uploadImage = (caseId: string, file: File) => {
 export const getImages = (caseId: string) => api.get(`/cases/${caseId}/images`);
 export const getViewerUrl = (imageId: string) => api.get(`/images/${imageId}/viewer-url`);
 
-// Inference
-export const processImage = (imageId: string, caseId: string) =>
-  api.post(`/images/${imageId}:process`, { case_id: caseId });
+// Inference (v2)
+export const processImage = (imageId: string, caseId: string, useChoquet = true) =>
+  api.post(`/images/${imageId}:process`, { case_id: caseId, use_choquet: useChoquet });
 export const getJob = (jobId: string) => api.get(`/jobs/${jobId}`);
 export const getLatestResults = (imageId: string) => api.get(`/images/${imageId}/results/latest`);
 export const getResultBundle = (id: string) => api.get(`/results/${id}`);
 export const getArtifacts = (rbId: string) => api.get(`/results/${rbId}/artifacts`);
+export const getCheckpointStatus = () => api.get('/checkpoints/status');
 
 // EHR
 export const ingestEHR = (caseId: string, content: string) =>

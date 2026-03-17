@@ -1,0 +1,178 @@
+// LCHAI v1.2 - Lung Cancer Histologic Analysis with AI
+// System architecture diagram (Graphviz DOT)
+// Generated for DERCAS_LCHAI_v1_2
+// Render: dot -Tpng lchai_system_architecture.gv -o lchai_architecture.png
+
+digraph LCHAI_System {
+    compound=true;
+    rankdir=TB;
+    splines=polyline;
+    node [fontsize=11];
+    edge [fontsize=9];
+
+    // ========== GRAPH SETTINGS ==========
+    graph [label="LCHAI v1.2 - Lung Cancer Histologic Analysis with AI", labelloc=t, fontsize=14];
+    node [shape=box, style="rounded,filled", margin=0.3];
+
+    // ========== USER LAYER ==========
+    subgraph cluster_user {
+        label="User Layer";
+        style=filled;
+        fillcolor="#d3d3d3";
+        fontsize=12;
+        User [label="Oncologo / Patologo\nAdmin / Auditor", shape=ellipse, fillcolor=white];
+    }
+
+    // ========== WEBAPP ==========
+    subgraph cluster_webapp {
+        label="Frontend";
+        style=filled;
+        fillcolor="#add8e6";
+        fontsize=12;
+        Webapp [label="React Webapp :3000\nCaseSelector ImagePanel EHRPanel\nGraphPanel ShapPanel Admin", fillcolor="#87CEEB"];
+    }
+
+    // ========== API GATEWAY ==========
+    subgraph cluster_gateway {
+        label="API Gateway";
+        style=filled;
+        fillcolor="#90EE90";
+        fontsize=12;
+        APIGateway [label="API Gateway :8000\nJWT/RBAC + Reverse Proxy", fillcolor="#90EE90"];
+    }
+
+    // ========== APPLICATION SERVICES ==========
+    subgraph cluster_services {
+        label="Application Services";
+        style=filled;
+        fillcolor="#FFF8DC";
+        fontsize=12;
+
+        CaseService [label="case-service :8001\nPatients & Cases CRUD", fillcolor="#FFE4B5"];
+        ImageService [label="image-service :8002\nImage Upload / MinIO", fillcolor="#FFE4B5"];
+        InferenceService [label="inference-service :8003\nML Pipeline (CTransPath + FuzzyArcLoss v3)", fillcolor="#FFE4B5"];
+        InferenceWorker [label="inference-worker\nCelery Worker", fillcolor="#DDA0DD"];
+        EHRService [label="ehr-service :8004\nEHR Ingestion & Entity Extraction", fillcolor="#FFE4B5"];
+        GraphService [label="graph-service :8005\nOntology Graph Assembly", fillcolor="#FFE4B5"];
+        OntologyAdmin [label="ontology-admin :8006\nOntology Proposals / Publish", fillcolor="#FFE4B5"];
+        AuditService [label="audit-service :8007\nAudit Event Log", fillcolor="#FFE4B5"];
+    }
+
+    // ========== INFRASTRUCTURE ==========
+    subgraph cluster_infra {
+        label="Infrastructure";
+        style=filled;
+        fillcolor="#F0F0F0";
+        fontsize=12;
+
+        subgraph cluster_datastores {
+            label="Data Stores";
+            fillcolor=white;
+            PostgreSQL [label="PostgreSQL 16 :5432\npatients, cases, images, ml_jobs\nresult_bundles, ehr_documents, audit_events", fillcolor="#E6E6FA"];
+            MinIO [label="MinIO :9000/9001\nS3: images, overlays, xai, ehr", fillcolor="#E6E6FA"];
+            Fuseki [label="Apache Fuseki :3030\nSPARQL / Triple Store", fillcolor="#E6E6FA"];
+        }
+
+        subgraph cluster_messaging {
+            label="Messaging";
+            fillcolor=white;
+            RabbitMQ [label="RabbitMQ :5672/15672\nEvent Bus", fillcolor="#FFE4E1"];
+            Redis [label="Redis :6379\nCelery Backend", fillcolor="#FFE4E1"];
+        }
+
+        subgraph cluster_auth_obs {
+            label="Auth and Observability";
+            fillcolor=white;
+            Keycloak [label="Keycloak :8080\nOIDC / JWT", fillcolor="#E0FFE0"];
+            Jaeger [label="Jaeger :16686\nDistributed Tracing", fillcolor="#E0FFE0"];
+            Prometheus [label="Prometheus :9090\nMetrics", fillcolor="#E0FFE0"];
+        }
+    }
+
+    // ========== ML PIPELINE (conceptual) ==========
+    subgraph cluster_ml {
+        label="ML Pipeline (inference-service)";
+        style=filled;
+        fillcolor="#FFEFD5";
+        fontsize=12;
+        TileExtract [label="1. Tile Extraction\n384px, no overlap", fillcolor=white];
+        CTransPath [label="2. CTransPath Backbone\nSwin Tiny + ConvStem", fillcolor=white];
+        FuzzyArc [label="3. FuzzyArcLoss v3\nSubCenters (K=3)", fillcolor=white];
+        PatternComp [label="4. Pattern Composition\n6 patterns", fillcolor=white];
+        MorphProfile [label="5. Morphologic Profile\npct_* features", fillcolor=white];
+        XGBoost [label="6. XGBoost Mutation\nEGFR, KRAS, TP53", fillcolor=white];
+        SHAP [label="7. SHAP\nbar, beeswarm, force", fillcolor=white];
+    }
+
+    // ========== LANGGRAPH WORKFLOWS ==========
+    subgraph cluster_workflows {
+        label="LangGraph Workflows";
+        style=filled;
+        fillcolor="#E6F3FF";
+        fontsize=12;
+
+        ImageAnalysis [label="ImageAnalysisGraph\n14 nodes", fillcolor=white];
+        EHRToOnto [label="EHRToOntologyGraph\n7 nodes", fillcolor=white];
+        GraphAssembler [label="GraphAssemblerGraph\n6 nodes", fillcolor=white];
+        Explanation [label="ExplanationComposerGraph\n6 nodes", fillcolor=white];
+        OntologyUpdate [label="OntologyUpdateWorkflow\n12 nodes", fillcolor=white];
+    }
+
+    // ========== EDGES: User Flow ==========
+    User -> Webapp [label="HTTP"];
+    Webapp -> APIGateway [label="API /api/v1/*"];
+
+    // ========== EDGES: Gateway to Services ==========
+    APIGateway -> CaseService [label="cases, patients"];
+    APIGateway -> ImageService [label="images"];
+    APIGateway -> InferenceService [label="jobs, results"];
+    APIGateway -> EHRService [label="ehr"];
+    APIGateway -> GraphService [label="graph"];
+    APIGateway -> OntologyAdmin [label="ontologies"];
+    APIGateway -> AuditService [label="audit"];
+    APIGateway -> Keycloak [label="Auth"];
+
+    // ========== EDGES: Service Dependencies ==========
+    CaseService -> PostgreSQL;
+    ImageService -> PostgreSQL;
+    ImageService -> MinIO;
+    InferenceService -> PostgreSQL;
+    InferenceService -> MinIO;
+    InferenceService -> RabbitMQ;
+    InferenceService -> Redis;
+    InferenceWorker -> RabbitMQ;
+    InferenceWorker -> Redis;
+    InferenceWorker -> PostgreSQL;
+    InferenceWorker -> MinIO;
+    EHRService -> PostgreSQL;
+    EHRService -> Fuseki;
+    EHRService -> RabbitMQ;
+    GraphService -> PostgreSQL;
+    GraphService -> Fuseki;
+    GraphService -> RabbitMQ;
+    OntologyAdmin -> PostgreSQL;
+    OntologyAdmin -> Fuseki;
+    OntologyAdmin -> RabbitMQ;
+    AuditService -> PostgreSQL;
+    AuditService -> RabbitMQ;
+
+    // ========== EDGES: ML Pipeline (internal flow) ==========
+    TileExtract -> CTransPath;
+    CTransPath -> FuzzyArc;
+    FuzzyArc -> PatternComp;
+    PatternComp -> MorphProfile;
+    MorphProfile -> XGBoost;
+    MorphProfile -> SHAP;
+    XGBoost -> SHAP;
+
+    // ========== EDGES: Workflows to Services ==========
+    InferenceService -> ImageAnalysis [style=dashed, label="runs"];
+    EHRService -> EHRToOnto [style=dashed, label="runs"];
+    GraphService -> GraphAssembler [style=dashed, label="runs"];
+    EHRService -> Explanation [style=dashed, label="runs"];
+    OntologyAdmin -> OntologyUpdate [style=dashed, label="runs"];
+
+    // ========== EVENT FLOW ==========
+    InferenceService -> RabbitMQ [label="inference.completed", color=blue, style=dashed];
+    RabbitMQ -> AuditService [label="consume", color=blue, style=dashed];
+}

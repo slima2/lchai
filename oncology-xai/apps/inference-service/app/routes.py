@@ -1,4 +1,4 @@
-"""Inference API routes (DERCAS 9.4)."""
+"""Inference API routes — v2 (ABMIL + Choquet + SHAP Decomposition)."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import settings
 from app.database import get_db
 from app.models import MLJobDB, ResultBundleDB, XAIArtifactDB
 from app.tasks import process_image_task
@@ -128,6 +129,17 @@ async def get_artifacts(result_bundle_id: str, db: AsyncSession = Depends(get_db
     ]
 
 
+@router.get("/checkpoints/status")
+async def get_checkpoint_status():
+    """Return which v2 checkpoints are loaded per gene."""
+    try:
+        from app.ml.checkpoints.loader import CheckpointLoader
+        loader = CheckpointLoader(settings.v2_checkpoint_dir, "cpu")
+        return loader.get_checkpoint_status()
+    except Exception as e:
+        return {"error": str(e), "checkpoint_dir": settings.v2_checkpoint_dir}
+
+
 def _bundle_dict(b: ResultBundleDB) -> dict:
     mp = b.morphologic_profile
     return {
@@ -137,6 +149,8 @@ def _bundle_dict(b: ResultBundleDB) -> dict:
         "job_id": b.job_id,
         "model_profile": b.model_profile,
         "model_version": b.model_version,
+        "pipeline_version": getattr(b, "pipeline_version", None) or "1.0.0",
+        "use_choquet": getattr(b, "use_choquet", None),
         "thresholds": b.thresholds,
         "pattern_composition": b.pattern_composition,
         "predominant_pattern": b.predominant_pattern,
@@ -157,6 +171,19 @@ def _bundle_dict(b: ResultBundleDB) -> dict:
                 "mutation": gr.mutation,
                 "score": gr.score,
                 "status": gr.status,
+                "confidence_label": getattr(gr, "confidence_label", None),
+                "auroc_threshold": getattr(gr, "auroc_threshold", None),
+                "prediction_method": getattr(gr, "prediction_method", None),
+                "disclaimer": getattr(gr, "disclaimer", None),
+                "shap_decomposition": {
+                    "embedding_contribution_pct": getattr(gr, "shap_embedding_pct", None),
+                    "pattern_contribution_pct": getattr(gr, "shap_pattern_pct", None),
+                    "top_pattern_dims": getattr(gr, "shap_top_patterns", None),
+                } if getattr(gr, "shap_embedding_pct", None) is not None else None,
+                "choquet_shapley": {
+                    "shapley_values": getattr(gr, "choquet_shapley_values", None),
+                    "interaction_indices": getattr(gr, "choquet_interaction_indices", None),
+                } if getattr(gr, "choquet_shapley_values", None) is not None else None,
                 "evidence_source": gr.evidence_source,
                 "intended_use": gr.intended_use,
             }
@@ -171,13 +198,15 @@ def _bundle_dict(b: ResultBundleDB) -> dict:
             "pct_solid": mp.pct_solid,
             "pct_mucinous": mp.pct_mucinous,
         } if mp else None,
+        "attention_overlay_uri": getattr(b, "attention_overlay_uri", None),
         "xai_artifacts": [
             {"artifact_id": a.id, "type": a.artifact_type, "gene": a.gene, "uri": a.uri}
             for a in (b.xai_artifacts or [])
         ],
         "disclaimers": [
             "This is a research tool, NOT a clinical diagnostic device.",
-            "Mutation predictions are based on morphology aggregation (thesis evidence only).",
+            "v2 mutation predictions use Pattern-Informed ABMIL + Fuzzy Choquet MIL (thesis Artifacts 2 & 3).",
+            "Inconclusive genes (AUROC < 0.70) require molecular testing for confirmation.",
             "Always confirm with standard molecular testing.",
         ],
         "created_at": b.created_at.isoformat() if b.created_at else None,

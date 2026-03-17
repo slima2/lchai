@@ -1,6 +1,15 @@
-# LCHAI v1.2 — Lung Cancer Histologic Analysis with AI
+# LCHAI v2.0 — Lung Cancer Histologic Analysis with AI
 
-Oncology Explainable AI system for lung cancer histopathological analysis.
+Oncology Explainable AI system for lung adenocarcinoma histopathological analysis.
+
+## What's New in v2.0
+
+- **Pattern-Informed ABMIL** (Artifact 2): Replaces XGBoost for mutation prediction using gated attention on concat(embeddings\_512d, pattern\_probs\_6d)
+- **Fuzzy Choquet MIL** (Artifact 3): Parallel pathway with interpretable Shapley values and interaction indices from a 2-additive fuzzy measure
+- **6 genes**: TP53, EGFR, KRAS, STK11, KEAP1, RBM10 (expanded from 3)
+- **Confidence labelling**: Conclusive (AUROC ≥ 0.70) vs Inconclusive with gene-specific disclaimers
+- **SHAP Decomposition**: DeepSHAP on ABMIL separating embedding dims (0-511) vs pattern dims (512-517) contribution
+- **3-card frontend**: Mutation Report, Attention + Pattern Visualisation, Ontology-Grounded Explanation
 
 ## Quick Start
 

@@ -17,7 +17,7 @@ from app.models import (
     GeneticResultDB, XAIArtifactDB, MorphologicProfileDB,
 )
 from app.roi_inference_ctranspath_fuzzyarcloss_v3 import (
-    InferenceConfig, run_inference,
+    InferenceConfig, InferenceResult, run_inference,
 )
 
 from oncology_common.storage import StorageClient
@@ -73,7 +73,7 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
             img.save(buf, format="PNG")
             image_bytes = buf.getvalue()
 
-        # Build config
+        # Build config (v2)
         thr = thresholds or {}
         config = InferenceConfig(
             image_uri=f"image:{image_id}",
@@ -82,9 +82,14 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
             ctranspath_checkpoint=settings.ctranspath_checkpoint,
             fuzzyarc_checkpoint=settings.fuzzyarc_checkpoint,
             mutation_model_dir=settings.mutation_model_dir,
+            v2_checkpoint_dir=settings.v2_checkpoint_dir,
+            use_choquet=settings.use_choquet,
+            top_k_tiles=settings.v2_top_k_tiles,
+            genes=settings.genes_list,
             pattern_threshold=thr.get("pattern", settings.pattern_threshold),
             mutation_threshold=thr.get("mutation", settings.mutation_threshold),
             shap_enabled=settings.shap_enabled,
+            shap_decomposition_enabled=settings.shap_decomposition_enabled,
         )
 
         # Run inference
@@ -109,14 +114,32 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
         metrics_json = json.dumps(result.metrics).encode()
         storage.upload_bytes(f"{prefix}/metrics.json", metrics_json, "application/json")
 
-        # Persist ResultBundle to DB
+        # Upload attention overlay if available
+        attention_overlay_uri = None
+        if result.attention_overlay_bytes:
+            attn_key = f"{prefix}/attention_overlay.png"
+            storage.upload_bytes(attn_key, result.attention_overlay_bytes, "image/png")
+            attention_overlay_uri = f"s3://{settings.s3_bucket}/{attn_key}"
+            attn_art = XAIArtifactDB(
+                result_bundle_id=rb_id,
+                artifact_type="attention_overlay",
+                gene=None,
+                uri=attention_overlay_uri,
+                hash=hashlib.sha256(result.attention_overlay_bytes).hexdigest(),
+            )
+            db.add(attn_art)
+
+        # Persist ResultBundle to DB (v2)
         bundle = ResultBundleDB(
             id=rb_id,
             case_id=case_id,
             image_id=image_id,
             job_id=job_id,
-            model_profile="ctranspath_fuzzyarcloss_v3_subcenters",
-            model_version="v1.0.0-mock" if config.model_backend == "mock" else "v1.0.0",
+            model_profile="ctranspath_fuzzyarcloss_v2_abmil_choquet",
+            model_version="v2.0.0-mock" if config.model_backend == "mock" else "v2.0.0",
+            pipeline_version="2.0.0",
+            use_choquet=config.use_choquet,
+            attention_overlay_uri=attention_overlay_uri,
             thresholds={"pattern": config.pattern_threshold, "mutation": config.mutation_threshold},
             pattern_composition=result.pattern_percentages,
             predominant_pattern=result.predominant_pattern,
@@ -138,15 +161,42 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
             )
             db.add(pr)
 
-        # Genetic results
-        for gene in result.mutation_scores:
+        # Build lookup dicts for v2 SHAP and Choquet data
+        shap_by_gene = {d.gene: d for d in result.shap_decompositions}
+        choquet_by_gene = {c.gene: c for c in result.choquet_shapley}
+
+        # Genetic results (v2 — with confidence labels + interpretability)
+        for entry in result.mutation_report:
+            shap_d = shap_by_gene.get(entry.gene)
+            choquet_d = choquet_by_gene.get(entry.gene)
             gr = GeneticResultDB(
                 result_bundle_id=rb_id,
-                mutation=gene,
-                score=result.mutation_scores[gene],
-                status=result.mutation_status.get(gene, "INCONCLUSIVE"),
+                mutation=entry.gene,
+                score=entry.probability,
+                status=result.mutation_status.get(entry.gene, "INCONCLUSIVE"),
+                confidence_label=entry.label,
+                auroc_threshold=entry.auroc_threshold,
+                prediction_method=entry.method,
+                disclaimer=entry.disclaimer,
+                shap_embedding_pct=shap_d.embedding_contribution_pct if shap_d else None,
+                shap_pattern_pct=shap_d.pattern_contribution_pct if shap_d else None,
+                shap_top_patterns=shap_d.top_pattern_dims if shap_d else None,
+                choquet_shapley_values=choquet_d.shapley_values if choquet_d else None,
+                choquet_interaction_indices=choquet_d.interaction_indices if choquet_d else None,
             )
             db.add(gr)
+
+        # Fallback: persist any genes from mutation_scores not already in mutation_report
+        reported_genes = {e.gene for e in result.mutation_report}
+        for gene in result.mutation_scores:
+            if gene not in reported_genes:
+                gr = GeneticResultDB(
+                    result_bundle_id=rb_id,
+                    mutation=gene,
+                    score=result.mutation_scores[gene],
+                    status=result.mutation_status.get(gene, "INCONCLUSIVE"),
+                )
+                db.add(gr)
 
         # Morphologic profile
         mp = MorphologicProfileDB(
@@ -160,6 +210,16 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
             pct_mucinous=result.morphologic_profile.get("pct_mucinous", 0.0),
         )
         db.add(mp)
+
+        # ROI overlay artifact
+        overlay_art = XAIArtifactDB(
+            result_bundle_id=rb_id,
+            artifact_type="roi_overlay",
+            gene=None,
+            uri=f"s3://{settings.s3_bucket}/{overlay_key}",
+            hash=hashlib.sha256(result.overlay_combined_bytes).hexdigest(),
+        )
+        db.add(overlay_art)
 
         # SHAP artifacts
         for name, data in result.shap_artifacts.items():

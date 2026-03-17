@@ -39,6 +39,9 @@ class MutationType(str, Enum):
     EGFR = "EGFR"
     KRAS = "KRAS"
     TP53 = "TP53"
+    STK11 = "STK11"
+    KEAP1 = "KEAP1"
+    RBM10 = "RBM10"
 
 
 class MutationStatus(str, Enum):
@@ -163,10 +166,27 @@ class PatternResult(BaseModel):
     overlay_uri: str | None = None
 
 
+class SHAPDecomposition(BaseModel):
+    embedding_contribution_pct: float | None = None
+    pattern_contribution_pct: float | None = None
+    top_pattern_dims: list[str] | None = None
+
+
+class ChoquetShapley(BaseModel):
+    shapley_values: dict[str, float] | None = None
+    interaction_indices: dict[str, float] | None = None
+
+
 class GeneticResult(BaseModel):
     mutation: MutationType
     score: float = Field(..., ge=0.0, le=1.0)
     status: MutationStatus
+    confidence_label: str | None = None  # Conclusive | Inconclusive
+    auroc_threshold: float | None = None
+    prediction_method: str | None = None  # abmil | choquet | xgboost
+    disclaimer: str | None = None
+    shap_decomposition: SHAPDecomposition | None = None
+    choquet_shapley: ChoquetShapley | None = None
     evidence_source: str = "THESIS_INTERNAL"
     intended_use: str = "research / decision support (non-diagnostic)"
     evidence_uri: str | None = None

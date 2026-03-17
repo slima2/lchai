@@ -240,6 +240,9 @@ services:
       - SERVICE_PORT=8003
     ports:
       - "8003:8003"
+    volumes:
+      - "${CHECKPOINT_HOST_PATH:-D:/Dropbox/PHD/THESIS/best_model_roi_acc6_v3.pth}:/data/models/best_model.pth:ro"
+      - "${V2_CHECKPOINT_HOST_PATH:-D:/Dropbox/PHD/THESIS/CHECKPOINTS LUAD V2/checkpoints}:/data/checkpoints:ro"
     depends_on:
       postgres:
         condition: service_healthy
@@ -257,8 +260,11 @@ services:
       context: ..
       dockerfile: apps/inference-service/Dockerfile
     container_name: oncology-inference-worker
-    command: celery -A app.celery_app:celery worker --loglevel=info --concurrency=2
+    command: celery -A app.celery_app:celery worker --loglevel=info --concurrency=1
     env_file: ../.env
+    volumes:
+      - "${CHECKPOINT_HOST_PATH:-D:/Dropbox/PHD/THESIS/best_model_roi_acc6_v3.pth}:/data/models/best_model.pth:ro"
+      - "${V2_CHECKPOINT_HOST_PATH:-D:/Dropbox/PHD/THESIS/CHECKPOINTS LUAD V2/checkpoints}:/data/checkpoints:ro"
     depends_on:
       postgres:
         condition: service_healthy
