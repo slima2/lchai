@@ -24,6 +24,7 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
   const fileRef = useRef<HTMLInputElement>(null);
   const [selImage, setSelImage] = useState<string | null>(initialImageId || null);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [processedImageId, setProcessedImageId] = useState<string | null>(null);
   const [autoSelected, setAutoSelected] = useState(false);
   const [showAttnOverlay, setShowAttnOverlay] = useState(false);
 
@@ -77,11 +78,18 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
 
   const process = useMutation({
     mutationFn: () => processImage(selImage!, caseId),
-    onSuccess: (r) => setJobId(r.data.job_id),
+    onSuccess: (r) => {
+      setProcessedImageId(selImage);
+      setJobId(r.data.job_id);
+    },
   });
 
   React.useEffect(() => {
     if (job.data?.status === 'COMPLETED' && job.data?.result_bundle_id) {
+      if (processedImageId && processedImageId !== selImage) {
+        setSelImage(processedImageId);
+        onImageSelected(processedImageId);
+      }
       onResultsReady(job.data.result_bundle_id);
       results.refetch();
       setJobId(null);

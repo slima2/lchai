@@ -18,11 +18,11 @@ class Settings(BaseSettings):
     s3_secret_key: str = "minioadmin"
     s3_bucket: str = "oncology-xai"
 
-    # Model — v1 backbone (CTransPath + FuzzyArcLoss pattern classifier)
+    # Model — v2 backbone (CTransPath Swin Tiny + FuzzyArcLoss V2)
     model_backend: str = "mock"  # mock | local | triton
     triton_url: str = "http://triton:8001"
     ctranspath_checkpoint: str = "/data/models/ctranspath.pth"
-    fuzzyarc_checkpoint: str = "/data/models/fuzzyarcloss_v3_subcenters.pth"
+    fuzzyarc_checkpoint: str = "/data/models/best_fuzzyarcloss_v2.pth"
 
     # Model — v1 legacy (XGBoost mutation, kept for backward compat)
     mutation_model_dir: str = "/data/models/mutation_xgboost/"

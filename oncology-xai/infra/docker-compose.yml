@@ -241,7 +241,7 @@ services:
     ports:
       - "8003:8003"
     volumes:
-      - "${CHECKPOINT_HOST_PATH:-D:/Dropbox/PHD/THESIS/best_model_roi_acc6_v3.pth}:/data/models/best_model.pth:ro"
+      - "${BACKBONE_HOST_DIR:-D:/Dropbox/PHD/THESIS/SCRIPTS/BACKBONES}:/data/models:ro"
       - "${V2_CHECKPOINT_HOST_PATH:-D:/Dropbox/PHD/THESIS/CHECKPOINTS LUAD V2/checkpoints}:/data/checkpoints:ro"
     depends_on:
       postgres:
@@ -263,7 +263,7 @@ services:
     command: celery -A app.celery_app:celery worker --loglevel=info --concurrency=1
     env_file: ../.env
     volumes:
-      - "${CHECKPOINT_HOST_PATH:-D:/Dropbox/PHD/THESIS/best_model_roi_acc6_v3.pth}:/data/models/best_model.pth:ro"
+      - "${BACKBONE_HOST_DIR:-D:/Dropbox/PHD/THESIS/SCRIPTS/BACKBONES}:/data/models:ro"
       - "${V2_CHECKPOINT_HOST_PATH:-D:/Dropbox/PHD/THESIS/CHECKPOINTS LUAD V2/checkpoints}:/data/checkpoints:ro"
     depends_on:
       postgres:

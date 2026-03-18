@@ -141,72 +141,44 @@ class InferenceResult:
 
 # ═══════════════════════════════════════════════════════════════════════
 # REAL ML COMPONENTS (used when model_backend == "local")
-# Loaded from thesis checkpoint: ResNet-101 (4-ch) + FuzzyArcLoss head
+# v2: CTransPath Swin Tiny (4-ch) + FuzzyArcLoss V2 classifier
 # ═══════════════════════════════════════════════════════════════════════
 
 _MODEL_CACHE: dict[str, Any] = {}
 
 
 def _load_real_pipeline(checkpoint_path: str, device: str = "cpu") -> dict[str, Any]:
-    """Load trained ResNet-101 + FuzzyArcLoss head from a single .pth checkpoint.
+    """Load CTransPath Swin Tiny + FuzzyArcLoss V2 from best_fuzzyarcloss_v2.pth.
 
     Checkpoint structure (from thesis training):
-      model_state  — nn.Sequential(ResNet101_4ch, BN(2048), Linear(2048,512), BN(512))
-      head_state   — {'head.weight': [6, 512], 'ce.alpha': [6]}
-      config       — training hyperparams (IMG_SIZE, S_SCALE, id2label, ...)
+      model    — nn.Sequential(CTransPathBackbone(4ch→768), ProjectionHead(768→512))
+      loss_fn  — {'weight': [6, 512], 'head.weight': [6, 512]}
+      config   — {EMBED_DIM: 512, IMG_SIZE: 224, S_SCALE: 46.1, ...}
     """
     if checkpoint_path in _MODEL_CACHE:
         return _MODEL_CACHE[checkpoint_path]
 
     import torch
-    import torch.nn as nn
-    from torchvision import models as tv_models
 
-    ck = torch.load(checkpoint_path, map_location=device, weights_only=False)
-    cfg = ck.get("config", {})
-    id2label = ck.get("id2label", _CK_ID2LABEL)
-    num_classes = len(id2label)
-    embed_dim = cfg.get("EMBED_DIM", 512)
-    s_scale = cfg.get("S_SCALE", 30.0)
-    img_size = cfg.get("IMG_SIZE", 384)
+    from app.ml.models.ctranspath_backbone import CTransPathPipeline
 
-    # ── backbone: ResNet-101 with 4 input channels (RGB + mask) ──
-    backbone = tv_models.resnet101(weights=None)
-    backbone.conv1 = nn.Conv2d(4, 64, kernel_size=7, stride=2, padding=3, bias=False)
-    backbone.fc = nn.Identity()
-
-    model = nn.Sequential(
-        backbone,                               # 0 → 2048-dim
-        nn.BatchNorm1d(2048),                   # 1
-        nn.Linear(2048, embed_dim, bias=False),  # 2
-        nn.BatchNorm1d(embed_dim),              # 3
-    )
-
-    missing, unexpected = model.load_state_dict(ck["model_state"], strict=False)
-    logger.info(
-        "Loaded model from %s  (matched: %d, missing: %d, unexpected: %d)",
-        checkpoint_path,
-        len(ck["model_state"]) - len(unexpected),
-        len(missing), len(unexpected),
-    )
-    model.eval().to(device)
-
-    # ── head: class prototype weight matrix [num_classes, embed_dim] ──
-    head_weight = ck["head_state"]["head.weight"].to(device)  # (6, 512)
+    model = CTransPathPipeline.from_finetuned(checkpoint_path, device)
+    classifier_info = CTransPathPipeline.load_classifier_weights(checkpoint_path, device)
 
     pipeline = {
         "model": model,
-        "head_weight": head_weight,
-        "id2label": {int(k): v for k, v in id2label.items()},
-        "num_classes": num_classes,
-        "embed_dim": embed_dim,
-        "s_scale": float(s_scale),
-        "img_size": int(img_size),
+        "head_weight": classifier_info["head_weight"],
+        "id2label": classifier_info["id2label"],
+        "num_classes": classifier_info["num_classes"],
+        "embed_dim": classifier_info["embed_dim"],
+        "s_scale": classifier_info["s_scale"],
+        "img_size": classifier_info["img_size"],
     }
     _MODEL_CACHE[checkpoint_path] = pipeline
     logger.info(
-        "Pipeline ready: %d classes, embed=%d, s=%.2f, img=%d, val_f1=%.4f",
-        num_classes, embed_dim, s_scale, img_size, ck.get("val_f1", 0),
+        "CTransPath pipeline ready: %d classes, embed=%d, s=%.2f, img=%d",
+        pipeline["num_classes"], pipeline["embed_dim"],
+        pipeline["s_scale"], pipeline["img_size"],
     )
     return pipeline
 
@@ -511,10 +483,10 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
         if old_max is not None:
             Image.MAX_IMAGE_PIXELS = old_max
 
-    # 2) Tile
+    # 2) Tile — use checkpoint IMG_SIZE (224 for CTransPath V2)
     tile_sz = config.tile_size
-    if config.model_backend == "local" and config.ctranspath_checkpoint:
-        pipe = _load_real_pipeline(config.ctranspath_checkpoint, config.device)
+    if config.model_backend == "local" and config.fuzzyarc_checkpoint:
+        pipe = _load_real_pipeline(config.fuzzyarc_checkpoint, config.device)
         tile_sz = pipe["img_size"]
     tiles = _tile_image(img, tile_sz, config.overlap)
     result.n_tiles = len(tiles)
@@ -570,15 +542,19 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
     }
     result.morphologic_profile = profile
 
-    # Generate mock tile embeddings if needed
+    # Tile embeddings: use real CTransPath embeddings or generate mock
     if config.model_backend == "mock":
         rng = np.random.default_rng(42)
         result.tile_embeddings = rng.normal(size=(n_tiles, 512)).astype(np.float32)
         result.embedding = result.tile_embeddings.mean(axis=0)
     else:
-        if result.tile_embeddings is None:
+        if "embeddings" in _REAL_TILE_EMBEDDINGS:
+            result.tile_embeddings = _REAL_TILE_EMBEDDINGS["embeddings"]
+            result.embedding = result.tile_embeddings.mean(axis=0)
+            logger.info("Using real CTransPath embeddings: shape=%s", result.tile_embeddings.shape)
+        else:
+            logger.warning("No real embeddings available — falling back to random")
             result.tile_embeddings = np.random.default_rng(42).normal(size=(n_tiles, 512)).astype(np.float32)
-        if result.embedding is None:
             result.embedding = result.tile_embeddings.mean(axis=0)
 
     # ── v2: Pathway A — Pattern-Informed ABMIL ──
@@ -774,23 +750,25 @@ def _build_attention_overlay(
 
 
 def _real_tile_inference(tiles: list[tuple[int, int, Image.Image]], config: InferenceConfig) -> dict[str, list[float]]:
-    """Run real ResNet-101 backbone + FuzzyArcLoss cosine head on tiles.
+    """Run CTransPath Swin Tiny backbone + FuzzyArcLoss V2 cosine head on tiles.
 
-    Each tile is resized to the training IMG_SIZE, normalised, given a
-    4th channel of ones (mask = full ROI), and passed through the model.
-    Cosine similarity with the class prototypes yields per-pattern scores.
+    Each tile is resized to 224×224, normalised with ImageNet stats, given a
+    4th channel of ones (mask = full ROI), and passed through CTransPath.
+    Cosine similarity with the V2 class prototypes yields per-pattern scores.
+
+    Also stores per-tile 512-d embeddings for downstream ABMIL/Choquet.
     """
     import torch
     import torch.nn.functional as F
     from torchvision import transforms
 
     device = config.device
-    pipe = _load_real_pipeline(config.ctranspath_checkpoint, device)
+    pipe = _load_real_pipeline(config.fuzzyarc_checkpoint, device)
     model = pipe["model"]
     head_weight = pipe["head_weight"]
     id2label = pipe["id2label"]
     s_scale = pipe["s_scale"]
-    img_size = pipe["img_size"]
+    img_size = pipe["img_size"]  # 224
 
     normalize = transforms.Compose([
         transforms.Resize((img_size, img_size)),
@@ -799,17 +777,19 @@ def _real_tile_inference(tiles: list[tuple[int, int, Image.Image]], config: Infe
     ])
 
     scores: dict[str, list[float]] = {p: [] for p in PATTERNS}
+    all_embeddings: list[np.ndarray] = []
     batch_size = 16
 
     with torch.no_grad():
         for i in range(0, len(tiles), batch_size):
             batch_3ch = [normalize(t[2]) for t in tiles[i:i + batch_size]]
-            # Add 4th channel (mask = all ones → entire tile is region of interest)
             mask_ch = torch.ones(1, img_size, img_size)
             batch_4ch = [torch.cat([img3, mask_ch], dim=0) for img3 in batch_3ch]
             batch_tensor = torch.stack(batch_4ch).to(device)
 
             embeddings = model(batch_tensor)                   # (B, 512)
+            all_embeddings.append(embeddings.cpu().numpy())
+
             emb_norm = F.normalize(embeddings, dim=1)
             w_norm = F.normalize(head_weight, dim=1)           # (6, 512)
             cosine = emb_norm @ w_norm.t()                     # (B, 6)
@@ -822,7 +802,13 @@ def _real_tile_inference(tiles: list[tuple[int, int, Image.Image]], config: Infe
                     if label_name in scores:
                         scores[label_name].append(float(probs[j, class_idx]))
 
+    _REAL_TILE_EMBEDDINGS.clear()
+    _REAL_TILE_EMBEDDINGS["embeddings"] = np.concatenate(all_embeddings, axis=0)
+
     return scores
+
+
+_REAL_TILE_EMBEDDINGS: dict[str, np.ndarray] = {}
 
 
 def _real_mutation_prediction(
