@@ -402,11 +402,20 @@ def _generate_shap_real(profile: dict[str, float], gene: str, model_dir: str) ->
 # IMAGE DECODE (PIL + OpenSlide for SVS)
 # ═══════════════════════════════════════════════════════════════════════
 
+_WSI_SLIDE_HANDLE = None  # holds OpenSlide handle for full-resolution tiling
+
+
 def _decode_image(image_bytes: bytes, image_format: str | None) -> Image.Image:
     """Decode image bytes to PIL RGB. Supports PNG, JPEG, TIFF (PIL) and SVS (OpenSlide).
-    Whole-slide formats (svs, tif, tiff) use OpenSlide when available to avoid PIL decompression-bomb limit."""
+
+    For WSI formats (svs, tif, tiff), returns a *thumbnail* for overlay rendering
+    but stores the OpenSlide handle in _WSI_SLIDE_HANDLE for full-resolution tiling.
+    """
+    global _WSI_SLIDE_HANDLE
+    _WSI_SLIDE_HANDLE = None
+
     fmt = (image_format or "").lower().strip()
-    # Use OpenSlide for whole-slide formats (avoids PIL pixel limit and supports SVS)
+    logger.info("_decode_image: format=%r, bytes=%d, fmt=%r", image_format, len(image_bytes), fmt)
     if fmt in ("svs", "tif", "tiff"):
         try:
             import os
@@ -418,28 +427,33 @@ def _decode_image(image_bytes: bytes, image_format: str | None) -> Image.Image:
                 path = f.name
             try:
                 slide = openslide.OpenSlide(path)
+                _WSI_SLIDE_HANDLE = (slide, path)
                 thumb = slide.get_thumbnail((4096, 4096))
+                logger.info(
+                    "OpenSlide WSI opened: dims=%s, thumbnail=%s",
+                    slide.dimensions, thumb.size,
+                )
                 return thumb.convert("RGB")
-            finally:
+            except Exception:
                 try:
                     os.unlink(path)
                 except OSError:
                     pass
-        except ImportError:
+                raise
+        except ImportError as ie:
+            logger.error("OpenSlide import failed: %s", ie)
             if fmt == "svs":
                 raise ValueError(
                     "SVS format requires openslide-python. Install with: pip install openslide-python (and system libopenslide)."
                 ) from None
-            # For tif/tiff fall through to PIL with raised limit
         except Exception as e:
             logger.warning("OpenSlide decode failed for %s: %s, trying PIL", fmt, e)
             if fmt == "svs":
                 raise ValueError(f"SVS decode failed: {e}") from e
-            # For tif/tiff fall through to PIL
-    # PIL path: allow large images (whole-slide TIFF/JPEG) to avoid decompression-bomb error
+    # PIL path for regular images
     try:
         old_max = getattr(Image, "MAX_IMAGE_PIXELS", None)
-        Image.MAX_IMAGE_PIXELS = None  # allow large WSI
+        Image.MAX_IMAGE_PIXELS = None
         try:
             return Image.open(io.BytesIO(image_bytes)).convert("RGB")
         finally:
@@ -448,6 +462,78 @@ def _decode_image(image_bytes: bytes, image_format: str | None) -> Image.Image:
     except Exception as e:
         logger.error("Failed to decode image (format=%s): %s", image_format, e)
         raise ValueError(f"Image decode failed: {e}") from e
+
+
+def _cleanup_wsi():
+    """Close OpenSlide handle and delete temp file."""
+    global _WSI_SLIDE_HANDLE
+    if _WSI_SLIDE_HANDLE is not None:
+        slide, path = _WSI_SLIDE_HANDLE
+        _WSI_SLIDE_HANDLE = None
+        try:
+            slide.close()
+        except Exception:
+            pass
+        try:
+            import os
+            os.unlink(path)
+        except OSError:
+            pass
+
+
+def _tile_wsi_full_resolution(
+    tile_size: int = 224,
+    level: int = 0,
+    tissue_threshold: float = 0.15,
+    max_tiles: int = 15000,
+) -> list[tuple[int, int, Image.Image]] | None:
+    """Tile a WSI at full resolution using OpenSlide read_region.
+
+    Skips background tiles (>85% white) to focus on tissue.
+    Returns list of (x, y, tile_image) or None if no WSI handle.
+    """
+    if _WSI_SLIDE_HANDLE is None:
+        return None
+
+    slide, _ = _WSI_SLIDE_HANDLE
+    w, h = slide.level_dimensions[level]
+    logger.info("WSI full-resolution tiling: level=%d, dims=(%d, %d), tile=%d", level, w, h, tile_size)
+
+    tiles = []
+    step = tile_size
+    n_x = (w - tile_size) // step + 1
+    n_y = (h - tile_size) // step + 1
+    total_candidates = n_x * n_y
+    logger.info("WSI tile grid: %d x %d = %d candidates (max_tiles=%d)", n_x, n_y, total_candidates, max_tiles)
+
+    stride = 1
+    if total_candidates > max_tiles * 2:
+        stride = max(1, int(math.sqrt(total_candidates / max_tiles)))
+        logger.info("WSI subsampling with stride=%d to stay under max_tiles", stride)
+
+    count = 0
+    for yi in range(0, n_y, stride):
+        for xi in range(0, n_x, stride):
+            if count >= max_tiles:
+                break
+            x = xi * step
+            y = yi * step
+            region = slide.read_region((x, y), level, (tile_size, tile_size))
+            tile_rgb = region.convert("RGB")
+
+            arr = np.array(tile_rgb)
+            gray = arr.mean(axis=2)
+            tissue_frac = (gray < 220).mean()
+            if tissue_frac < tissue_threshold:
+                continue
+
+            tiles.append((x, y, tile_rgb))
+            count += 1
+        if count >= max_tiles:
+            break
+
+    logger.info("WSI tiling complete: %d tissue tiles from %d candidates", len(tiles), total_candidates)
+    return tiles if tiles else None
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -483,16 +569,26 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
         if old_max is not None:
             Image.MAX_IMAGE_PIXELS = old_max
 
-    # 2) Tile — use checkpoint IMG_SIZE (224 for CTransPath V2)
+    # 2) Tile — use full-resolution WSI tiling when available
     tile_sz = config.tile_size
     if config.model_backend == "local" and config.fuzzyarc_checkpoint:
         pipe = _load_real_pipeline(config.fuzzyarc_checkpoint, config.device)
         tile_sz = pipe["img_size"]
-    tiles = _tile_image(img, tile_sz, config.overlap)
+
+    wsi_tiles = _tile_wsi_full_resolution(
+        tile_size=tile_sz, tissue_threshold=0.15, max_tiles=config.top_k_tiles * 50,
+    )
+    if wsi_tiles is not None and len(wsi_tiles) > 0:
+        tiles = wsi_tiles
+        logger.info("Using full-resolution WSI tiling: %d tissue tiles at %dpx", len(tiles), tile_sz)
+    else:
+        tiles = _tile_image(img, tile_sz, config.overlap)
+        logger.info("Using thumbnail tiling: %d tiles (%dx%d, overlap=%d)", len(tiles), tile_sz, tile_sz, config.overlap)
+
     result.n_tiles = len(tiles)
     tile_coords = [(x, y) for x, y, _ in tiles]
     result.tile_coords = tile_coords
-    logger.info("Tiled image into %d tiles (%dx%d, overlap=%d)", len(tiles), tile_sz, tile_sz, config.overlap)
+    logger.info("Total tiles for inference: %d", len(tiles))
 
     # 3-4) Pattern inference
     if config.model_backend == "mock":
@@ -523,12 +619,24 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
     result.predominant_pattern = max(percentages, key=percentages.get) if percentages else ""  # type: ignore[arg-type]
     result.is_conclusive = {p: avg_scores[p] >= config.pattern_threshold for p in active_patterns}
 
-    # 6) Pattern overlay
+    # 6) Pattern overlay — scale WSI coords to thumbnail for rendering
     tile_labels = []
     for i in range(n_tiles):
         best_p = max(active_patterns, key=lambda p: tile_scores[p][i])
         tile_labels.append(best_p)
-    result.overlay_combined_bytes = _build_overlay(img, tile_coords, tile_labels, tile_sz)
+
+    overlay_coords = tile_coords
+    overlay_tile_sz = tile_sz
+    if _WSI_SLIDE_HANDLE is not None:
+        wsi_slide, _ = _WSI_SLIDE_HANDLE
+        wsi_w, wsi_h = wsi_slide.dimensions
+        thumb_w, thumb_h = img.size
+        sx, sy = thumb_w / wsi_w, thumb_h / wsi_h
+        overlay_coords = [(int(x * sx), int(y * sy)) for x, y in tile_coords]
+        overlay_tile_sz = max(2, int(tile_sz * min(sx, sy)))
+        result.overlay_combined_bytes = _build_overlay(img, overlay_coords, tile_labels, overlay_tile_sz)
+    else:
+        result.overlay_combined_bytes = _build_overlay(img, tile_coords, tile_labels, tile_sz)
 
     # 7) Morphologic profile
     profile = {
@@ -588,12 +696,18 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
 
         result.attention_top_k_indices = abmil_output.top_k_indices
 
-        # Build attention heatmap overlay from ABMIL
+        # Build attention heatmap overlay from ABMIL (scale coords for WSI)
         if abmil_output.attention_map is not None and len(tile_coords) > 0:
-            result.attention_overlay_bytes = _build_attention_overlay(
-                img, tile_coords, abmil_output.attention_map,
-                abmil_output.top_k_indices, tile_sz,
-            )
+            if _WSI_SLIDE_HANDLE is not None:
+                result.attention_overlay_bytes = _build_attention_overlay(
+                    img, overlay_coords, abmil_output.attention_map,
+                    abmil_output.top_k_indices, overlay_tile_sz,
+                )
+            else:
+                result.attention_overlay_bytes = _build_attention_overlay(
+                    img, tile_coords, abmil_output.attention_map,
+                    abmil_output.top_k_indices, tile_sz,
+                )
 
     except Exception as e:
         logger.warning("v2 ABMIL pathway failed: %s — falling back to v1 XGBoost", e)
@@ -689,6 +803,8 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
         percentages.get(result.predominant_pattern, 0),
         len(result.mutation_report), elapsed,
     )
+
+    _cleanup_wsi()
     return result
 
 
