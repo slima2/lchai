@@ -814,40 +814,54 @@ def _build_attention_overlay(
     attention_weights: np.ndarray,
     top_k_indices: list[int],
     tile_size: int,
-    alpha: int = 140,
+    alpha: int = 180,
 ) -> bytes:
-    """Build spatial attention heatmap from ABMIL attention weights."""
+    """Build spatial attention heatmap highlighting only top-K attended tiles."""
     from PIL import ImageFilter
 
     w, h = img.size
     heat = np.zeros((h, w), dtype=np.float32)
 
-    half = tile_size // 2
-    ys = np.arange(tile_size, dtype=np.float32) - half
-    xs = np.arange(tile_size, dtype=np.float32) - half
+    render_size = max(tile_size * 2, min(w, h) // 40)
+    half = render_size // 2
+    ys = np.arange(render_size, dtype=np.float32) - half
+    xs = np.arange(render_size, dtype=np.float32) - half
     gx, gy = np.meshgrid(xs, ys)
-    sigma = tile_size * 0.38
+    sigma = render_size * 0.40
     gaussian = np.exp(-(gx ** 2 + gy ** 2) / (2 * sigma ** 2))
 
     top_set = set(top_k_indices)
+    top_weights = attention_weights[list(top_k_indices)] if len(top_k_indices) > 0 else np.array([1.0])
+    w_min, w_max = top_weights.min(), top_weights.max()
+    w_range = w_max - w_min if w_max > w_min else 1e-8
+
     for idx, (tx, ty) in enumerate(tile_coords):
         if idx >= len(attention_weights):
             break
-        weight = attention_weights[idx]
         if idx not in top_set:
-            weight *= 0.1
-        y1, y2 = ty, min(ty + tile_size, h)
-        x1, x2 = tx, min(tx + tile_size, w)
-        ky2, kx2 = y2 - ty, x2 - tx
-        heat[y1:y2, x1:x2] += gaussian[:ky2, :kx2] * weight
+            continue
+        norm_w = (attention_weights[idx] - w_min) / w_range
+        weight = 0.3 + 0.7 * norm_w
+
+        cx, cy = tx + tile_size // 2, ty + tile_size // 2
+        y1 = max(0, cy - half)
+        x1 = max(0, cx - half)
+        y2 = min(h, cy + render_size - half)
+        x2 = min(w, cx + render_size - half)
+        gy1 = y1 - (cy - half)
+        gx1 = x1 - (cx - half)
+        gy2 = gy1 + (y2 - y1)
+        gx2 = gx1 + (x2 - x1)
+        if gy2 > gy1 and gx2 > gx1:
+            heat[y1:y2, x1:x2] = np.maximum(heat[y1:y2, x1:x2], gaussian[gy1:gy2, gx1:gx2] * weight)
 
     if heat.max() > 0:
         heat /= heat.max()
 
     r = (heat * 255).astype(np.uint8)
-    g = ((1 - heat) * 100).astype(np.uint8)
+    g = ((heat * 0.4) * 255).astype(np.uint8)
     b = np.zeros_like(r)
-    a = (heat * alpha).astype(np.uint8)
+    a = np.where(heat > 0.02, (heat * alpha).clip(0, 255), 0).astype(np.uint8)
 
     overlay = Image.merge("RGBA", (
         Image.fromarray(r, "L"),
