@@ -99,7 +99,6 @@ async def get_artifact_presigned(key: str = Query(...)):
         logger.error("Failed to download artifact key=%s: %s", key, exc)
         raise HTTPException(status_code=404, detail=f"Artifact not found: {key}")
 
-    # Determine content type from key extension
     ext = key.rsplit(".", 1)[-1].lower() if "." in key else "bin"
     ct_map = {
         "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
@@ -108,7 +107,11 @@ async def get_artifact_presigned(key: str = Query(...)):
         "html": "text/html", "csv": "text/csv",
     }
     content_type = ct_map.get(ext, "application/octet-stream")
-    return Response(content=data, media_type=content_type)
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
 
 def _img_dict(img: ImageDB) -> dict:

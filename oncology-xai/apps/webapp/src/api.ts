@@ -72,9 +72,8 @@ export const createKGSnapshot = (data: any) => api.post('/admin/kg/snapshots', d
 export const getKGChangelog = (snapshotId: string) =>
   api.get(`/admin/kg/snapshots/${snapshotId}/changelog`);
 
-// Artifacts — presigned URL proxy
+// Artifacts — streamed from MinIO via image-service proxy
 export const getArtifactUrl = (uri: string) => {
-  // Convert s3://bucket/key to MinIO presigned URL via gateway
   const key = uri.replace(/^s3:\/\/[^/]+\//, '');
   return `${API_URL}/api/v1/artifacts/presigned?key=${encodeURIComponent(key)}`;
 };

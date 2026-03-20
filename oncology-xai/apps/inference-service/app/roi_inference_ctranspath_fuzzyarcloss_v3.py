@@ -859,9 +859,9 @@ def _build_attention_overlay(
         heat /= heat.max()
 
     r = (heat * 255).astype(np.uint8)
-    g = ((heat * 0.4) * 255).astype(np.uint8)
+    g = ((heat * 0.35) * 255).astype(np.uint8)
     b = np.zeros_like(r)
-    a = np.where(heat > 0.02, (heat * alpha).clip(0, 255), 0).astype(np.uint8)
+    a = np.where(heat > 0.01, (heat * alpha).clip(40, 255), 0).astype(np.uint8)
 
     overlay = Image.merge("RGBA", (
         Image.fromarray(r, "L"),
@@ -869,7 +869,7 @@ def _build_attention_overlay(
         Image.fromarray(b, "L"),
         Image.fromarray(a, "L"),
     ))
-    blur_radius = max(tile_size // 6, 4)
+    blur_radius = max(render_size // 3, 6)
     overlay = overlay.filter(ImageFilter.GaussianBlur(radius=blur_radius))
 
     base = img.convert("RGBA")

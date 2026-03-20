@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import CaseSelector from './panels/CaseSelector';
 import ImagePanel from './panels/ImagePanel';
+import ViewerPanel from './panels/ViewerPanel';
 import EHRPanel from './panels/EHRPanel';
 import GraphPanel from './panels/GraphPanel';
 import ShapPanel from './panels/ShapPanel';
 import AdminPanel from './panels/AdminPanel';
 import { getPatients, getCases, getImages, getLatestResults } from './api';
 
-type Tab = 'cases' | 'images' | 'ehr' | 'graph' | 'shap' | 'admin';
+type Tab = 'cases' | 'images' | 'viewer' | 'ehr' | 'graph' | 'shap' | 'admin';
 
 const DEFAULT_PATIENT_EXTERNAL_ID = 'TCGA-69-7979';
 
@@ -68,6 +69,7 @@ export default function App() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'cases', label: 'Cases' },
     { key: 'images', label: 'Images' },
+    { key: 'viewer', label: 'Viewer' },
     { key: 'ehr', label: 'EHR' },
     { key: 'graph', label: 'Graph' },
     { key: 'shap', label: 'SHAP / XAI' },
@@ -128,6 +130,9 @@ export default function App() {
             onResultsReady={setResultBundleId}
           />
         )}
+        {tab === 'viewer' && caseId && (
+          <ViewerPanel caseId={caseId} imageId={imageId} resultBundleId={resultBundleId} />
+        )}
         {tab === 'ehr' && caseId && <EHRPanel caseId={caseId} />}
         {tab === 'graph' && caseId && <GraphPanel caseId={caseId} />}
         {tab === 'shap' && resultBundleId && <ShapPanel resultBundleId={resultBundleId} />}
@@ -136,6 +141,9 @@ export default function App() {
         {/* Fallback messages */}
         {tab === 'images' && !caseId && (
           <p className="text-gray-500">Select a case first.</p>
+        )}
+        {tab === 'viewer' && !caseId && (
+          <p className="text-gray-500">Select a case and process an image first.</p>
         )}
         {tab === 'ehr' && !caseId && (
           <p className="text-gray-500">Select a case first.</p>
