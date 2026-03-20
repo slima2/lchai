@@ -816,18 +816,26 @@ def _build_attention_overlay(
     tile_size: int,
     alpha: int = 180,
 ) -> bytes:
-    """Build spatial attention heatmap highlighting only top-K attended tiles."""
-    from PIL import ImageFilter
+    """Build spatial attention heatmap by blending hot colors directly onto the image.
+
+    Darkens the base image, then paints bright red/yellow hotspots at
+    top-K attended tile locations so they are clearly visible.
+    """
+    from PIL import ImageFilter, ImageEnhance
 
     w, h = img.size
+    base = img.convert("RGB")
+    base = ImageEnhance.Brightness(base).enhance(0.4)
+    base_arr = np.array(base).astype(np.float32)
+
     heat = np.zeros((h, w), dtype=np.float32)
 
-    render_size = max(tile_size * 2, min(w, h) // 40)
+    render_size = max(tile_size * 2, min(w, h) // 35)
     half = render_size // 2
     ys = np.arange(render_size, dtype=np.float32) - half
     xs = np.arange(render_size, dtype=np.float32) - half
     gx, gy = np.meshgrid(xs, ys)
-    sigma = render_size * 0.40
+    sigma = render_size * 0.42
     gaussian = np.exp(-(gx ** 2 + gy ** 2) / (2 * sigma ** 2))
 
     top_set = set(top_k_indices)
@@ -844,38 +852,33 @@ def _build_attention_overlay(
         weight = 0.3 + 0.7 * norm_w
 
         cx, cy = tx + tile_size // 2, ty + tile_size // 2
-        y1 = max(0, cy - half)
-        x1 = max(0, cx - half)
+        y1, x1 = max(0, cy - half), max(0, cx - half)
         y2 = min(h, cy + render_size - half)
         x2 = min(w, cx + render_size - half)
-        gy1 = y1 - (cy - half)
-        gx1 = x1 - (cx - half)
-        gy2 = gy1 + (y2 - y1)
-        gx2 = gx1 + (x2 - x1)
+        gy1, gx1 = y1 - (cy - half), x1 - (cx - half)
+        gy2, gx2 = gy1 + (y2 - y1), gx1 + (x2 - x1)
         if gy2 > gy1 and gx2 > gx1:
-            heat[y1:y2, x1:x2] = np.maximum(heat[y1:y2, x1:x2], gaussian[gy1:gy2, gx1:gx2] * weight)
+            heat[y1:y2, x1:x2] = np.maximum(
+                heat[y1:y2, x1:x2], gaussian[gy1:gy2, gx1:gx2] * weight
+            )
 
     if heat.max() > 0:
         heat /= heat.max()
 
-    r = (heat * 255).astype(np.uint8)
-    g = ((heat * 0.35) * 255).astype(np.uint8)
-    b = np.zeros_like(r)
-    a = np.where(heat > 0.01, (heat * alpha).clip(40, 255), 0).astype(np.uint8)
+    heat_blur = Image.fromarray((heat * 255).astype(np.uint8), "L")
+    heat_blur = heat_blur.filter(ImageFilter.GaussianBlur(radius=max(render_size // 3, 6)))
+    heat = np.array(heat_blur).astype(np.float32) / 255.0
 
-    overlay = Image.merge("RGBA", (
-        Image.fromarray(r, "L"),
-        Image.fromarray(g, "L"),
-        Image.fromarray(b, "L"),
-        Image.fromarray(a, "L"),
-    ))
-    blur_radius = max(render_size // 3, 6)
-    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+    hot_r = np.clip(heat * 2.5, 0, 1) * 255
+    hot_g = np.clip((heat - 0.4) * 2.0, 0, 1) * 255
+    hot_b = np.zeros_like(heat)
 
-    base = img.convert("RGBA")
-    combined = Image.alpha_composite(base, overlay)
+    blend = heat[:, :, np.newaxis]
+    result = base_arr * (1 - blend * 0.85) + np.stack([hot_r, hot_g, hot_b], axis=2) * blend * 0.85
+    result = np.clip(result, 0, 255).astype(np.uint8)
+
     buf = io.BytesIO()
-    combined.save(buf, format="PNG")
+    Image.fromarray(result, "RGB").save(buf, format="PNG")
     return buf.getvalue()
 
 
