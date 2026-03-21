@@ -136,102 +136,71 @@ export default function ShapPanel({ resultBundleId }: Props) {
         </div>
       )}
 
-      {/* ── ABLATION EVIDENCE: proposed vs emb-only vs pat-only ── */}
+      {/* ── ABLATION + PERMUTATION — unified explanation ── */}
       {geneResult?.ablation && (
         <div className="mb-6 border rounded-lg shadow-sm overflow-hidden">
           <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-2">
-            <h3 className="font-bold text-emerald-900">Ablation Evidence — {selGene}</h3>
+            <h3 className="font-bold text-emerald-900">How was this prediction made? — {selGene}</h3>
           </div>
           <div className="p-4">
-            <p className="text-xs text-gray-600 mb-3">
-              Per-slide prediction from 3 independently trained models on the same slide.
-              The delta shows how much adding pattern features changes the prediction.
-            </p>
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="bg-gray-50 rounded p-3 text-center">
-                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Proposed (emb+pat)</div>
-                <div className="text-2xl font-bold text-blue-700">{((geneResult.ablation.p_proposed || 0) * 100).toFixed(1)}%</div>
-                <div className="text-[10px] text-gray-400">518-d concat input</div>
-              </div>
-              <div className="bg-gray-50 rounded p-3 text-center">
-                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Emb-only (Baseline 2)</div>
-                <div className="text-2xl font-bold text-orange-600">{((geneResult.ablation.p_emb_only || 0) * 100).toFixed(1)}%</div>
-                <div className="text-[10px] text-gray-400">512-d embeddings only</div>
-              </div>
-              <div className="bg-gray-50 rounded p-3 text-center">
-                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Pat-only (Baseline 3)</div>
-                <div className="text-2xl font-bold text-green-600">{((geneResult.ablation.p_pat_only || 0) * 100).toFixed(1)}%</div>
-                <div className="text-[10px] text-gray-400">6-d pattern probs only</div>
-              </div>
-            </div>
-            {/* Vertical bar comparison */}
-            <div className="flex items-end justify-center gap-8 h-48 mt-2">
+            {/* Natural language explanation */}
+            {(() => {
+              const a = geneResult.ablation;
+              const p = geneResult.permutation;
+              const pProp = ((a.p_proposed || 0) * 100).toFixed(1);
+              const pEmb = ((a.p_emb_only || 0) * 100).toFixed(1);
+              const pPat = ((a.p_pat_only || 0) * 100).toFixed(1);
+              const delta = ((a.delta_patterns || 0) * 100).toFixed(1);
+              const deltaAbs = Math.abs((a.delta_patterns || 0) * 100);
+              const permImp = p?.importance_pct || 0;
+              const method = geneResult.prediction_method || '';
+
+              const bestModel = parseFloat(pEmb) > parseFloat(pProp) ? 'embeddings-only' :
+                parseFloat(pPat) > parseFloat(pProp) ? 'patterns-only' : 'proposed (combined)';
+
+              return (
+                <div className="text-sm text-gray-700 leading-relaxed mb-4 space-y-2">
+                  <p>
+                    Three independently trained models were run on this slide to predict <strong>{selGene}</strong> mutation.
+                    The <strong className="text-blue-700">combined model</strong> (embeddings + patterns) predicts <strong>{pProp}%</strong>,
+                    the <strong className="text-orange-600">embeddings-only model</strong> predicts <strong>{pEmb}%</strong>,
+                    and the <strong className="text-green-600">patterns-only model</strong> predicts <strong>{pPat}%</strong>.
+                  </p>
+                  <p>
+                    {deltaAbs > 5
+                      ? `Adding pattern information ${parseFloat(delta) > 0 ? 'increases' : 'decreases'} the prediction by ${Math.abs(parseFloat(delta))}% compared to using embeddings alone, indicating that histological patterns have a meaningful impact on this gene's prediction.`
+                      : `The difference between the combined and embeddings-only models is small (${delta}%), suggesting that for ${selGene} on this slide, visual features captured by CTransPath are the primary driver.`}
+                  </p>
+                  {p && (
+                    <p>
+                      {permImp > 5
+                        ? `When pattern dimensions are randomly shuffled, the prediction changes by ${permImp.toFixed(1)}%, confirming that patterns contribute meaningfully to the ${selGene} prediction.`
+                        : `Randomly shuffling pattern dimensions changes the prediction by only ${permImp.toFixed(1)}%, confirming that embeddings dominate for ${selGene}.`}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 italic">
+                    Active method for {selGene}: {method}. Selected based on thesis Finding 2 (gene-dependent optimal representation).
+                  </p>
+                </div>
+              );
+            })()}
+
+            {/* Compact vertical bars — no redundant numbers above */}
+            <div className="flex items-end justify-center gap-10 h-40">
               {[
-                { label: 'Proposed', sub: '(emb+pat)', val: geneResult.ablation.p_proposed, color: 'bg-blue-500' },
-                { label: 'Emb-only', sub: '(B2)', val: geneResult.ablation.p_emb_only, color: 'bg-orange-400' },
-                { label: 'Pat-only', sub: '(B3)', val: geneResult.ablation.p_pat_only, color: 'bg-green-500' },
+                { label: 'Combined', val: geneResult.ablation.p_proposed, color: 'bg-blue-500' },
+                { label: 'Emb-only', val: geneResult.ablation.p_emb_only, color: 'bg-orange-400' },
+                { label: 'Pat-only', val: geneResult.ablation.p_pat_only, color: 'bg-green-500' },
               ].map(item => (
-                <div key={item.label} className="flex flex-col items-center gap-1 w-24">
+                <div key={item.label} className="flex flex-col items-center gap-1 w-20">
                   <span className="text-xs font-mono font-bold">{((item.val || 0) * 100).toFixed(1)}%</span>
-                  <div className="w-14 bg-gray-100 rounded-t relative" style={{ height: '140px' }}>
-                    <div
-                      className={`absolute bottom-0 left-0 right-0 rounded-t ${item.color}`}
-                      style={{ height: `${Math.min((item.val || 0) * 100, 100)}%` }}
-                    />
+                  <div className="w-12 bg-gray-100 rounded-t relative" style={{ height: '110px' }}>
+                    <div className={`absolute bottom-0 left-0 right-0 rounded-t ${item.color}`}
+                      style={{ height: `${Math.min((item.val || 0) * 100, 100)}%` }} />
                   </div>
                   <span className="text-[10px] text-gray-600 text-center font-medium">{item.label}</span>
-                  <span className="text-[9px] text-gray-400 text-center">{item.sub}</span>
                 </div>
               ))}
-            </div>
-            {/* Delta */}
-            <div className="mt-3 p-2 bg-blue-50 rounded text-xs">
-              <strong>Per-slide delta:</strong>{' '}
-              P(proposed) − P(emb-only) = <strong className={`${(geneResult.ablation.delta_patterns || 0) > 0 ? 'text-green-700' : 'text-red-600'}`}>
-                {(geneResult.ablation.delta_patterns || 0) > 0 ? '+' : ''}{((geneResult.ablation.delta_patterns || 0) * 100).toFixed(1)}%
-              </strong>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* ── PERMUTATION IMPORTANCE ── */}
-      {geneResult?.permutation && (
-        <div className="mb-6 border rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-violet-50 border-b border-violet-200 px-4 py-2">
-            <h3 className="font-bold text-violet-900">Permutation Feature Importance — {selGene}</h3>
-          </div>
-          <div className="p-4">
-            <p className="text-xs text-gray-600 mb-3">
-              Pattern dimensions are randomly shuffled across tiles (10 repeats).
-              The prediction change measures how much the model relies on pattern information.
-            </p>
-            <div className="grid grid-cols-3 gap-4 mb-3">
-              <div className="bg-gray-50 rounded p-3 text-center">
-                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Original P(mut)</div>
-                <div className="text-xl font-bold">{((geneResult.permutation.p_original || 0) * 100).toFixed(1)}%</div>
-              </div>
-              <div className="bg-gray-50 rounded p-3 text-center">
-                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Permuted P(mut)</div>
-                <div className="text-xl font-bold text-gray-400">{((geneResult.permutation.p_permuted_mean || 0) * 100).toFixed(1)}%</div>
-                <div className="text-[10px] text-gray-400">mean of 10 shuffles</div>
-              </div>
-              <div className="bg-gray-50 rounded p-3 text-center">
-                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Pattern Importance</div>
-                <div className={`text-xl font-bold ${(geneResult.permutation.importance_pct || 0) > 5 ? 'text-violet-700' : 'text-gray-500'}`}>
-                  {geneResult.permutation.importance_pct?.toFixed(1)}%
-                </div>
-                <div className="text-[10px] text-gray-400">|original − permuted|</div>
-              </div>
-            </div>
-            <div className="p-2 bg-violet-50 rounded text-xs">
-              <strong>Interpretation:</strong>{' '}
-              {(geneResult.permutation.importance_pct || 0) > 10
-                ? `Shuffling patterns changes ${selGene} prediction by ${geneResult.permutation.importance_pct?.toFixed(1)}% — patterns are a significant contributor.`
-                : (geneResult.permutation.importance_pct || 0) > 3
-                ? `Patterns contribute ${geneResult.permutation.importance_pct?.toFixed(1)}% to the prediction — moderate but measurable effect.`
-                : `Pattern contribution is small (${geneResult.permutation.importance_pct?.toFixed(1)}%) — embeddings dominate for ${selGene} on this slide.`}
             </div>
           </div>
         </div>

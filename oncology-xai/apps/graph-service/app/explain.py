@@ -9,13 +9,15 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """Eres un asistente que explica grafos de conocimiento oncológico en lenguaje natural.
-Recibes la estructura de un grafo (nodos y aristas) de un caso de patología pulmonar.
-Genera una explicación clara y concisa en español que describa:
-1. Qué entidades aparecen (caso, genes, diagnósticos, patrones histológicos).
-2. Cómo se relacionan entre sí (asserted vs inferred).
-3. Qué implicaciones tiene para el caso (ej. patrones lepidic/acinar asociados a genes).
-Mantén un tono técnico pero accesible. Evita afirmaciones diagnósticas definitivas."""
+SYSTEM_PROMPT = """You are an assistant that explains oncology knowledge graphs in natural language.
+You receive the structure of a graph (nodes and edges) from a lung pathology case.
+Generate a clear, concise explanation that describes:
+1. What histological patterns were detected and their predominance.
+2. Which gene mutations were predicted as positive, negative, or inconclusive.
+3. For each predicted mutation, what targeted therapies or treatments are available according to current guidelines (OncoKB/FDA).
+4. Which predictions are reliable (Conclusive, AUROC >= 0.70) vs which require molecular testing.
+Keep a technical but accessible tone. Do NOT make definitive diagnostic statements.
+Always recommend molecular confirmation for any positive prediction."""
 
 USER_PROMPT_TEMPLATE = """Explica el siguiente grafo de conocimiento para el caso {case_id}:
 
@@ -53,34 +55,68 @@ def _format_graph_for_prompt(nodes: list[dict], edges: list[dict]) -> tuple[str,
     return nodes_text or "(ninguno)", edges_text
 
 
+GENE_TREATMENTS: dict[str, str] = {
+    "TP53": "No targeted therapy available. Standard treatment: platinum-based chemotherapy + immunotherapy (pembrolizumab). TP53 mutations are associated with poor prognosis.",
+    "EGFR": "Targeted therapies: osimertinib (3rd gen TKI, preferred 1st line), erlotinib, gefitinib, afatinib. EGFR-mutant NSCLC responds well to TKI therapy.",
+    "KRAS": "Targeted therapy: sotorasib (for G12C mutation only, ~13% of KRAS). Adagrasib also FDA-approved for G12C. Other KRAS variants lack targeted options.",
+    "STK11": "No direct targeted therapy. STK11 loss predicts poor response to anti-PD-1/PD-L1 immunotherapy. Consider chemotherapy combinations.",
+    "KEAP1": "No targeted therapy available. KEAP1 mutations associated with resistance to immunotherapy and poor prognosis. Platinum-based chemo is standard.",
+    "RBM10": "No targeted therapy. RBM10 loss-of-function associated with aggressive disease. Standard chemotherapy/immunotherapy protocols apply.",
+}
+
+
 def _mock_explanation(nodes: list[dict], edges: list[dict], case_id: str) -> str:
-    """Generate a deterministic mock explanation when no LLM is configured."""
-    node_labels = [n.get("label", n.get("id", "?")) for n in nodes]
-    types = {}
+    """Generate a deterministic explanation with treatment recommendations."""
+    types: dict[str, int] = {}
     for n in nodes:
         t = n.get("type", "entity")
         types[t] = types.get(t, 0) + 1
-    patterns = [n.get("label", "?") for n in nodes if n.get("type") == "pattern" or "pattern" in str(n.get("id", ""))]
-    genes = [n.get("label", "?") for n in nodes if n.get("type") == "gene"]
-    inferred_count = sum(1 for e in edges if e.get("type") == "inferred")
 
-    parts = [
-        f"Este grafo de conocimiento corresponde al caso {case_id[:8]}... y representa "
-        f"la integración de evidencia clínica, ontológica y de imagen.",
-        f"Contiene {len(nodes)} entidades: {', '.join(str(v) + ' ' + k for k, v in types.items())}.",
-    ]
+    patterns = [n.get("label", "?") for n in nodes if n.get("type") == "pattern" or "pattern" in str(n.get("id", "")).lower()]
+    genes = [n.get("label", "?") for n in nodes if n.get("type") == "gene"]
+    treatments = [n.get("label", "?") for n in nodes if n.get("type") == "treatment"]
+
+    pos_genes = [g for g in genes if "[POS]" in g]
+    neg_genes = [g for g in genes if "[NEG]" in g]
+    inc_genes = [g for g in genes if "[INCONCLUSIVE]" in g]
+
+    parts = []
+
     if patterns:
         parts.append(
-            f"Los patrones histológicos detectados incluyen: {', '.join(patterns)}. "
-            "Estos patrones se asocian con genes (ej. lepidic con TP53, acinar con EGFR) mediante relaciones inferidas."
+            f"**Histological patterns detected:** {', '.join(patterns)}."
         )
-    if genes:
-        parts.append(f"Los genes representados son: {', '.join(genes)}.")
-    if inferred_count > 0:
+
+    if pos_genes:
         parts.append(
-            f"Hay {inferred_count} relación(es) inferida(s) por el modelo THESIS_INTERNAL, "
-            "basadas en literatura y correlaciones morfológico-moleculares."
+            f"**Mutations predicted as POSITIVE:** {', '.join(pos_genes)}. "
+            "These predictions should be confirmed with standard molecular testing (NGS/PCR)."
         )
+        parts.append("**Treatment options based on predicted mutations:**")
+        for g in pos_genes:
+            gene_name = g.split("[")[0].strip()
+            tx = GENE_TREATMENTS.get(gene_name, "Consult oncology guidelines.")
+            parts.append(f"- **{gene_name}:** {tx}")
+
+    if neg_genes:
+        parts.append(
+            f"**Likely wild-type (negative):** {', '.join(neg_genes)}."
+        )
+
+    if inc_genes:
+        parts.append(
+            f"**Inconclusive predictions (require molecular testing):** {', '.join(inc_genes)}. "
+            "The model AUROC < 0.70 for these genes — histological features alone are insufficient for reliable prediction."
+        )
+
+    if treatments:
+        parts.append(f"**Treatments in knowledge graph:** {', '.join(treatments)}.")
+
+    parts.append(
+        "**Disclaimer:** This analysis is for research purposes only (THESIS_INTERNAL evidence). "
+        "All mutation predictions must be confirmed by standard molecular pathology before clinical decision-making."
+    )
+
     return "\n\n".join(parts)
 
 
