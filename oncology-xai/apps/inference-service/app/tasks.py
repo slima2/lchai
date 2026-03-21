@@ -129,6 +129,19 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
             )
             db.add(attn_art)
 
+        # Upload combined overlay (patterns + attention contours)
+        if result.combined_overlay_bytes:
+            comb_key = f"{prefix}/combined_overlay.png"
+            storage.upload_bytes(comb_key, result.combined_overlay_bytes, "image/png")
+            comb_art = XAIArtifactDB(
+                result_bundle_id=rb_id,
+                artifact_type="combined_overlay",
+                gene=None,
+                uri=f"s3://{settings.s3_bucket}/{comb_key}",
+                hash=hashlib.sha256(result.combined_overlay_bytes).hexdigest(),
+            )
+            db.add(comb_art)
+
         # Persist ResultBundle to DB (v2)
         bundle = ResultBundleDB(
             id=rb_id,

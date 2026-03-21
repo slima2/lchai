@@ -115,6 +115,7 @@ class InferenceResult:
     is_conclusive: dict[str, bool] = field(default_factory=dict)
     overlay_combined_bytes: bytes = b""
     attention_overlay_bytes: bytes = b""
+    combined_overlay_bytes: bytes = b""
     embedding: np.ndarray | None = None
     tile_embeddings: np.ndarray | None = None   # (N, 512) per-tile
     tile_pattern_probs: np.ndarray | None = None  # (N, 6) per-tile
@@ -698,16 +699,19 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
 
         # Build attention heatmap overlay from ABMIL (scale coords for WSI)
         if abmil_output.attention_map is not None and len(tile_coords) > 0:
-            if _WSI_SLIDE_HANDLE is not None:
-                result.attention_overlay_bytes = _build_attention_overlay(
-                    img, overlay_coords, abmil_output.attention_map,
-                    abmil_output.top_k_indices, overlay_tile_sz,
-                )
-            else:
-                result.attention_overlay_bytes = _build_attention_overlay(
-                    img, tile_coords, abmil_output.attention_map,
-                    abmil_output.top_k_indices, tile_sz,
-                )
+            use_coords = overlay_coords if _WSI_SLIDE_HANDLE is not None else tile_coords
+            use_tile_sz = overlay_tile_sz if _WSI_SLIDE_HANDLE is not None else tile_sz
+
+            result.attention_overlay_bytes = _build_attention_overlay(
+                img, use_coords, abmil_output.attention_map,
+                abmil_output.top_k_indices, use_tile_sz,
+            )
+
+            result.combined_overlay_bytes = _build_combined_overlay(
+                img, use_coords, tile_labels,
+                abmil_output.attention_map, abmil_output.top_k_indices,
+                use_tile_sz,
+            )
 
     except Exception as e:
         logger.warning("v2 ABMIL pathway failed: %s — falling back to v1 XGBoost", e)
@@ -879,6 +883,124 @@ def _build_attention_overlay(
 
     buf = io.BytesIO()
     Image.fromarray(result, "RGB").save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def _build_combined_overlay(
+    img: Image.Image,
+    tile_coords: list[tuple[int, int]],
+    tile_labels: list[str],
+    attention_weights: np.ndarray,
+    top_k_indices: list[int],
+    tile_size: int,
+) -> bytes:
+    """Build combined overlay: pattern colours + white attention region contours.
+
+    Patterns are shown as coloured regions (same as pattern overlay).
+    Attention is shown as white contour lines tracing the boundaries of
+    high-attention regions at multiple intensity levels.
+    """
+    from PIL import ImageFilter, ImageDraw
+    import cv2
+
+    w, h = img.size
+
+    # 1) Build pattern colour overlay (same as _build_overlay)
+    acc_r = np.zeros((h, w), dtype=np.float32)
+    acc_g = np.zeros((h, w), dtype=np.float32)
+    acc_b = np.zeros((h, w), dtype=np.float32)
+    acc_w = np.zeros((h, w), dtype=np.float32)
+
+    half = tile_size // 2
+    ys = np.arange(tile_size, dtype=np.float32) - half
+    xs = np.arange(tile_size, dtype=np.float32) - half
+    gx, gy = np.meshgrid(xs, ys)
+    sigma = tile_size * 0.38
+    gaussian_kernel = np.exp(-(gx ** 2 + gy ** 2) / (2 * sigma ** 2))
+
+    for (tx, ty), label in zip(tile_coords, tile_labels):
+        color = PATTERN_PALETTE.get(label, (128, 128, 128))
+        y1, y2 = ty, min(ty + tile_size, h)
+        x1, x2 = tx, min(tx + tile_size, w)
+        ky2, kx2 = y2 - ty, x2 - tx
+        kern = gaussian_kernel[:ky2, :kx2]
+        acc_r[y1:y2, x1:x2] += kern * color[0]
+        acc_g[y1:y2, x1:x2] += kern * color[1]
+        acc_b[y1:y2, x1:x2] += kern * color[2]
+        acc_w[y1:y2, x1:x2] += kern
+
+    mask = acc_w > 0
+    for ch in (acc_r, acc_g, acc_b):
+        ch[mask] /= acc_w[mask]
+
+    r_img = Image.fromarray(np.clip(acc_r, 0, 255).astype(np.uint8), "L")
+    g_img = Image.fromarray(np.clip(acc_g, 0, 255).astype(np.uint8), "L")
+    b_img = Image.fromarray(np.clip(acc_b, 0, 255).astype(np.uint8), "L")
+    alpha_arr = np.where(mask, 120, 0).astype(np.uint8)
+    a_img = Image.fromarray(alpha_arr, "L")
+
+    overlay = Image.merge("RGBA", (r_img, g_img, b_img, a_img))
+    blur_radius = max(tile_size // 6, 4)
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+
+    base = img.convert("RGBA")
+    combined = Image.alpha_composite(base, overlay).convert("RGB")
+    result_arr = np.array(combined)
+
+    # 2) Build attention heatmap for contour extraction
+    render_size = max(tile_size * 2, min(w, h) // 35)
+    r_half = render_size // 2
+    r_ys = np.arange(render_size, dtype=np.float32) - r_half
+    r_xs = np.arange(render_size, dtype=np.float32) - r_half
+    r_gx, r_gy = np.meshgrid(r_xs, r_ys)
+    r_sigma = render_size * 0.42
+    r_gaussian = np.exp(-(r_gx ** 2 + r_gy ** 2) / (2 * r_sigma ** 2))
+
+    heat = np.zeros((h, w), dtype=np.float32)
+    top_set = set(top_k_indices)
+    top_weights = attention_weights[list(top_k_indices)] if len(top_k_indices) > 0 else np.array([1.0])
+    w_min, w_max = top_weights.min(), top_weights.max()
+    w_range = w_max - w_min if w_max > w_min else 1e-8
+
+    for idx, (tx, ty) in enumerate(tile_coords):
+        if idx >= len(attention_weights) or idx not in top_set:
+            continue
+        norm_w = (attention_weights[idx] - w_min) / w_range
+        weight = 0.3 + 0.7 * norm_w
+        cx, cy = tx + tile_size // 2, ty + tile_size // 2
+        y1, x1 = max(0, cy - r_half), max(0, cx - r_half)
+        y2 = min(h, cy + render_size - r_half)
+        x2 = min(w, cx + render_size - r_half)
+        gy1, gx1 = y1 - (cy - r_half), x1 - (cx - r_half)
+        gy2, gx2 = gy1 + (y2 - y1), gx1 + (x2 - x1)
+        if gy2 > gy1 and gx2 > gx1:
+            heat[y1:y2, x1:x2] = np.maximum(
+                heat[y1:y2, x1:x2], r_gaussian[gy1:gy2, gx1:gx2] * weight
+            )
+
+    if heat.max() > 0:
+        heat /= heat.max()
+
+    heat_smooth = cv2.GaussianBlur(heat, (0, 0), sigmaX=max(render_size // 2, 8))
+    if heat_smooth.max() > 0:
+        heat_smooth /= heat_smooth.max()
+
+    # 3) Extract contours at multiple threshold levels and draw white lines
+    thresholds = [0.15, 0.30, 0.50, 0.70]
+    line_widths = [1, 2, 3, 4]
+
+    for thresh, lw in zip(thresholds, line_widths):
+        binary = (heat_smooth >= thresh).astype(np.uint8) * 255
+        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        min_area = (render_size * 0.5) ** 2
+        for cnt in contours:
+            if cv2.contourArea(cnt) < min_area:
+                continue
+            smooth_cnt = cv2.approxPolyDP(cnt, epsilon=render_size * 0.3, closed=True)
+            cv2.drawContours(result_arr, [smooth_cnt], -1, (255, 255, 255), lw, cv2.LINE_AA)
+
+    buf = io.BytesIO()
+    Image.fromarray(result_arr, "RGB").save(buf, format="PNG")
     return buf.getvalue()
 
 

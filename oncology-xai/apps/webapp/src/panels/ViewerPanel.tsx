@@ -8,7 +8,7 @@ interface Props {
   resultBundleId?: string | null;
 }
 
-type LayerMode = 'original' | 'pattern' | 'attention';
+type LayerMode = 'original' | 'pattern' | 'attention' | 'combined';
 
 const PATTERN_COLORS: Record<string, string> = {
   lepidic: '#FFFF00', acinar: '#00FF00', papillary: '#0000FF',
@@ -49,14 +49,17 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
   const allArts = artifacts.data || [];
   const roiArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'roi_overlay');
   const attnArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'attention_overlay');
+  const combArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'combined_overlay');
 
   const patternUrl = roiArt?.uri ? getArtifactUrl(roiArt.uri) : null;
   const attentionUrl = attnArt?.uri ? getArtifactUrl(attnArt.uri) : null;
+  const combinedUrl = combArt?.uri ? getArtifactUrl(combArt.uri) : null;
   const originalUrl = isWSI ? patternUrl : (selImageData?.storage_uri ? getArtifactUrl(selImageData.storage_uri) : null);
 
   const activeUrl = layer === 'original' ? (originalUrl || patternUrl)
     : layer === 'pattern' ? (patternUrl || originalUrl)
-    : (attentionUrl || patternUrl || originalUrl);
+    : layer === 'attention' ? (attentionUrl || patternUrl || originalUrl)
+    : (combinedUrl || patternUrl || originalUrl);
 
   useEffect(() => { setImgLoaded(false); setImgError(false); }, [activeUrl]);
 
@@ -88,6 +91,7 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
       if (e.key === '1') setLayer('original');
       if (e.key === '2') setLayer('pattern');
       if (e.key === '3') setLayer('attention');
+      if (e.key === '4') setLayer('combined');
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -102,10 +106,10 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-3 py-2 bg-gray-900 border-b border-gray-700 flex-shrink-0">
         <div className="flex gap-1">
-          {(['original', 'pattern', 'attention'] as LayerMode[]).map(m => (
+          {(['original', 'pattern', 'attention', 'combined'] as LayerMode[]).map(m => (
             <button key={m} onClick={() => setLayer(m)}
               className={`px-3 py-1.5 rounded text-xs font-medium ${layer === m ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>
-              {m === 'original' ? '1 Original' : m === 'pattern' ? '2 Patterns' : '3 Attention'}
+              {m === 'original' ? '1 Original' : m === 'pattern' ? '2 Patterns' : m === 'attention' ? '3 Attention' : '4 Combined'}
             </button>
           ))}
         </div>
@@ -131,7 +135,7 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
             <span>Pipeline: <strong className="text-green-400">v{rb.pipeline_version}</strong></span>
           </div>
         )}
-        <div className="text-gray-500 text-[10px] ml-2">Scroll=zoom Drag=pan 1/2/3 +−0</div>
+        <div className="text-gray-500 text-[10px] ml-2">Scroll=zoom Drag=pan 1/2/3/4 +−0</div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -215,9 +219,14 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
           <div className="mt-4 pt-3 border-t border-gray-700">
             <h4 className="text-gray-300 text-xs font-bold mb-2 uppercase tracking-wide">Layers</h4>
             <div className="space-y-1 text-xs">
-              {(['original', 'pattern', 'attention'] as LayerMode[]).map(m => (
+              {(['original', 'pattern', 'attention', 'combined'] as LayerMode[]).map(m => (
                 <div key={m} className={`p-1.5 rounded cursor-pointer ${layer === m ? 'bg-gray-700' : 'hover:bg-gray-800'}`} onClick={() => setLayer(m)}>
-                  <span className="text-gray-300">{m === 'original' ? '1 — Original H&E' : m === 'pattern' ? '2 — Pattern Overlay' : '3 — ABMIL Attention'}</span>
+                  <span className="text-gray-300">{
+                    m === 'original' ? '1 — Original H&E' :
+                    m === 'pattern' ? '2 — Pattern Overlay' :
+                    m === 'attention' ? '3 — ABMIL Attention' :
+                    '4 — Combined (Pat+Attn)'
+                  }</span>
                 </div>
               ))}
             </div>
