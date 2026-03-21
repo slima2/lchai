@@ -74,6 +74,10 @@ CURATED_NODES: dict[str, dict] = {
     _ncit("C17735"):    {"label": "MET",                       "type": "gene"},
     _ncit("C52544"):    {"label": "RET",                       "type": "gene"},
     _ncit("C18449"):    {"label": "HER2 (ERBB2)",              "type": "gene"},
+    # Thesis genes added for v2
+    _ncit("C18609"):    {"label": "STK11",                     "type": "gene"},
+    _ncit("C97660"):    {"label": "KEAP1",                     "type": "gene"},
+    _ncit("C114948"):   {"label": "RBM10",                     "type": "gene"},
 
     # ── Treatments / Drugs (FDA-approved for NSCLC, from OncoKB/NCIt) ──
     "drug:erlotinib":    {"label": "Erlotinib",       "type": "treatment", "iri": _ncit("C65530")},
@@ -226,17 +230,22 @@ PATTERN_NAME_TO_IRI: dict[str, str] = {
 }
 
 GENE_NAME_TO_IRI: dict[str, str] = {
-    "EGFR": _ncit("C17757"),
-    "KRAS": _ncit("C17383"),
-    "TP53": _ncit("C17387"),
-    "ALK":  _ncit("C20316"),
-    "ROS1": _ncit("C101480"),
-    "BRAF": _ncit("C51549"),
-    "MET":  _ncit("C17735"),
-    "RET":  _ncit("C52544"),
-    "HER2": _ncit("C18449"),
+    "EGFR":  _ncit("C17757"),
+    "KRAS":  _ncit("C17383"),
+    "TP53":  _ncit("C17387"),
+    "STK11": _ncit("C18609"),
+    "KEAP1": _ncit("C97660"),
+    "RBM10": _ncit("C114948"),
+    "ALK":   _ncit("C20316"),
+    "ROS1":  _ncit("C101480"),
+    "BRAF":  _ncit("C51549"),
+    "MET":   _ncit("C17735"),
+    "RET":   _ncit("C52544"),
+    "HER2":  _ncit("C18449"),
     "ERBB2": _ncit("C18449"),
 }
+
+THESIS_GENES = {"TP53", "EGFR", "KRAS", "STK11", "KEAP1", "RBM10"}
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -290,13 +299,22 @@ def build_case_graph_from_ontology(
     else:
         relevant_pattern_iris = set(PATTERN_NAME_TO_IRI.values())
 
-    # Find genes associated with active patterns (from curated edges)
+    # Only include thesis genes (TP53, EGFR, KRAS, STK11, KEAP1, RBM10)
+    thesis_gene_iris = {GENE_NAME_TO_IRI[g] for g in THESIS_GENES if g in GENE_NAME_TO_IRI}
+
+    # Find thesis genes associated with active patterns (from curated edges)
     for edge in CURATED_EDGES:
         if edge["label"] == "associatedWithMutation" and edge["s"] in relevant_pattern_iris:
-            relevant_gene_iris.add(edge["t"])
+            if edge["t"] in thesis_gene_iris:
+                relevant_gene_iris.add(edge["t"])
 
-    # Add genes from predictions
+    # Add genes from predictions (only thesis genes)
     for gname in active_genes_from_pred:
+        if gname in THESIS_GENES and gname in GENE_NAME_TO_IRI:
+            relevant_gene_iris.add(GENE_NAME_TO_IRI[gname])
+
+    # Always include all thesis genes that have prediction results
+    for gname in THESIS_GENES:
         if gname in GENE_NAME_TO_IRI:
             relevant_gene_iris.add(GENE_NAME_TO_IRI[gname])
 
@@ -394,14 +412,24 @@ def build_case_graph_from_ontology(
             o_iri = dr.get("object_iri", "")
             if not s_iri or not o_iri:
                 continue
+
+            s_name = dr.get("subject", "").upper()
+            o_name = dr.get("object", "").upper()
+            s_type = dr.get("subject_type", "entity")
+            o_type = dr.get("object_type", "entity")
+
+            if s_type == "gene" and s_name not in THESIS_GENES:
+                continue
+            if o_type == "gene" and o_name not in THESIS_GENES:
+                continue
+
             s_id = _iri_to_id(s_iri)
             o_id = _iri_to_id(o_iri)
-            # Add nodes if not present
             if s_id not in nodes:
                 nodes[s_id] = {
                     "id": s_id,
                     "label": dr.get("subject", s_id),
-                    "type": dr.get("subject_type", "entity"),
+                    "type": s_type,
                     "iri": s_iri,
                     "source": "discovered",
                 }
@@ -409,7 +437,7 @@ def build_case_graph_from_ontology(
                 nodes[o_id] = {
                     "id": o_id,
                     "label": dr.get("object", o_id),
-                    "type": dr.get("object_type", "entity"),
+                    "type": o_type,
                     "iri": o_iri,
                     "source": "discovered",
                 }

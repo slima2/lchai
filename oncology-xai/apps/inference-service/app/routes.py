@@ -65,6 +65,7 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
         "result_bundle_id": job.result_bundle_id,
         "error_code": job.error_code,
         "error_detail": job.error_detail,
+        "stage": job.error_detail if job.status == "RUNNING" else None,
         "started_at": job.started_at.isoformat() if job.started_at else None,
         "ended_at": job.ended_at.isoformat() if job.ended_at else None,
         "created_at": job.created_at.isoformat() if job.created_at else None,
@@ -184,6 +185,8 @@ def _bundle_dict(b: ResultBundleDB) -> dict:
                     "shapley_values": getattr(gr, "choquet_shapley_values", None),
                     "interaction_indices": getattr(gr, "choquet_interaction_indices", None),
                 } if getattr(gr, "choquet_shapley_values", None) is not None else None,
+                "ablation": getattr(gr, "ablation_data", None),
+                "permutation": getattr(gr, "permutation_data", None),
                 "evidence_source": gr.evidence_source,
                 "intended_use": gr.intended_use,
             }

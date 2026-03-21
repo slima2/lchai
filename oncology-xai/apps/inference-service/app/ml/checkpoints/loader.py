@@ -39,6 +39,42 @@ INCONCLUSIVE_GENES = {"KRAS", "STK11", "KEAP1", "RBM10"}
 
 AUROC_THRESHOLD = 0.70
 
+# Best method per gene (from thesis Table 6.7, Finding 2)
+# "baseline2" = emb-only ABMIL (512-d)
+# "proposed"  = pattern-informed ABMIL concat (518-d)
+# "choquet"   = Fuzzy Choquet MIL
+BEST_METHOD: dict[str, str] = {
+    "TP53":  "baseline2",   # Visual features sufficient
+    "EGFR":  "baseline2",   # Visual features sufficient
+    "STK11": "proposed",    # Patterns add signal
+    "KEAP1": "proposed",    # Patterns add signal over B2
+    "KRAS":  "choquet",     # Fuzzy aggregation captures signal
+    "RBM10": "choquet",     # Choquet best despite low prevalence
+}
+
+BEST_METHOD_LABEL: dict[str, str] = {
+    "baseline2": "B2 (embeddings)",
+    "proposed":  "P (proposed concat)",
+    "choquet":   "FC (Fuzzy Choquet)",
+}
+
+PROPOSED_AUROC: dict[str, float] = {
+    "TP53": 0.8024, "EGFR": 0.7504, "KRAS": 0.6800,
+    "STK11": 0.6962, "KEAP1": 0.6218, "RBM10": 0.7371,
+}
+BASELINE2_AUROC: dict[str, float] = {
+    "TP53": 0.7929, "EGFR": 0.7302, "KRAS": 0.7148,
+    "STK11": 0.6708, "KEAP1": 0.6600, "RBM10": 0.6930,
+}
+BASELINE3_AUROC: dict[str, float] = {
+    "TP53": 0.5518, "EGFR": 0.6806, "KRAS": 0.6155,
+    "STK11": 0.5419, "KEAP1": 0.5361, "RBM10": 0.7644,
+}
+CHOQUET_AUROC: dict[str, float] = {
+    "TP53": 0.7835, "EGFR": 0.7171, "KRAS": 0.6698,
+    "STK11": 0.5287, "KEAP1": 0.6760, "RBM10": 0.7082,
+}
+
 _CACHE: dict[str, Any] = {}
 
 
@@ -81,6 +117,66 @@ class CheckpointLoader:
             logger.info("Loaded ABMIL checkpoint %s for %s (fold %d)", fname, gene, fold)
         else:
             logger.warning("ABMIL checkpoint not found: %s — using random init", ckpt_path)
+
+        model.eval().to(self.device)
+        _CACHE[key] = model
+        return model
+
+    def load_baseline2(
+        self,
+        gene: str,
+        input_dim: int = 512,
+        hidden_dim: int = 256,
+        attn_dim: int = 128,
+        dropout: float = 0.25,
+    ) -> ABMIL:
+        """Load baseline2 ABMIL (embeddings-only, 512-d input)."""
+        key = self._cache_key("baseline2", gene)
+        if key in _CACHE:
+            return _CACHE[key]
+
+        fold = BEST_FOLD.get(gene, 0)
+        fname = f"ckpt_baseline2_abmil_embeddings_{gene}_fold{fold}.pth"
+        ckpt_path = self.checkpoint_dir / fname
+
+        model = ABMIL(input_dim, hidden_dim, attn_dim, dropout)
+        if ckpt_path.exists():
+            ckpt = torch.load(str(ckpt_path), map_location=self.device, weights_only=False)
+            state = ckpt.get("model_state_dict", ckpt.get("state_dict", ckpt))
+            model.load_state_dict(state, strict=False)
+            logger.info("Loaded baseline2 (emb-only) %s for %s", fname, gene)
+        else:
+            logger.warning("Baseline2 checkpoint not found: %s", ckpt_path)
+
+        model.eval().to(self.device)
+        _CACHE[key] = model
+        return model
+
+    def load_baseline3(
+        self,
+        gene: str,
+        input_dim: int = 6,
+        hidden_dim: int = 256,
+        attn_dim: int = 128,
+        dropout: float = 0.25,
+    ) -> ABMIL:
+        """Load baseline3 ABMIL (patterns-only, 6-d input)."""
+        key = self._cache_key("baseline3", gene)
+        if key in _CACHE:
+            return _CACHE[key]
+
+        fold = BEST_FOLD.get(gene, 0)
+        fname = f"ckpt_baseline3_abmil_patterns_{gene}_fold{fold}.pth"
+        ckpt_path = self.checkpoint_dir / fname
+
+        model = ABMIL(input_dim, hidden_dim, attn_dim, dropout)
+        if ckpt_path.exists():
+            ckpt = torch.load(str(ckpt_path), map_location=self.device, weights_only=False)
+            state = ckpt.get("model_state_dict", ckpt.get("state_dict", ckpt))
+            model.load_state_dict(state, strict=False)
+            logger.info("Loaded baseline3 (pat-only) %s for %s", fname, gene)
+        else:
+            logger.warning("Baseline3 checkpoint not found: %s", ckpt_path)
 
         model.eval().to(self.device)
         _CACHE[key] = model

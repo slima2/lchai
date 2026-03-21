@@ -225,8 +225,12 @@ export default function GraphPanel({ caseId }: Props) {
       .attr('font-weight', '500')
       .text((d: GraphNode) => {
         const label = d.label || d.id;
-        return label.length > 20 ? label.slice(0, 18) + '...' : label;
+        return label.length > 30 ? label.slice(0, 28) + '...' : label;
       });
+
+    // Store zoom for external buttons
+    (svgRef.current as any).__zoom_behavior = zoom;
+    (svgRef.current as any).__svg_selection = svg;
 
     // Node type icon text
     node.append('text')
@@ -272,6 +276,13 @@ export default function GraphPanel({ caseId }: Props) {
         >
           {rebuild.isPending ? 'Rebuilding...' : 'Rebuild Graph'}
         </button>
+        <button
+          className="bg-amber-500 text-white px-4 py-1.5 rounded text-sm hover:bg-amber-600 transition"
+          onClick={() => explain.mutate()}
+          disabled={rawNodes.length === 0 || explain.isPending}
+        >
+          {explain.isPending ? 'Generating...' : 'Explain with AI'}
+        </button>
         <label className="flex items-center gap-1.5 text-sm">
           <input type="checkbox" checked={showInferred} onChange={e => setShowInferred(e.target.checked)} />
           Show inferred edges
@@ -315,7 +326,35 @@ export default function GraphPanel({ caseId }: Props) {
       {/* D3 Force-Directed Graph */}
       <div ref={containerRef} className="border rounded bg-white relative" style={{ minHeight: 500 }}>
         {rawNodes.length > 0 ? (
-          <svg ref={svgRef} className="w-full" style={{ minHeight: 500 }} />
+          <>
+            <svg ref={svgRef} className="w-full" style={{ minHeight: 500 }} />
+            {/* Zoom controls */}
+            <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-gray-800 rounded-lg shadow-lg px-1 py-1">
+              <button
+                className="w-8 h-8 flex items-center justify-center text-white text-lg font-bold hover:bg-gray-700 rounded"
+                onClick={() => {
+                  const el = svgRef.current as any;
+                  if (el?.__zoom_behavior && el?.__svg_selection) {
+                    el.__svg_selection.transition().duration(300).call(
+                      el.__zoom_behavior.scaleBy, 0.7
+                    );
+                  }
+                }}
+              >−</button>
+              <span className="text-white text-xs font-mono px-1">100%</span>
+              <button
+                className="w-8 h-8 flex items-center justify-center text-white text-lg font-bold hover:bg-gray-700 rounded"
+                onClick={() => {
+                  const el = svgRef.current as any;
+                  if (el?.__zoom_behavior && el?.__svg_selection) {
+                    el.__svg_selection.transition().duration(300).call(
+                      el.__zoom_behavior.scaleBy, 1.4
+                    );
+                  }
+                }}
+              >+</button>
+            </div>
+          </>
         ) : (
           <div className="flex items-center justify-center h-full min-h-[500px] text-gray-400 text-sm">
             {graph.isLoading ? 'Loading graph...' : 'Click "Rebuild Graph" to generate the knowledge graph'}
@@ -326,21 +365,12 @@ export default function GraphPanel({ caseId }: Props) {
       {/* LLM explanation */}
       <details className="mt-4" open={!!explain.data || explain.isPending}>
         <summary className="text-sm font-semibold cursor-pointer text-gray-600 flex items-center gap-2">
-          <span>Explicación en lenguaje natural</span>
+          <span>AI Explanation</span>
           {explain.isPending && (
             <span className="text-xs text-amber-600 animate-pulse">Generando...</span>
           )}
         </summary>
         <div className="mt-2">
-          {!explain.data && !explain.isPending && (
-            <button
-              className="bg-amber-500 text-white px-4 py-2 rounded text-sm hover:bg-amber-600 transition"
-              onClick={() => explain.mutate()}
-              disabled={rawNodes.length === 0}
-            >
-              Explicar grafo con IA
-            </button>
-          )}
           {explain.data && (
             <div className="space-y-2">
               <div className="p-4 bg-amber-50 border border-amber-200 rounded text-sm text-gray-700 whitespace-pre-wrap">

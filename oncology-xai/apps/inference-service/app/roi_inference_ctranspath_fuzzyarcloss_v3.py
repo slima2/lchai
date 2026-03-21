@@ -34,10 +34,10 @@ logger = logging.getLogger(__name__)
 
 # ── Pattern palette (DERCAS 7) ─────────────────────────────────────────
 PATTERN_PALETTE: dict[str, tuple[int, int, int]] = {
-    "lepidic": (255, 255, 0),
+    "lepidic": (230, 255, 50),
     "acinar": (0, 255, 0),
     "papillary": (0, 0, 255),
-    "micropapillary": (255, 0, 255),
+    "micropapillary": (255, 215, 0),
     "solid": (255, 0, 0),
     "mucinous": (255, 165, 0),
 }
@@ -113,6 +113,7 @@ class InferenceResult:
     pattern_percentages: dict[str, float] = field(default_factory=dict)
     predominant_pattern: str = ""
     is_conclusive: dict[str, bool] = field(default_factory=dict)
+    thumbnail_bytes: bytes = b""
     overlay_combined_bytes: bytes = b""
     attention_overlay_bytes: bytes = b""
     combined_overlay_bytes: bytes = b""
@@ -136,6 +137,10 @@ class InferenceResult:
     shap_artifacts: dict[str, bytes] = field(default_factory=dict)
     # Attention map
     attention_top_k_indices: list[int] = field(default_factory=list)
+    # Ablation comparison (proposed vs emb-only vs pat-only)
+    ablation_results: list[Any] = field(default_factory=list)
+    # Permutation importance
+    permutation_results: list[Any] = field(default_factory=list)
     # Metrics
     metrics: dict[str, Any] = field(default_factory=dict)
 
@@ -417,12 +422,12 @@ def _decode_image(image_bytes: bytes, image_format: str | None) -> Image.Image:
 
     fmt = (image_format or "").lower().strip()
     logger.info("_decode_image: format=%r, bytes=%d, fmt=%r", image_format, len(image_bytes), fmt)
-    if fmt in ("svs", "tif", "tiff"):
+    if fmt in ("svs", "tif", "tiff", "bif"):
         try:
             import os
             import tempfile
             import openslide
-            suffix = ".svs" if fmt == "svs" else ".tif"
+            suffix = {"svs": ".svs", "bif": ".bif"}.get(fmt, ".tif")
             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
                 f.write(image_bytes)
                 path = f.name
@@ -541,7 +546,7 @@ def _tile_wsi_full_resolution(
 # MAIN ENTRY POINT
 # ═══════════════════════════════════════════════════════════════════════
 
-def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResult:
+def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback=None) -> InferenceResult:
     """Execute complete v2 inference pipeline.
 
     Steps:
@@ -570,6 +575,14 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
         if old_max is not None:
             Image.MAX_IMAGE_PIXELS = old_max
 
+    _p = progress_callback or (lambda *a: None)
+    _p(0.12, "Decoding image...")
+
+    # Save clean thumbnail (no overlay) for the Viewer "Original" layer
+    thumb_buf = io.BytesIO()
+    img.save(thumb_buf, format="PNG")
+    result.thumbnail_bytes = thumb_buf.getvalue()
+
     # 2) Tile — use full-resolution WSI tiling when available
     tile_sz = config.tile_size
     if config.model_backend == "local" and config.fuzzyarc_checkpoint:
@@ -590,6 +603,7 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
     tile_coords = [(x, y) for x, y, _ in tiles]
     result.tile_coords = tile_coords
     logger.info("Total tiles for inference: %d", len(tiles))
+    _p(0.20, f"Running CTransPath on {len(tiles)} tiles...")
 
     # 3-4) Pattern inference
     if config.model_backend == "mock":
@@ -605,6 +619,8 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
             for i in range(min(n_tiles, len(tile_scores[p]))):
                 tile_probs_matrix[i, j] = tile_scores[p][i]
     result.tile_pattern_probs = tile_probs_matrix
+
+    _p(0.50, "Computing pattern composition + overlays...")
 
     # 5) Pattern composition
     active_patterns = [p for p in PATTERNS if p in tile_scores]
@@ -666,6 +682,8 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
             result.tile_embeddings = np.random.default_rng(42).normal(size=(n_tiles, 512)).astype(np.float32)
             result.embedding = result.tile_embeddings.mean(axis=0)
 
+    _p(0.55, "Running mutation prediction (ABMIL/Choquet)...")
+
     # ── v2: Pathway A — Pattern-Informed ABMIL ──
     try:
         from app.ml.inference.abmil_inference import run_abmil_inference
@@ -687,7 +705,7 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
                 label=gr.label,
                 auroc_threshold=gr.auroc_threshold,
                 disclaimer=gr.disclaimer,
-                method="abmil",
+                method=gr.method or "abmil",
             ))
             result.mutation_scores[gr.gene] = gr.probability
             status = "POS" if gr.probability >= config.mutation_threshold else (
@@ -744,6 +762,26 @@ def run_inference(image_bytes: bytes, config: InferenceConfig) -> InferenceResul
                 ))
         except Exception as e:
             logger.warning("v2 Choquet pathway failed: %s", e)
+
+    _p(0.65, "Running ablation + permutation analysis...")
+
+    # ── v2: Ablation comparison (proposed vs emb-only vs pat-only) ──
+    try:
+        from app.ml.inference.abmil_inference import run_ablation_comparison, run_permutation_importance
+        from app.ml.checkpoints.loader import CheckpointLoader as CL2
+
+        loader2 = CL2(config.v2_checkpoint_dir, config.device)
+        result.ablation_results = run_ablation_comparison(
+            result.tile_embeddings, tile_probs_matrix, loader2, genes=config.genes,
+        )
+        result.permutation_results = run_permutation_importance(
+            result.tile_embeddings, tile_probs_matrix, loader2,
+            n_repeats=10, genes=config.genes,
+        )
+    except Exception as e:
+        logger.warning("Ablation/permutation analysis failed: %s", e)
+
+    _p(0.75, "Computing SHAP decomposition...")
 
     # ── v2: SHAP Decomposition (DeepSHAP on ABMIL) ──
     if config.shap_decomposition_enabled:
@@ -820,17 +858,16 @@ def _build_attention_overlay(
     tile_size: int,
     alpha: int = 180,
 ) -> bytes:
-    """Build spatial attention heatmap by blending hot colors directly onto the image.
+    """Build attention overlay: original image + cyan fill + white contour borders.
 
-    Darkens the base image, then paints bright red/yellow hotspots at
-    top-K attended tile locations so they are clearly visible.
+    Top-K attended tiles are filled with semi-transparent cyan and outlined
+    with white contour lines around the attended regions.
     """
-    from PIL import ImageFilter, ImageEnhance
+    from PIL import ImageFilter
+    import cv2
 
     w, h = img.size
-    base = img.convert("RGB")
-    base = ImageEnhance.Brightness(base).enhance(0.4)
-    base_arr = np.array(base).astype(np.float32)
+    base_arr = np.array(img.convert("RGB")).astype(np.float32)
 
     heat = np.zeros((h, w), dtype=np.float32)
 
@@ -873,13 +910,32 @@ def _build_attention_overlay(
     heat_blur = heat_blur.filter(ImageFilter.GaussianBlur(radius=max(render_size // 3, 6)))
     heat = np.array(heat_blur).astype(np.float32) / 255.0
 
-    hot_r = np.clip(heat * 2.5, 0, 1) * 255
-    hot_g = np.clip((heat - 0.4) * 2.0, 0, 1) * 255
-    hot_b = np.zeros_like(heat)
+    # Cyan fill on original
+    cyan = np.stack([
+        np.zeros_like(heat),
+        heat * 255,
+        heat * 255,
+    ], axis=2)
 
     blend = heat[:, :, np.newaxis]
-    result = base_arr * (1 - blend * 0.85) + np.stack([hot_r, hot_g, hot_b], axis=2) * blend * 0.85
+    blend_strength = np.clip(blend * 0.55, 0, 1)
+    result = base_arr * (1 - blend_strength) + cyan * blend_strength
     result = np.clip(result, 0, 255).astype(np.uint8)
+
+    # White contour lines around attended regions
+    heat_smooth = cv2.GaussianBlur(heat, (0, 0), sigmaX=max(render_size // 2, 8))
+    if heat_smooth.max() > 0:
+        heat_smooth /= heat_smooth.max()
+
+    for thresh, lw in [(0.15, 2), (0.35, 3), (0.55, 4)]:
+        binary = (heat_smooth >= thresh).astype(np.uint8) * 255
+        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        min_area = (render_size * 0.5) ** 2
+        for cnt in contours:
+            if cv2.contourArea(cnt) < min_area:
+                continue
+            smooth_cnt = cv2.approxPolyDP(cnt, epsilon=render_size * 0.3, closed=True)
+            cv2.drawContours(result, [smooth_cnt], -1, (255, 255, 255), lw, cv2.LINE_AA)
 
     buf = io.BytesIO()
     Image.fromarray(result, "RGB").save(buf, format="PNG")

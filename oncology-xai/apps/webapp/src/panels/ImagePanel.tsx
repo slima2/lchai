@@ -3,10 +3,10 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { getImages, uploadImage, processImage, getJob, getLatestResults, getArtifactUrl } from '../api';
 
 const PATTERN_COLORS: Record<string, string> = {
-  lepidic: '#FFFF00',
+  lepidic: '#E6FF32',
   acinar: '#00FF00',
   papillary: '#0000FF',
-  micropapillary: '#FF00FF',
+  micropapillary: '#FFD700',
   solid: '#FF0000',
   mucinous: '#FFA500',
 };
@@ -118,16 +118,11 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
         <button className="bg-blue-600 text-white px-4 py-2 rounded text-sm" onClick={() => fileRef.current?.click()}>
           Upload Image
         </button>
-        <span className="text-gray-500 text-xs self-center">Supported: PNG, JPEG, TIFF, SVS</span>
+        <span className="text-gray-500 text-xs self-center">Supported: PNG, JPEG, TIFF, SVS, BIF</span>
         {selImage && (
           <button className="bg-purple-600 text-white px-4 py-2 rounded text-sm" onClick={() => process.mutate()}>
-            Process (v2 ABMIL + Choquet)
+            Analyze Slide
           </button>
-        )}
-        {jobId && job.data && (
-          <span className="self-center text-sm text-gray-600">
-            Job: {job.data.status} {job.data.status === 'RUNNING' && '...'}
-          </span>
         )}
         {isV2 && (
           <span className="self-center text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium">
@@ -135,6 +130,50 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
           </span>
         )}
       </div>
+
+      {/* Processing progress modal */}
+      {jobId && job.data && job.data.status !== 'COMPLETED' && job.data.status !== 'FAILED' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-96">
+            <h3 className="font-bold text-lg mb-1">Processing Image</h3>
+            <p className="text-xs text-gray-500 mb-4">v2.0 Pipeline: CTransPath + ABMIL + Choquet</p>
+
+            {/* Progress bar */}
+            <div className="bg-gray-200 rounded-full h-4 overflow-hidden mb-2">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500"
+                style={{ width: `${Math.max((job.data.progress || 0) * 100, 2)}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs mb-3">
+              <span className="text-gray-600">{job.data.stage || job.data.status}</span>
+              <span className="font-mono font-bold text-blue-700">{((job.data.progress || 0) * 100).toFixed(0)}%</span>
+            </div>
+
+            {/* Stage details */}
+            <div className="bg-gray-50 rounded p-3 text-xs text-gray-500 space-y-1">
+              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.05 ? 'text-green-600' : ''}`}>
+                <span>{(job.data.progress || 0) >= 0.10 ? '✓' : '⏳'}</span> Download image
+              </div>
+              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.20 ? 'text-green-600' : ''}`}>
+                <span>{(job.data.progress || 0) >= 0.50 ? '✓' : (job.data.progress || 0) >= 0.20 ? '⏳' : '○'}</span> CTransPath tile inference (~7 min)
+              </div>
+              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.55 ? 'text-green-600' : ''}`}>
+                <span>{(job.data.progress || 0) >= 0.65 ? '✓' : (job.data.progress || 0) >= 0.55 ? '⏳' : '○'}</span> Mutation prediction (ABMIL/Choquet)
+              </div>
+              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.65 ? 'text-green-600' : ''}`}>
+                <span>{(job.data.progress || 0) >= 0.75 ? '✓' : (job.data.progress || 0) >= 0.65 ? '⏳' : '○'}</span> Ablation + permutation analysis
+              </div>
+              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.75 ? 'text-green-600' : ''}`}>
+                <span>{(job.data.progress || 0) >= 0.85 ? '✓' : (job.data.progress || 0) >= 0.75 ? '⏳' : '○'}</span> SHAP decomposition
+              </div>
+              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.85 ? 'text-green-600' : ''}`}>
+                <span>{(job.data.progress || 0) >= 0.95 ? '✓' : (job.data.progress || 0) >= 0.85 ? '⏳' : '○'}</span> Saving results
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Image list */}
       <div className="flex gap-2 mb-4 flex-wrap">
@@ -165,19 +204,35 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                   <th className="border px-3 py-2 text-right">Probability</th>
                   <th className="border px-3 py-2 text-center">Label</th>
                   <th className="border px-3 py-2 text-center">Method</th>
-                  <th className="border px-3 py-2 text-left">SHAP Split (Emb/Pat)</th>
-                  {rb.use_choquet && <th className="border px-3 py-2 text-left">Choquet Shapley</th>}
-                  <th className="border px-3 py-2 text-left">Disclaimer</th>
+                  <th className="border px-3 py-2 text-left">Interpretability</th>
+                  <th className="border px-3 py-2 text-left">Interpretation</th>
                 </tr>
               </thead>
               <tbody>
-                {rb.genetic_results.map((gr: any) => (
+                {rb.genetic_results.map((gr: any) => {
+                  const prob = (gr.score || 0);
+                  const pct = (prob * 100).toFixed(1);
+                  const isConcl = gr.confidence_label === 'Conclusive';
+                  const isPos = prob >= 0.5;
+
+                  let interpretation = '';
+                  if (isConcl && isPos) {
+                    interpretation = `High probability (${pct}%) of ${gr.mutation} mutation. This prediction is reliable (model AUROC ≥ 0.70). Confirm with molecular testing.`;
+                  } else if (isConcl && !isPos) {
+                    interpretation = `Low probability (${pct}%) of ${gr.mutation} mutation — likely wild-type. This prediction is reliable (model AUROC ≥ 0.70).`;
+                  } else if (!isConcl && isPos) {
+                    interpretation = `Elevated probability (${pct}%) but the model cannot reliably predict ${gr.mutation} (AUROC < 0.70). Molecular testing required.`;
+                  } else {
+                    interpretation = `Low probability (${pct}%). However, ${gr.mutation} cannot be reliably predicted from histology alone. Molecular testing recommended.`;
+                  }
+
+                  return (
                   <tr key={gr.mutation} className="hover:bg-gray-50">
                     <td className="border px-3 py-2 font-bold">{gr.mutation}</td>
-                    <td className="border px-3 py-2 text-right font-mono">{gr.score?.toFixed(4)}</td>
+                    <td className="border px-3 py-2 text-right font-mono">{pct}%</td>
                     <td className="border px-3 py-2 text-center">
                       <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                        gr.confidence_label === 'Conclusive' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        isConcl ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                       }`}>
                         {gr.confidence_label || gr.status}
                       </span>
@@ -188,29 +243,24 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                       </span>
                     </td>
                     <td className="border px-3 py-2 text-xs">
-                      {gr.shap_decomposition ? (
-                        <div className="flex items-center gap-1">
-                          <div className="flex-1 bg-gray-100 rounded h-3 overflow-hidden flex">
-                            <div
-                              className="h-full bg-blue-500"
-                              style={{ width: `${gr.shap_decomposition.embedding_contribution_pct || 0}%` }}
-                              title={`Embeddings: ${gr.shap_decomposition.embedding_contribution_pct}%`}
-                            />
-                            <div
-                              className="h-full bg-red-400"
-                              style={{ width: `${gr.shap_decomposition.pattern_contribution_pct || 0}%` }}
-                              title={`Patterns: ${gr.shap_decomposition.pattern_contribution_pct}%`}
-                            />
+                      {(gr.prediction_method || '').includes('proposed') && gr.shap_decomposition ? (
+                        <div>
+                          <div className="text-[10px] text-gray-500 mb-0.5">SHAP Split (Emb/Pat)</div>
+                          <div className="flex items-center gap-1">
+                            <div className="flex-1 bg-gray-100 rounded h-3 overflow-hidden flex">
+                              <div className="h-full bg-blue-500"
+                                style={{ width: `${gr.shap_decomposition.embedding_contribution_pct || 0}%` }} />
+                              <div className="h-full bg-red-400"
+                                style={{ width: `${gr.shap_decomposition.pattern_contribution_pct || 0}%` }} />
+                            </div>
+                            <span className="text-[10px] whitespace-nowrap">
+                              {gr.shap_decomposition.embedding_contribution_pct?.toFixed(0)}% / {gr.shap_decomposition.pattern_contribution_pct?.toFixed(0)}%
+                            </span>
                           </div>
-                          <span className="text-[10px] whitespace-nowrap">
-                            {gr.shap_decomposition.embedding_contribution_pct?.toFixed(0)}% / {gr.shap_decomposition.pattern_contribution_pct?.toFixed(0)}%
-                          </span>
                         </div>
-                      ) : <span className="text-gray-400">—</span>}
-                    </td>
-                    {rb.use_choquet && (
-                      <td className="border px-3 py-2 text-xs">
-                        {gr.choquet_shapley?.shapley_values ? (
+                      ) : (gr.prediction_method || '').includes('Choquet') && gr.choquet_shapley?.shapley_values ? (
+                        <div>
+                          <div className="text-[10px] text-gray-500 mb-0.5">Choquet Shapley</div>
                           <div className="flex flex-wrap gap-0.5">
                             {Object.entries(gr.choquet_shapley.shapley_values as Record<string, number>)
                               .sort(([, a], [, b]) => (b as number) - (a as number))
@@ -222,27 +272,32 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                                 </span>
                               ))}
                           </div>
-                        ) : <span className="text-gray-400">—</span>}
-                      </td>
-                    )}
-                    <td className="border px-3 py-2 text-xs text-gray-500">
-                      {gr.disclaimer ? (
-                        <span className="text-yellow-700">{gr.disclaimer}</span>
-                      ) : <span className="text-green-600">Reliable prediction</span>}
+                        </div>
+                      ) : (gr.prediction_method || '').includes('embedding') ? (
+                        <span className="text-gray-400 text-[10px]">Visual features only</span>
+                      ) : <span className="text-gray-400">—</span>}
+                    </td>
+                    <td className="border px-3 py-2 text-xs text-gray-600 max-w-xs">
+                      {interpretation}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
 
             {/* Legend */}
-            <div className="flex gap-4 text-xs text-gray-500">
+            <div className="flex gap-4 text-xs text-gray-500 flex-wrap">
+              <span className="text-gray-400">Interpretability: </span>
               <span className="flex items-center gap-1">
-                <span className="w-3 h-1.5 bg-blue-500 inline-block rounded" /> Embedding dims (0-511)
+                <span className="w-3 h-1.5 bg-blue-500 inline-block rounded" /> Emb
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-3 h-1.5 bg-red-400 inline-block rounded" /> Pattern dims (512-517)
+                <span className="w-3 h-1.5 bg-red-400 inline-block rounded" /> Pat
               </span>
+              <span className="text-gray-400 ml-1">(SHAP Split for proposed genes)</span>
+              <span className="text-gray-400">|</span>
+              <span className="text-gray-400">Choquet Shapley for FC genes</span>
             </div>
           </div>
         </div>
@@ -343,60 +398,69 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
       {rb?.genetic_results && (
         <div className="mb-6 border rounded-lg shadow-sm overflow-hidden">
           <div className="bg-purple-50 border-b border-purple-200 px-4 py-2">
-            <h3 className="font-bold text-purple-900">Card 3 — Ontology-Grounded Case Explanation</h3>
+            <h3 className="font-bold text-purple-900">Card 3 — Clinical Summary</h3>
           </div>
-          <div className="p-4">
-            <div className="grid grid-cols-3 gap-4">
-              {/* SPARQL results */}
-              <div className="bg-gray-50 rounded p-3">
-                <h4 className="font-semibold text-xs mb-2 text-gray-700">SPARQL Query Chain</h4>
-                <p className="text-xs text-gray-500 mb-2">pattern → gene → treatment</p>
-                <div className="space-y-1 text-xs">
-                  {rb.genetic_results
-                    .filter((gr: any) => gr.score >= 0.5)
-                    .map((gr: any) => (
-                      <div key={gr.mutation} className="bg-white rounded px-2 py-1 border">
-                        <span className="font-bold">{gr.mutation}</span>
-                        <span className="text-gray-400 mx-1">→</span>
-                        <span className="text-gray-600">
-                          {gr.mutation === 'EGFR' ? 'Osimertinib, Erlotinib' :
-                           gr.mutation === 'TP53' ? 'Platinum-based chemo' :
-                           gr.mutation === 'KRAS' ? 'Sotorasib (G12C)' :
-                           gr.mutation === 'STK11' ? 'Pembrolizumab (limited)' :
-                           gr.mutation === 'KEAP1' ? 'No targeted therapy' :
-                           'Under investigation'}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-              </div>
+          <div className="p-4 text-sm text-gray-700 leading-relaxed">
+            {(() => {
+              const posGenes = rb.genetic_results.filter((g: any) => g.score >= 0.5);
+              const negGenes = rb.genetic_results.filter((g: any) => g.score < 0.5);
+              const conclPos = posGenes.filter((g: any) => g.confidence_label === 'Conclusive');
+              const inconclPos = posGenes.filter((g: any) => g.confidence_label !== 'Conclusive');
+              const predominant = rb.predominant_pattern;
+              const tiles = rb.morphologic_profile?.n_tiles_total || 0;
 
-              {/* KG summary */}
-              <div className="bg-gray-50 rounded p-3">
-                <h4 className="font-semibold text-xs mb-2 text-gray-700">Knowledge Graph</h4>
-                <p className="text-xs text-gray-500 mb-2">NCIt + MONDO + SO (case-filtered)</p>
-                <div className="text-xs text-gray-600">
-                  <div>Nodes: patterns ({rb.pattern_results?.length}), genes ({rb.genetic_results?.length})</div>
-                  <div>Ontologies: NCIt, MONDO</div>
-                  <a href="#" onClick={(e) => { e.preventDefault(); }} className="text-blue-600 underline text-xs mt-1 inline-block">
-                    View full graph in Graph tab →
-                  </a>
-                </div>
-              </div>
+              return (
+                <div className="space-y-3">
+                  <p>
+                    <strong>Histological analysis</strong> of this lung adenocarcinoma slide ({tiles.toLocaleString()} tissue tiles analyzed)
+                    reveals a <strong className="capitalize">{predominant}</strong>-predominant pattern
+                    ({rb.pattern_composition?.[predominant]?.toFixed(1)}% of tiles).
+                    {rb.pattern_results?.filter((p: any) => p.percentage > 1 && p.pattern !== predominant)
+                      .map((p: any) => ` ${p.pattern} (${p.percentage.toFixed(1)}%)`)
+                      .join(',') && (
+                      <span> Secondary patterns include
+                        {rb.pattern_results
+                          .filter((p: any) => p.percentage > 1 && p.pattern !== predominant)
+                          .sort((a: any, b: any) => b.percentage - a.percentage)
+                          .map((p: any) => ` ${p.pattern} (${p.percentage.toFixed(1)}%)`)
+                          .join(',')}.
+                      </span>
+                    )}
+                  </p>
 
-              {/* DeepSearch + LLM */}
-              <div className="bg-gray-50 rounded p-3">
-                <h4 className="font-semibold text-xs mb-2 text-gray-700">LLM Explanation</h4>
-                <p className="text-xs text-gray-500 mb-2">Clinical narrative with guardrails</p>
-                <div className="text-xs text-gray-600">
-                  <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[10px] font-medium mr-1">DeepSearch</span>
-                  Literature-grounded relations available
+                  {conclPos.length > 0 && (
+                    <p>
+                      <strong>Mutation predictions (reliable):</strong>{' '}
+                      {conclPos.map((g: any) => `${g.mutation} (${((g.score || 0) * 100).toFixed(1)}%)`).join(', ')}
+                      {' '}— these genes have model AUROC ≥ 0.70 and the predictions are considered reliable.
+                      {conclPos.some((g: any) => g.mutation === 'TP53') && ' TP53 mutations are commonly associated with solid and micropapillary patterns.'}
+                      {conclPos.some((g: any) => g.mutation === 'EGFR') && ' EGFR mutations correlate with lepidic and papillary patterns.'}
+                    </p>
+                  )}
+
+                  {negGenes.filter((g: any) => g.confidence_label === 'Conclusive').length > 0 && (
+                    <p>
+                      <strong>Likely wild-type (reliable):</strong>{' '}
+                      {negGenes.filter((g: any) => g.confidence_label === 'Conclusive')
+                        .map((g: any) => `${g.mutation} (${((g.score || 0) * 100).toFixed(1)}%)`).join(', ')}.
+                    </p>
+                  )}
+
+                  {inconclPos.length > 0 && (
+                    <p className="text-yellow-800 bg-yellow-50 p-2 rounded">
+                      <strong>Requires molecular testing:</strong>{' '}
+                      {inconclPos.map((g: any) => `${g.mutation} (${((g.score || 0) * 100).toFixed(1)}%)`).join(', ')}
+                      {' '}— these genes cannot be reliably predicted from histology alone (AUROC &lt; 0.70).
+                    </p>
+                  )}
+
+                  <p className="text-xs text-gray-500 italic">
+                    Prediction methods: {[...new Set(rb.genetic_results.map((g: any) => g.prediction_method))].join(', ')}.
+                    Each gene uses its optimal model based on thesis Finding 2 (Lima et al., 2026).
+                  </p>
                 </div>
-                <a href="#" onClick={(e) => { e.preventDefault(); }} className="text-blue-600 underline text-xs mt-2 inline-block">
-                  Generate explanation in Graph tab →
-                </a>
-              </div>
-            </div>
+              );
+            })()}
           </div>
         </div>
       )}

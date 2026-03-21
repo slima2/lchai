@@ -11,8 +11,8 @@ interface Props {
 type LayerMode = 'original' | 'pattern' | 'attention' | 'combined';
 
 const PATTERN_COLORS: Record<string, string> = {
-  lepidic: '#FFFF00', acinar: '#00FF00', papillary: '#0000FF',
-  micropapillary: '#FF00FF', solid: '#FF0000', mucinous: '#FFA500',
+  lepidic: '#E6FF32', acinar: '#00FF00', papillary: '#0000FF',
+  micropapillary: '#FFD700', solid: '#FF0000', mucinous: '#FFA500',
 };
 
 export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) {
@@ -44,17 +44,19 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
   });
 
   const selImageData = images.data?.find((img: any) => img.image_id === imageId);
-  const isWSI = selImageData && ['svs', 'tif', 'tiff'].includes((selImageData.format || '').toLowerCase());
+  const isWSI = selImageData && ['svs', 'tif', 'tiff', 'bif'].includes((selImageData.format || '').toLowerCase());
 
   const allArts = artifacts.data || [];
+  const thumbArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'thumbnail');
   const roiArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'roi_overlay');
   const attnArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'attention_overlay');
   const combArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'combined_overlay');
 
+  const thumbnailUrl = thumbArt?.uri ? getArtifactUrl(thumbArt.uri) : null;
   const patternUrl = roiArt?.uri ? getArtifactUrl(roiArt.uri) : null;
   const attentionUrl = attnArt?.uri ? getArtifactUrl(attnArt.uri) : null;
   const combinedUrl = combArt?.uri ? getArtifactUrl(combArt.uri) : null;
-  const originalUrl = isWSI ? patternUrl : (selImageData?.storage_uri ? getArtifactUrl(selImageData.storage_uri) : null);
+  const originalUrl = thumbnailUrl || (isWSI ? patternUrl : (selImageData?.storage_uri ? getArtifactUrl(selImageData.storage_uri) : null));
 
   const activeUrl = layer === 'original' ? (originalUrl || patternUrl)
     : layer === 'pattern' ? (patternUrl || originalUrl)
@@ -172,7 +174,7 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
             </div>
           )}
 
-          {isWSI && layer === 'original' && (
+          {isWSI && layer === 'original' && !thumbnailUrl && (
             <div className="absolute top-2 left-2 bg-yellow-900/80 text-yellow-200 text-xs px-3 py-1.5 rounded max-w-xs">
               WSI shown as pattern overlay. Switch to "2 Patterns" for analysis.
             </div>
@@ -196,7 +198,7 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
               </div>
               <div className="flex justify-between mt-1">
                 <span className="text-gray-400 text-xs">P(mut)</span>
-                <span className="text-white text-xs font-mono">{gr.score?.toFixed(4)}</span>
+                <span className="text-white text-xs font-mono">{((gr.score || 0) * 100).toFixed(1)}%</span>
               </div>
               {gr.shap_decomposition?.embedding_contribution_pct != null && (
                 <div className="mt-1 h-1.5 rounded bg-gray-700 overflow-hidden flex">

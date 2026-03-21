@@ -9,12 +9,12 @@ interface Props {
 const GENES_V2 = ['TP53', 'EGFR', 'KRAS', 'STK11', 'KEAP1', 'RBM10'];
 
 const PATTERN_COLORS: Record<string, string> = {
-  lepidic: '#FFEB3B',
-  acinar: '#4CAF50',
-  papillary: '#2196F3',
-  micropapillary: '#E91E63',
-  solid: '#F44336',
-  mucinous: '#FF9800',
+  lepidic: '#E6FF32',
+  acinar: '#00FF00',
+  papillary: '#0000FF',
+  micropapillary: '#FFD700',
+  solid: '#FF0000',
+  mucinous: '#FFA500',
 };
 
 function ArtifactImage({ uri, alt, className }: { uri: string; alt: string; className?: string }) {
@@ -126,7 +126,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
             </span>
             <span className="ml-2 text-xs text-gray-500">via {geneResult.prediction_method || 'xgboost'}</span>
           </div>
-          <span className="text-sm font-mono">P(mut) = {geneResult.score?.toFixed(4)}</span>
+          <span className="text-sm font-mono">P(mut) = {((geneResult.score || 0) * 100).toFixed(1)}%</span>
         </div>
       )}
 
@@ -136,8 +136,109 @@ export default function ShapPanel({ resultBundleId }: Props) {
         </div>
       )}
 
-      {/* ── OUTPUT 3: SHAP Decomposition ── */}
-      {shapDecomp && (
+      {/* ── ABLATION EVIDENCE: proposed vs emb-only vs pat-only ── */}
+      {geneResult?.ablation && (
+        <div className="mb-6 border rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-2">
+            <h3 className="font-bold text-emerald-900">Ablation Evidence — {selGene}</h3>
+          </div>
+          <div className="p-4">
+            <p className="text-xs text-gray-600 mb-3">
+              Per-slide prediction from 3 independently trained models on the same slide.
+              The delta shows how much adding pattern features changes the prediction.
+            </p>
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="bg-gray-50 rounded p-3 text-center">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Proposed (emb+pat)</div>
+                <div className="text-2xl font-bold text-blue-700">{((geneResult.ablation.p_proposed || 0) * 100).toFixed(1)}%</div>
+                <div className="text-[10px] text-gray-400">518-d concat input</div>
+              </div>
+              <div className="bg-gray-50 rounded p-3 text-center">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Emb-only (Baseline 2)</div>
+                <div className="text-2xl font-bold text-orange-600">{((geneResult.ablation.p_emb_only || 0) * 100).toFixed(1)}%</div>
+                <div className="text-[10px] text-gray-400">512-d embeddings only</div>
+              </div>
+              <div className="bg-gray-50 rounded p-3 text-center">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Pat-only (Baseline 3)</div>
+                <div className="text-2xl font-bold text-green-600">{((geneResult.ablation.p_pat_only || 0) * 100).toFixed(1)}%</div>
+                <div className="text-[10px] text-gray-400">6-d pattern probs only</div>
+              </div>
+            </div>
+            {/* Vertical bar comparison */}
+            <div className="flex items-end justify-center gap-8 h-48 mt-2">
+              {[
+                { label: 'Proposed', sub: '(emb+pat)', val: geneResult.ablation.p_proposed, color: 'bg-blue-500' },
+                { label: 'Emb-only', sub: '(B2)', val: geneResult.ablation.p_emb_only, color: 'bg-orange-400' },
+                { label: 'Pat-only', sub: '(B3)', val: geneResult.ablation.p_pat_only, color: 'bg-green-500' },
+              ].map(item => (
+                <div key={item.label} className="flex flex-col items-center gap-1 w-24">
+                  <span className="text-xs font-mono font-bold">{((item.val || 0) * 100).toFixed(1)}%</span>
+                  <div className="w-14 bg-gray-100 rounded-t relative" style={{ height: '140px' }}>
+                    <div
+                      className={`absolute bottom-0 left-0 right-0 rounded-t ${item.color}`}
+                      style={{ height: `${Math.min((item.val || 0) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-gray-600 text-center font-medium">{item.label}</span>
+                  <span className="text-[9px] text-gray-400 text-center">{item.sub}</span>
+                </div>
+              ))}
+            </div>
+            {/* Delta */}
+            <div className="mt-3 p-2 bg-blue-50 rounded text-xs">
+              <strong>Per-slide delta:</strong>{' '}
+              P(proposed) − P(emb-only) = <strong className={`${(geneResult.ablation.delta_patterns || 0) > 0 ? 'text-green-700' : 'text-red-600'}`}>
+                {(geneResult.ablation.delta_patterns || 0) > 0 ? '+' : ''}{((geneResult.ablation.delta_patterns || 0) * 100).toFixed(1)}%
+              </strong>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── PERMUTATION IMPORTANCE ── */}
+      {geneResult?.permutation && (
+        <div className="mb-6 border rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-violet-50 border-b border-violet-200 px-4 py-2">
+            <h3 className="font-bold text-violet-900">Permutation Feature Importance — {selGene}</h3>
+          </div>
+          <div className="p-4">
+            <p className="text-xs text-gray-600 mb-3">
+              Pattern dimensions are randomly shuffled across tiles (10 repeats).
+              The prediction change measures how much the model relies on pattern information.
+            </p>
+            <div className="grid grid-cols-3 gap-4 mb-3">
+              <div className="bg-gray-50 rounded p-3 text-center">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Original P(mut)</div>
+                <div className="text-xl font-bold">{((geneResult.permutation.p_original || 0) * 100).toFixed(1)}%</div>
+              </div>
+              <div className="bg-gray-50 rounded p-3 text-center">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Permuted P(mut)</div>
+                <div className="text-xl font-bold text-gray-400">{((geneResult.permutation.p_permuted_mean || 0) * 100).toFixed(1)}%</div>
+                <div className="text-[10px] text-gray-400">mean of 10 shuffles</div>
+              </div>
+              <div className="bg-gray-50 rounded p-3 text-center">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Pattern Importance</div>
+                <div className={`text-xl font-bold ${(geneResult.permutation.importance_pct || 0) > 5 ? 'text-violet-700' : 'text-gray-500'}`}>
+                  {geneResult.permutation.importance_pct?.toFixed(1)}%
+                </div>
+                <div className="text-[10px] text-gray-400">|original − permuted|</div>
+              </div>
+            </div>
+            <div className="p-2 bg-violet-50 rounded text-xs">
+              <strong>Interpretation:</strong>{' '}
+              {(geneResult.permutation.importance_pct || 0) > 10
+                ? `Shuffling patterns changes ${selGene} prediction by ${geneResult.permutation.importance_pct?.toFixed(1)}% — patterns are a significant contributor.`
+                : (geneResult.permutation.importance_pct || 0) > 3
+                ? `Patterns contribute ${geneResult.permutation.importance_pct?.toFixed(1)}% to the prediction — moderate but measurable effect.`
+                : `Pattern contribution is small (${geneResult.permutation.importance_pct?.toFixed(1)}%) — embeddings dominate for ${selGene} on this slide.`}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── OUTPUT 3: SHAP Decomposition (only for Proposed concat genes: STK11, KEAP1) ── */}
+      {shapDecomp && geneResult?.prediction_method?.includes('proposed') && (
         <div className="mb-6 border rounded-lg shadow-sm overflow-hidden">
           <div className="bg-indigo-50 border-b border-indigo-200 px-4 py-2">
             <h3 className="font-bold text-indigo-900">SHAP Decomposition — {selGene}</h3>
@@ -205,8 +306,8 @@ export default function ShapPanel({ resultBundleId }: Props) {
         </div>
       )}
 
-      {/* ── OUTPUT 4: Choquet Shapley Values ── */}
-      {choquetData && (
+      {/* ── OUTPUT 4: Choquet Shapley Values (only for Choquet genes: KRAS, RBM10) ── */}
+      {choquetData && geneResult?.prediction_method?.includes('Choquet') && (
         <div className="mb-6 border rounded-lg shadow-sm overflow-hidden">
           <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
             <h3 className="font-bold text-amber-900">Choquet Shapley Values — {selGene} (Fuzzy Choquet MIL)</h3>

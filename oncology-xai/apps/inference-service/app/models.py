@@ -89,6 +89,9 @@ class GeneticResultDB(Base):
     # v2 Choquet Shapley
     choquet_shapley_values: Mapped[dict | None] = mapped_column(JSON)
     choquet_interaction_indices: Mapped[dict | None] = mapped_column(JSON)
+    # v2 ablation + permutation
+    ablation_data: Mapped[dict | None] = mapped_column(JSON)
+    permutation_data: Mapped[dict | None] = mapped_column(JSON)
     #
     evidence_source: Mapped[str] = mapped_column(String(50), default="THESIS_INTERNAL")
     intended_use: Mapped[str] = mapped_column(String(200), default="research / decision support (non-diagnostic)")

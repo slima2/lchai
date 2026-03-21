@@ -41,15 +41,28 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
     db = get_sync_db()
     storage = _storage()
 
+    def _update_progress(pct: float, stage: str = ""):
+        try:
+            j = db.query(MLJobDB).filter_by(id=job_id).first()
+            if j:
+                j.progress = round(pct, 2)
+                if stage:
+                    j.error_detail = stage
+                db.commit()
+        except Exception:
+            pass
+
     try:
-        # Update job → RUNNING
         job = db.query(MLJobDB).filter_by(id=job_id).first()
         if not job:
             raise ValueError(f"Job {job_id} not found")
         job.status = "RUNNING"
         job.started_at = datetime.utcnow()
         job.celery_task_id = self.request.id
+        job.error_detail = "Downloading image..."
         db.commit()
+
+        _update_progress(0.05, "Downloading image...")
 
         # Download image from MinIO and get format for decode
         from sqlalchemy import text
@@ -92,12 +105,20 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
             shap_decomposition_enabled=settings.shap_decomposition_enabled,
         )
 
-        # Run inference
-        result = run_inference(image_bytes, config)
+        _update_progress(0.10, "Running v2 inference pipeline...")
+
+        result = run_inference(image_bytes, config, progress_callback=_update_progress)
+
+        _update_progress(0.85, "Saving artifacts to MinIO...")
 
         # Persist artifacts to MinIO
         rb_id = str(uuid4())
         prefix = f"results/{case_id}/{rb_id}"
+
+        # Upload clean thumbnail (original image without overlays)
+        if result.thumbnail_bytes:
+            thumb_key = f"{prefix}/thumbnail.png"
+            storage.upload_bytes(thumb_key, result.thumbnail_bytes, "image/png")
 
         overlay_key = f"{prefix}/roi_overlay_combined.png"
         storage.upload_bytes(overlay_key, result.overlay_combined_bytes, "image/png")
@@ -177,6 +198,21 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
         # Build lookup dicts for v2 SHAP and Choquet data
         shap_by_gene = {d.gene: d for d in result.shap_decompositions}
         choquet_by_gene = {c.gene: c for c in result.choquet_shapley}
+        ablation_by_gene = {
+            a.gene: {"p_proposed": a.p_proposed, "p_emb_only": a.p_emb_only,
+                      "p_pat_only": a.p_pat_only, "delta_patterns": a.delta_patterns,
+                      "proposed_auroc": a.proposed_auroc,
+                      "baseline2_auroc": a.baseline2_auroc,
+                      "baseline3_auroc": a.baseline3_auroc,
+                      "choquet_auroc": a.choquet_auroc,
+                      "auroc_delta": a.auroc_delta}
+            for a in result.ablation_results
+        }
+        permutation_by_gene = {
+            p.gene: {"p_original": p.p_original, "p_permuted_mean": p.p_permuted_mean,
+                      "pattern_importance": p.pattern_importance, "importance_pct": p.importance_pct}
+            for p in result.permutation_results
+        }
 
         # Genetic results (v2 — with confidence labels + interpretability)
         for entry in result.mutation_report:
@@ -196,6 +232,8 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
                 shap_top_patterns=shap_d.top_pattern_dims if shap_d else None,
                 choquet_shapley_values=choquet_d.shapley_values if choquet_d else None,
                 choquet_interaction_indices=choquet_d.interaction_indices if choquet_d else None,
+                ablation_data=ablation_by_gene.get(entry.gene),
+                permutation_data=permutation_by_gene.get(entry.gene),
             )
             db.add(gr)
 
@@ -225,6 +263,16 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
         db.add(mp)
 
         # ROI overlay artifact
+        if result.thumbnail_bytes:
+            thumb_art = XAIArtifactDB(
+                result_bundle_id=rb_id,
+                artifact_type="thumbnail",
+                gene=None,
+                uri=f"s3://{settings.s3_bucket}/{thumb_key}",
+                hash=hashlib.sha256(result.thumbnail_bytes).hexdigest(),
+            )
+            db.add(thumb_art)
+
         overlay_art = XAIArtifactDB(
             result_bundle_id=rb_id,
             artifact_type="roi_overlay",
