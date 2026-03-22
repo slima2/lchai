@@ -129,7 +129,7 @@ function ParametersPanel() {
             <div className="flex items-center gap-3 mb-3">
               <span className="text-sm font-medium">AUROC Threshold:</span>
               <input
-                type="number" step="0.01" min="0.5" max="1"
+                type="number" step="0.001" min="0.5" max="1"
                 className="w-20 text-center text-xl font-bold text-blue-700 border rounded px-2 py-1"
                 value={threshold}
                 onChange={e => setThreshold(parseFloat(e.target.value) || 0.70)}
