@@ -214,7 +214,7 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
             {/* Stage details */}
             <div className="bg-gray-50 rounded p-3 text-xs text-gray-500 space-y-1">
               <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.05 ? 'text-green-600' : ''}`}>
-                <span>{(job.data.progress || 0) >= 0.10 ? '✓' : '⏳'}</span> Download image
+                <span>{(job.data.progress || 0) >= 0.10 ? '✓' : '⏳'}</span> Decoding image
               </div>
               <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.20 ? 'text-green-600' : ''}`}>
                 <span>{(job.data.progress || 0) >= 0.50 ? '✓' : (job.data.progress || 0) >= 0.20 ? '⏳' : '○'}</span> CTransPath tile inference {(() => {

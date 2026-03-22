@@ -265,6 +265,13 @@ services:
     volumes:
       - "${BACKBONE_HOST_DIR:-D:/Dropbox/PHD/THESIS/SCRIPTS/BACKBONES}:/data/models:ro"
       - "${V2_CHECKPOINT_HOST_PATH:-D:/Dropbox/PHD/THESIS/CHECKPOINTS LUAD V2/checkpoints}:/data/checkpoints:ro"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     depends_on:
       postgres:
         condition: service_healthy

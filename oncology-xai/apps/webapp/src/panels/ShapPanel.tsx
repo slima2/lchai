@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
-import { getResultBundle, getArtifacts, getArtifactUrl } from '../api';
+import { api, getResultBundle, getArtifacts, getArtifactUrl } from '../api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -158,6 +158,17 @@ export default function ShapPanel({ resultBundleId }: Props) {
     queryFn: () => getArtifacts(resultBundleId).then(r => r.data),
   });
 
+  const params = useQuery({
+    queryKey: ['system-params'],
+    queryFn: () => api.get('/parameters').then(r => r.data),
+    staleTime: 0,
+    refetchOnMount: 'always' as const,
+  });
+
+  const aurocValues: Record<string, number> = params.data?.auroc_values || {};
+  const aurocThreshold: number = params.data?.auroc_threshold ?? 0.70;
+  const isDynConcl = useCallback((gene: string) => (aurocValues[gene] ?? 0) >= aurocThreshold, [aurocValues, aurocThreshold]);
+
   const allArts = artifacts.data || [];
   const genetics = bundle.data?.genetic_results || [];
   const patterns = bundle.data?.pattern_results || [];
@@ -194,9 +205,9 @@ export default function ShapPanel({ resultBundleId }: Props) {
                 {g}
                 {gr && (
                   <span className={`ml-1 text-xs ${
-                    gr.confidence_label === 'Conclusive' ? 'text-green-200' : 'text-yellow-200'
+                    isDynConcl(g) ? 'text-green-200' : 'text-yellow-200'
                   }`}>
-                    ({gr.confidence_label || gr.status})
+                    ({isDynConcl(g) ? 'conclusive' : 'inconclusive'})
                   </span>
                 )}
               </button>
@@ -221,15 +232,15 @@ export default function ShapPanel({ resultBundleId }: Props) {
       {/* Gene result header */}
       {geneResult && (
         <div className={`p-3 rounded mb-4 flex items-center justify-between ${
-          geneResult.confidence_label === 'Conclusive' ? 'bg-green-50 border border-green-200' :
+          isDynConcl(selGene) ? 'bg-green-50 border border-green-200' :
           'bg-yellow-50 border border-yellow-200'
         }`}>
           <div>
             <span className="text-sm font-semibold">{selGene} Mutation:</span>
             <span className={`ml-2 px-2 py-0.5 rounded text-xs font-bold ${
-              geneResult.confidence_label === 'Conclusive' ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
+              isDynConcl(selGene) ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
             }`}>
-              {geneResult.confidence_label || geneResult.status}
+              {isDynConcl(selGene) ? 'Conclusive' : 'Inconclusive'}
             </span>
             <span className="ml-2 text-xs text-gray-500">via {geneResult.prediction_method || 'xgboost'}</span>
           </div>
@@ -237,9 +248,9 @@ export default function ShapPanel({ resultBundleId }: Props) {
         </div>
       )}
 
-      {geneResult?.disclaimer && (
+      {geneResult && !isDynConcl(selGene) && (
         <div className="bg-yellow-50 border border-yellow-300 rounded p-2 mb-4 text-xs text-yellow-800">
-          ⚠ {geneResult.disclaimer}
+          ⚠ Molecular testing recommended. {selGene} prediction has AUROC {(aurocValues[selGene] ?? 0).toFixed(3)} &lt; {aurocThreshold.toFixed(3)} — cannot be reliably predicted from histological features alone.
         </div>
       )}
 

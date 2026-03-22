@@ -86,11 +86,18 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
             img.save(buf, format="PNG")
             image_bytes = buf.getvalue()
 
-        # Build config (v2)
+        # Build config (v2) — auto-detect GPU
+        import torch
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.info("Inference device: %s (CUDA available: %s)", device, torch.cuda.is_available())
+        if device == "cuda":
+            logger.info("GPU: %s, VRAM: %.1f GB", torch.cuda.get_device_name(0), torch.cuda.get_device_properties(0).total_memory / 1e9)
+
         thr = thresholds or {}
         config = InferenceConfig(
             image_uri=f"image:{image_id}",
             image_format=image_format,
+            device=device,
             model_backend=settings.model_backend,
             ctranspath_checkpoint=settings.ctranspath_checkpoint,
             fuzzyarc_checkpoint=settings.fuzzyarc_checkpoint,

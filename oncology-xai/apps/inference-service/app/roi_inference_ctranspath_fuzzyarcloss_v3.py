@@ -298,7 +298,6 @@ def _build_overlay(img: Image.Image, tile_coords: list[tuple[int, int]],
     blur_radius = max(tile_size // 6, 4)
     overlay = overlay.filter(ImageFilter.GaussianBlur(radius=blur_radius))
 
-    # Composite
     base = img.convert("RGBA")
     combined = Image.alpha_composite(base, overlay)
     buf = io.BytesIO()
@@ -565,6 +564,31 @@ def _tile_wsi_full_resolution(
             if green_dominant > 0.4:
                 continue
 
+            # Reject tiles with red marker/pen (high R, low G and B)
+            red_marker = ((r > 150) & (r > g + 40) & (r > b + 40)).mean()
+            if red_marker > 0.3:
+                continue
+
+            # Reject tiles with olive/yellow marker (high R and G, low B)
+            olive_marker = ((r > 140) & (g > 120) & (b < 100) & ((r + g) > 2.5 * b)).mean()
+            if olive_marker > 0.3:
+                continue
+
+            # Reject tiles with blue/teal marker pen (B strongly dominates)
+            blue_marker = ((b > r + 30) & (b > g + 20) & (b > 100)).mean()
+            if blue_marker > 0.25:
+                continue
+
+            # Reject tiles with teal/cyan marker (G and B high, R clearly low)
+            teal_marker = ((g > r + 20) & (b > r + 20) & (r < 100)).mean()
+            if teal_marker > 0.30:
+                continue
+
+            # Reject non-H&E highly saturated regions (strong marker ink only)
+            high_sat = (saturation > 0.6).mean()
+            if high_sat > 0.5 and mean_sat > 0.45:
+                continue
+
             tiles.append((x, y, tile_rgb))
             count += 1
         if count >= max_tiles:
@@ -682,8 +706,12 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
         thumb_w, thumb_h = img.size
         sx, sy = thumb_w / wsi_w, thumb_h / wsi_h
         overlay_coords = [(int(x * sx), int(y * sy)) for x, y in tile_coords]
-        overlay_tile_sz = max(2, int(tile_sz * min(sx, sy)))
-        result.overlay_combined_bytes = _build_overlay(img, overlay_coords, tile_labels, overlay_tile_sz)
+        scaled_tile = int(tile_sz * min(sx, sy))
+        min_visible = max(40, min(thumb_w, thumb_h) // 30)
+        overlay_tile_sz = max(min_visible, scaled_tile)
+        logger.info("WSI overlay: thumb=%dx%d, scale=%.4f, scaled_tile=%d, min_visible=%d, overlay_tile_sz=%d",
+                    thumb_w, thumb_h, min(sx, sy), scaled_tile, min_visible, overlay_tile_sz)
+        result.overlay_combined_bytes = _build_overlay(img, overlay_coords, tile_labels, overlay_tile_sz, alpha=160)
     else:
         result.overlay_combined_bytes = _build_overlay(img, tile_coords, tile_labels, tile_sz)
 
@@ -757,10 +785,11 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
                 abmil_output.top_k_indices, use_tile_sz,
             )
 
+            comb_alpha = 160 if _WSI_SLIDE_HANDLE is not None else 120
             result.combined_overlay_bytes = _build_combined_overlay(
                 img, use_coords, tile_labels,
                 abmil_output.attention_map, abmil_output.top_k_indices,
-                use_tile_sz,
+                use_tile_sz, pattern_alpha=comb_alpha,
             )
 
     except Exception as e:
@@ -981,6 +1010,7 @@ def _build_combined_overlay(
     attention_weights: np.ndarray,
     top_k_indices: list[int],
     tile_size: int,
+    pattern_alpha: int = 120,
 ) -> bytes:
     """Build combined overlay: pattern colours + white attention region contours.
 
@@ -1024,7 +1054,7 @@ def _build_combined_overlay(
     r_img = Image.fromarray(np.clip(acc_r, 0, 255).astype(np.uint8), "L")
     g_img = Image.fromarray(np.clip(acc_g, 0, 255).astype(np.uint8), "L")
     b_img = Image.fromarray(np.clip(acc_b, 0, 255).astype(np.uint8), "L")
-    alpha_arr = np.where(mask, 120, 0).astype(np.uint8)
+    alpha_arr = np.where(mask, pattern_alpha, 0).astype(np.uint8)
     a_img = Image.fromarray(alpha_arr, "L")
 
     overlay = Image.merge("RGBA", (r_img, g_img, b_img, a_img))
@@ -1121,7 +1151,8 @@ def _real_tile_inference(tiles: list[tuple[int, int, Image.Image]], config: Infe
 
     scores: dict[str, list[float]] = {p: [] for p in PATTERNS}
     all_embeddings: list[np.ndarray] = []
-    batch_size = 16
+    batch_size = 64 if device != "cpu" else 16
+    logger.info("Tile inference: %d tiles, batch_size=%d, device=%s", len(tiles), batch_size, device)
 
     with torch.no_grad():
         for i in range(0, len(tiles), batch_size):

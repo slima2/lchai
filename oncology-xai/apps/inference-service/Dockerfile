@@ -13,12 +13,15 @@ COPY packages/langgraph-workflows /srv/packages/langgraph-workflows
 RUN pip install --no-cache-dir /srv/packages/common /srv/packages/event-contracts /srv/packages/langgraph-workflows
 
 COPY apps/inference-service/pyproject.toml .
-# Invalidate cache when app code changes: pass --build-arg CACHEBUST=$(date) or similar
 ARG CACHEBUST=
 COPY apps/inference-service/app/ app/
 COPY apps/inference-service/alembic.ini .
 COPY apps/inference-service/alembic/ alembic/
-RUN pip install --no-cache-dir -e .
+
+# Install PyTorch with CUDA 12.4 support (bundled CUDA libs), then project deps
+RUN pip install --no-cache-dir \
+    torch torchvision --index-url https://download.pytorch.org/whl/cu124 && \
+    pip install --no-cache-dir -e .
 
 EXPOSE 8003
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8003"]
