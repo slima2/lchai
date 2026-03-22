@@ -15,28 +15,48 @@ const METHODS: Record<string, string> = {
 const FOLDS: Record<string, number> = { TP53: 2, EGFR: 4, KRAS: 3, STK11: 3, KEAP1: 1, RBM10: 4 };
 const GENE_ORDER = ['TP53', 'EGFR', 'RBM10', 'STK11', 'KRAS', 'KEAP1'];
 
+const METHOD_OPTIONS = [
+  { value: 'baseline2', label: 'B2 (embeddings)' },
+  { value: 'proposed', label: 'P (proposed concat)' },
+  { value: 'choquet', label: 'FC (Fuzzy Choquet)' },
+];
+
 function ParametersPanel() {
   const [aurocs, setAurocs] = useState<Record<string, number>>({
     TP53: 0.8024, EGFR: 0.7504, RBM10: 0.7371, STK11: 0.6962, KRAS: 0.6800, KEAP1: 0.6218,
   });
+  const [methods, setMethods] = useState<Record<string, string>>({
+    TP53: 'baseline2', EGFR: 'baseline2', STK11: 'proposed', KEAP1: 'proposed', KRAS: 'choquet', RBM10: 'choquet',
+  });
   const [threshold, setThreshold] = useState(0.70);
+  const [mutThreshold, setMutThreshold] = useState(0.50);
+  const [topK, setTopK] = useState(200);
+  const [maxTiles, setMaxTiles] = useState(10000);
+  const [permRepeats, setPermRepeats] = useState(10);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [loaded, setLoaded] = useState(false);
 
   React.useEffect(() => {
     api.get('/parameters').then(r => {
       if (r.data?.auroc_values) setAurocs(r.data.auroc_values);
       if (r.data?.auroc_threshold != null) setThreshold(r.data.auroc_threshold);
-      setLoaded(true);
-    }).catch(() => setLoaded(true));
+      if (r.data?.best_method) setMethods(r.data.best_method);
+      if (r.data?.mutation_threshold != null) setMutThreshold(r.data.mutation_threshold);
+      if (r.data?.top_k_tiles != null) setTopK(r.data.top_k_tiles);
+      if (r.data?.max_tiles != null) setMaxTiles(r.data.max_tiles);
+      if (r.data?.permutation_repeats != null) setPermRepeats(r.data.permutation_repeats);
+    }).catch(() => {});
   }, []);
 
   const save = async () => {
     setSaving(true);
     setSaved(false);
     try {
-      await api.put('/parameters', { auroc_values: aurocs, auroc_threshold: threshold });
+      await api.put('/parameters', {
+        auroc_values: aurocs, auroc_threshold: threshold, best_method: methods,
+        mutation_threshold: mutThreshold, top_k_tiles: topK, max_tiles: maxTiles,
+        permutation_repeats: permRepeats,
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch { /* */ }
@@ -76,7 +96,17 @@ function ParametersPanel() {
                       onChange={e => setAurocs({ ...aurocs, [gene]: parseFloat(e.target.value) || 0 })}
                     />
                   </td>
-                  <td className="border px-3 py-2 text-center text-xs">{METHODS[gene]}</td>
+                  <td className="border px-1 py-1 text-center">
+                    <select
+                      className="text-xs border rounded px-1 py-1"
+                      value={methods[gene] || 'proposed'}
+                      onChange={e => setMethods({ ...methods, [gene]: e.target.value })}
+                    >
+                      {METHOD_OPTIONS.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </td>
                   <td className="border px-3 py-2 text-center">{FOLDS[gene]}</td>
                   <td className="border px-3 py-2 text-center">
                     <span className={`px-2 py-0.5 rounded text-xs font-bold ${
@@ -124,26 +154,41 @@ function ParametersPanel() {
           </button>
           {saved && <p className="text-green-600 text-xs mt-2">Parameters saved. Changes apply to the next image analysis.</p>}
 
-          <h4 className="font-semibold text-sm mt-6 mb-2">Other Parameters (read-only)</h4>
-          <div className="bg-gray-50 rounded p-4 space-y-2 text-sm">
-            {[
-              ['Mutation threshold (POS/NEG)', '0.50'],
-              ['Top-K attention tiles', '200'],
-              ['Max tiles per WSI', '10,000'],
-              ['Tile size', '224 px'],
-              ['Backbone', 'CTransPath Swin Tiny'],
-              ['Classifier', 'FuzzyArcLoss V2'],
-              ['Permutation repeats', '10'],
-            ].map(([label, val]) => (
-              <div key={label} className="flex justify-between">
-                <span className="text-gray-600">{label}</span>
-                <span className="font-mono font-bold">{val}</span>
-              </div>
-            ))}
+          <h4 className="font-semibold text-sm mt-6 mb-2">Inference Parameters — editable</h4>
+          <div className="bg-gray-50 rounded p-4 space-y-3 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Mutation threshold (POS/NEG)</span>
+              <input type="number" step="0.05" min="0.1" max="0.9" className="w-20 text-center font-mono border rounded px-1 py-1 text-sm"
+                value={mutThreshold} onChange={e => setMutThreshold(parseFloat(e.target.value) || 0.5)} />
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Top-K attention tiles</span>
+              <input type="number" step="50" min="50" max="1000" className="w-20 text-center font-mono border rounded px-1 py-1 text-sm"
+                value={topK} onChange={e => setTopK(parseInt(e.target.value) || 200)} />
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Max tiles per WSI</span>
+              <input type="number" step="1000" min="1000" max="50000" className="w-24 text-center font-mono border rounded px-1 py-1 text-sm"
+                value={maxTiles} onChange={e => setMaxTiles(parseInt(e.target.value) || 10000)} />
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Permutation repeats</span>
+              <input type="number" step="5" min="5" max="100" className="w-20 text-center font-mono border rounded px-1 py-1 text-sm"
+                value={permRepeats} onChange={e => setPermRepeats(parseInt(e.target.value) || 10)} />
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Tile size</span>
+              <span className="font-mono font-bold">224 px</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Backbone</span>
+              <span className="font-mono font-bold">CTransPath Swin Tiny</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Classifier</span>
+              <span className="font-mono font-bold">FuzzyArcLoss V2</span>
+            </div>
           </div>
-          <p className="text-xs text-gray-400 mt-2">
-            To modify these, edit <code>.env</code> and restart with <code>docker compose up -d</code>.
-          </p>
         </div>
       </div>
     </div>

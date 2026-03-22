@@ -177,19 +177,23 @@ async def get_checkpoint_status():
 
 @router.get("/parameters")
 async def get_parameters():
-    """Return current system parameters (AUROC values + threshold)."""
+    """Return current system parameters."""
     from app.ml.checkpoints.loader import PROPOSED_AUROC, AUROC_THRESHOLD, BEST_METHOD, BEST_FOLD
     return {
         "auroc_values": PROPOSED_AUROC,
         "auroc_threshold": AUROC_THRESHOLD,
         "best_method": BEST_METHOD,
         "best_fold": BEST_FOLD,
+        "mutation_threshold": settings.mutation_threshold,
+        "top_k_tiles": settings.v2_top_k_tiles,
+        "max_tiles": settings.v2_top_k_tiles * 50,
+        "permutation_repeats": 10,
     }
 
 
 @router.put("/parameters")
 async def update_parameters(body: dict[str, Any]):
-    """Update AUROC values and/or threshold at runtime."""
+    """Update system parameters at runtime."""
     import app.ml.checkpoints.loader as loader_mod
     updated = []
 
@@ -202,6 +206,25 @@ async def update_parameters(body: dict[str, Any]):
     if "auroc_threshold" in body:
         loader_mod.AUROC_THRESHOLD = float(body["auroc_threshold"])
         updated.append(f"threshold={body['auroc_threshold']}")
+
+    if "best_method" in body and isinstance(body["best_method"], dict):
+        for gene, method in body["best_method"].items():
+            if gene in loader_mod.BEST_METHOD:
+                loader_mod.BEST_METHOD[gene] = str(method)
+                updated.append(f"method[{gene}]={method}")
+
+    if "mutation_threshold" in body:
+        settings.mutation_threshold = float(body["mutation_threshold"])
+        updated.append(f"mutation_threshold={body['mutation_threshold']}")
+
+    if "top_k_tiles" in body:
+        settings.v2_top_k_tiles = int(body["top_k_tiles"])
+        updated.append(f"top_k_tiles={body['top_k_tiles']}")
+
+    if "max_tiles" in body:
+        new_top_k = max(1, int(body["max_tiles"]) // 50)
+        settings.v2_top_k_tiles = new_top_k
+        updated.append(f"max_tiles={body['max_tiles']} (top_k={new_top_k})")
 
     return {"status": "updated", "changes": updated}
 
