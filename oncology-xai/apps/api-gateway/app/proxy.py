@@ -146,7 +146,7 @@ def create_proxy_router(settings) -> APIRouter:  # type: ignore[no-untyped-def]
 
         @router.api_route(
             f"{prefix}",
-            methods=["GET", "POST"],
+            methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
             dependencies=[Depends(require_roles(*roles))],
             include_in_schema=False,
         )
