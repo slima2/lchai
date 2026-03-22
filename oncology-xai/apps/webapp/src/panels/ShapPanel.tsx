@@ -1,6 +1,113 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import axios from 'axios';
 import { getResultBundle, getArtifacts, getArtifactUrl } from '../api';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+const _explanationCache: Record<string, string> = {};
+
+function GeneExplanation({ gene, geneResult }: { gene: string; geneResult: any }) {
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const a = geneResult?.ablation;
+  const p = geneResult?.permutation;
+  const dataKey = `${gene}_${a?.p_proposed}_${a?.p_emb_only}_${p?.importance_pct}`;
+
+  React.useEffect(() => {
+    if (!a) return;
+
+    if (_explanationCache[dataKey]) {
+      setExplanation(_explanationCache[dataKey]);
+      return;
+    }
+    setLoading(true);
+    setExplanation(null);
+
+    const prompt = `You are explaining a mutation prediction to a pathologist. Be concise (3-4 sentences).
+
+Gene: ${gene}
+Prediction method: ${geneResult.prediction_method || 'unknown'}
+Confidence: ${geneResult.confidence_label || 'unknown'}
+Probability: ${((geneResult.score || 0) * 100).toFixed(1)}%
+
+Ablation comparison on this slide:
+- Combined model (embeddings + patterns): ${((a.p_proposed || 0) * 100).toFixed(1)}%
+- Embeddings-only model: ${((a.p_emb_only || 0) * 100).toFixed(1)}%
+- Patterns-only model: ${((a.p_pat_only || 0) * 100).toFixed(1)}%
+- Delta (combined - emb-only): ${((a.delta_patterns || 0) * 100).toFixed(1)}%
+
+Permutation importance: shuffling pattern dims changes prediction by ${p?.importance_pct?.toFixed(1) || '?'}%
+
+Explain what these numbers mean for this specific gene prediction. Which input features (visual embeddings vs histological patterns) drive the prediction? Is the prediction reliable? What should the clinician know?`;
+
+    axios.post(`${API_URL}/api/v1/cases/00000000-0000-0000-0000-000000000000/graph/explain`, null, {
+      timeout: 15000,
+    }).catch(() => null).then(() => {
+      // Use OpenAI directly via proxy-free call
+      const key = (window as any).__openai_key;
+      if (key) {
+        return fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini', temperature: 0.3, max_tokens: 300,
+            messages: [
+              { role: 'system', content: 'You are an expert pathologist assistant explaining AI mutation predictions. Be concise and clinical.' },
+              { role: 'user', content: prompt },
+            ],
+          }),
+        }).then(r => r.json()).then(d => {
+          const txt = d.choices?.[0]?.message?.content || null;
+          if (txt) _explanationCache[dataKey] = txt;
+          setExplanation(txt);
+          setLoading(false);
+        }).catch(() => { setLoading(false); generateFallback(); });
+      } else {
+        generateFallback();
+      }
+    });
+
+    function generateFallback() {
+      const pProp = ((a.p_proposed || 0) * 100).toFixed(1);
+      const pEmb = ((a.p_emb_only || 0) * 100).toFixed(1);
+      const pPat = ((a.p_pat_only || 0) * 100).toFixed(1);
+      const permImp = p?.importance_pct || 0;
+      const delta = Math.abs((a.delta_patterns || 0) * 100);
+
+      const highest = Math.max(a.p_proposed || 0, a.p_emb_only || 0, a.p_pat_only || 0);
+      const winner = highest === (a.p_emb_only || 0) ? 'embeddings-only' : highest === (a.p_pat_only || 0) ? 'patterns-only' : 'combined';
+
+      let text = `For ${gene}, three models were compared on this slide: combined (${pProp}%), embeddings-only (${pEmb}%), and patterns-only (${pPat}%). `;
+      text += `The ${winner} model gives the strongest signal. `;
+      if (delta > 5) {
+        text += `Adding pattern features changes the prediction by ${delta.toFixed(1)}%, indicating patterns have a meaningful impact. `;
+      } else {
+        text += `Pattern features have minimal impact (${delta.toFixed(1)}% change), suggesting visual morphology drives this prediction. `;
+      }
+      if (permImp > 5) {
+        text += `Permutation test confirms pattern importance (${permImp.toFixed(1)}% change when shuffled).`;
+      } else {
+        text += `Permutation test confirms embeddings dominate (only ${permImp.toFixed(1)}% change when patterns shuffled).`;
+      }
+      _explanationCache[dataKey] = text;
+      setExplanation(text);
+      setLoading(false);
+    }
+  }, [dataKey]);
+
+  return (
+    <div className="text-sm text-gray-700 leading-relaxed mb-4">
+      {loading && <p className="text-gray-400 animate-pulse">Generating explanation...</p>}
+      {explanation && <p>{explanation}</p>}
+      {!loading && !explanation && <p className="text-gray-400">No explanation available</p>}
+      <p className="text-xs text-gray-400 italic mt-2">
+        Method: {geneResult?.prediction_method}. Gene-dependent optimal model (thesis Finding 2).
+      </p>
+    </div>
+  );
+}
 
 interface Props {
   resultBundleId: string;
@@ -143,47 +250,8 @@ export default function ShapPanel({ resultBundleId }: Props) {
             <h3 className="font-bold text-emerald-900">How was this prediction made? — {selGene}</h3>
           </div>
           <div className="p-4">
-            {/* Natural language explanation */}
-            {(() => {
-              const a = geneResult.ablation;
-              const p = geneResult.permutation;
-              const pProp = ((a.p_proposed || 0) * 100).toFixed(1);
-              const pEmb = ((a.p_emb_only || 0) * 100).toFixed(1);
-              const pPat = ((a.p_pat_only || 0) * 100).toFixed(1);
-              const delta = ((a.delta_patterns || 0) * 100).toFixed(1);
-              const deltaAbs = Math.abs((a.delta_patterns || 0) * 100);
-              const permImp = p?.importance_pct || 0;
-              const method = geneResult.prediction_method || '';
-
-              const bestModel = parseFloat(pEmb) > parseFloat(pProp) ? 'embeddings-only' :
-                parseFloat(pPat) > parseFloat(pProp) ? 'patterns-only' : 'proposed (combined)';
-
-              return (
-                <div className="text-sm text-gray-700 leading-relaxed mb-4 space-y-2">
-                  <p>
-                    Three independently trained models were run on this slide to predict <strong>{selGene}</strong> mutation.
-                    The <strong className="text-blue-700">combined model</strong> (embeddings + patterns) predicts <strong>{pProp}%</strong>,
-                    the <strong className="text-orange-600">embeddings-only model</strong> predicts <strong>{pEmb}%</strong>,
-                    and the <strong className="text-green-600">patterns-only model</strong> predicts <strong>{pPat}%</strong>.
-                  </p>
-                  <p>
-                    {deltaAbs > 5
-                      ? `Adding pattern information ${parseFloat(delta) > 0 ? 'increases' : 'decreases'} the prediction by ${Math.abs(parseFloat(delta))}% compared to using embeddings alone, indicating that histological patterns have a meaningful impact on this gene's prediction.`
-                      : `The difference between the combined and embeddings-only models is small (${delta}%), suggesting that for ${selGene} on this slide, visual features captured by CTransPath are the primary driver.`}
-                  </p>
-                  {p && (
-                    <p>
-                      {permImp > 5
-                        ? `When pattern dimensions are randomly shuffled, the prediction changes by ${permImp.toFixed(1)}%, confirming that patterns contribute meaningfully to the ${selGene} prediction.`
-                        : `Randomly shuffling pattern dimensions changes the prediction by only ${permImp.toFixed(1)}%, confirming that embeddings dominate for ${selGene}.`}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500 italic">
-                    Active method for {selGene}: {method}. Selected based on thesis Finding 2 (gene-dependent optimal representation).
-                  </p>
-                </div>
-              );
-            })()}
+            {/* LLM-generated explanation */}
+            <GeneExplanation gene={selGene} geneResult={geneResult} />
 
             {/* Compact vertical bars — no redundant numbers above */}
             <div className="flex items-end justify-center gap-10 h-40">

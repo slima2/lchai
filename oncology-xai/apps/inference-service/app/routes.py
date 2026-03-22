@@ -51,6 +51,40 @@ async def process_image(
     }
 
 
+@router.post("/jobs/{job_id}:cancel")
+async def cancel_job(job_id: str, db: AsyncSession = Depends(get_db)):
+    """Cancel a running job and clean up its case data."""
+    job = await db.get(MLJobDB, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.celery_task_id:
+        try:
+            from app.celery_app import celery
+            celery.control.revoke(job.celery_task_id, terminate=True)
+        except Exception:
+            pass
+
+    job.status = "CANCELLED"
+    await db.commit()
+
+    from sqlalchemy import text, delete
+    case_id = job.case_id
+    image_id = job.image_id
+
+    await db.execute(text("DELETE FROM xai_artifacts WHERE result_bundle_id IN (SELECT id FROM result_bundles WHERE case_id = :cid)"), {"cid": case_id})
+    await db.execute(text("DELETE FROM genetic_results WHERE result_bundle_id IN (SELECT id FROM result_bundles WHERE case_id = :cid)"), {"cid": case_id})
+    await db.execute(text("DELETE FROM pattern_results WHERE result_bundle_id IN (SELECT id FROM result_bundles WHERE case_id = :cid)"), {"cid": case_id})
+    await db.execute(text("DELETE FROM morphologic_profiles WHERE result_bundle_id IN (SELECT id FROM result_bundles WHERE case_id = :cid)"), {"cid": case_id})
+    await db.execute(text("DELETE FROM result_bundles WHERE case_id = :cid"), {"cid": case_id})
+    await db.execute(text("DELETE FROM ml_jobs WHERE case_id = :cid"), {"cid": case_id})
+    await db.execute(text("DELETE FROM images WHERE case_id = :cid"), {"cid": case_id})
+    await db.execute(text("DELETE FROM cases WHERE id = :cid"), {"cid": case_id})
+    await db.commit()
+
+    return {"status": "cancelled", "job_id": job_id, "case_id": case_id, "cleaned": True}
+
+
 @router.get("/jobs/{job_id}")
 async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     """Poll job status."""

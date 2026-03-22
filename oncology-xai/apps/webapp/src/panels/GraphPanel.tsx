@@ -58,9 +58,10 @@ interface GraphEdge extends d3.SimulationLinkDatum<GraphNode> {
 
 interface Props {
   caseId: string;
+  resultBundleId?: string | null;
 }
 
-export default function GraphPanel({ caseId }: Props) {
+export default function GraphPanel({ caseId, resultBundleId }: Props) {
   const qc = useQueryClient();
   const [showInferred, setShowInferred] = useState(true);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
@@ -68,13 +69,16 @@ export default function GraphPanel({ caseId }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const graph = useQuery({
-    queryKey: ['graph', caseId],
-    queryFn: () => getCaseGraph(caseId).then(r => r.data),
+    queryKey: ['graph', caseId, resultBundleId],
+    queryFn: async () => {
+      await rebuildGraph(caseId);
+      return getCaseGraph(caseId).then(r => r.data);
+    },
   });
 
   const rebuild = useMutation({
     mutationFn: () => rebuildGraph(caseId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['graph', caseId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['graph', caseId, resultBundleId] }),
   });
 
   const explain = useMutation({

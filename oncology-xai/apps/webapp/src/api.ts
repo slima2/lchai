@@ -52,6 +52,8 @@ export const rebuildGraph = (caseId: string, fromOntology = true) =>
   api.post(`/cases/${caseId}/graph:rebuild`, null, { params: { fromOntology } });
 export const explainGraph = (caseId: string) =>
   api.post<{ case_id: string; explanation: string }>(`/cases/${caseId}/graph/explain`);
+export const explainResults = (caseId: string) =>
+  api.post<{ case_id: string; explanation: string }>(`/cases/${caseId}/graph/explain`);
 
 // Ontology Admin
 export const getOntologies = () => api.get('/admin/ontologies');

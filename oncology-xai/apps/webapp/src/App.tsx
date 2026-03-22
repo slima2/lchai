@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import ImagePanel from './panels/ImagePanel';
 import ViewerPanel from './panels/ViewerPanel';
 import GraphPanel from './panels/GraphPanel';
@@ -8,35 +9,49 @@ import { getPatients, getCases, getImages, getLatestResults } from './api';
 
 type Tab = 'images' | 'viewer' | 'graph' | 'shap' | 'admin';
 
-const DEFAULT_PATIENT_EXTERNAL_ID = 'TCGA-69-7979';
+interface CaseEntry {
+  caseId: string;
+  patientId: string;
+  patientName: string;
+  imageCount?: number;
+}
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('images');
   const [caseId, setCaseId] = useState<string | null>(null);
   const [imageId, setImageId] = useState<string | null>(null);
   const [resultBundleId, setResultBundleId] = useState<string | null>(null);
-  const [autoLoaded, setAutoLoaded] = useState(false);
+  const [allCases, setAllCases] = useState<CaseEntry[]>([]);
+  const [caseDropdownOpen, setCaseDropdownOpen] = useState(false);
 
   useEffect(() => {
-    if (autoLoaded) return;
-    setAutoLoaded(true);
+    loadAllCases();
+  }, []);
 
-    (async () => {
-      try {
-        const patientsRes = await getPatients();
-        const patients = patientsRes.data || [];
-        const defaultPatient = patients.find(
-          (p: any) => p.external_id === DEFAULT_PATIENT_EXTERNAL_ID
-        );
-        if (!defaultPatient) return;
+  async function loadAllCases() {
+    try {
+      const patientsRes = await getPatients();
+      const patients = patientsRes.data || [];
+      const entries: CaseEntry[] = [];
 
-        const casesRes = await getCases(defaultPatient.patient_id);
+      for (const p of patients) {
+        const casesRes = await getCases(p.patient_id);
         const cases = casesRes.data || [];
-        if (cases.length === 0) return;
-        const defaultCase = cases[0];
-        setCaseId(defaultCase.case_id);
+        for (const c of cases) {
+          entries.push({
+            caseId: c.case_id,
+            patientId: p.patient_id,
+            patientName: p.external_id || p.patient_id.slice(0, 8),
+          });
+        }
+      }
 
-        const imagesRes = await getImages(defaultCase.case_id);
+      setAllCases(entries);
+
+      if (!caseId && entries.length > 0) {
+        const first = entries[0];
+        setCaseId(first.caseId);
+        const imagesRes = await getImages(first.caseId);
         const images = imagesRes.data || [];
         if (images.length > 0) {
           setImageId(images[0].image_id);
@@ -45,13 +60,36 @@ export default function App() {
             if (resultsRes.data?.result_bundle_id) {
               setResultBundleId(resultsRes.data.result_bundle_id);
             }
-          } catch { /* no results yet */ }
+          } catch { /* no results */ }
         }
-      } catch (err) {
-        console.warn('Auto-load failed:', err);
       }
-    })();
-  }, [autoLoaded]);
+    } catch (err) {
+      console.warn('Failed to load cases:', err);
+    }
+  }
+
+  async function selectCase(entry: CaseEntry) {
+    setCaseId(entry.caseId);
+    setImageId(null);
+    setResultBundleId(null);
+    setCaseDropdownOpen(false);
+
+    try {
+      const imagesRes = await getImages(entry.caseId);
+      const images = imagesRes.data || [];
+      if (images.length > 0) {
+        setImageId(images[0].image_id);
+        try {
+          const resultsRes = await getLatestResults(images[0].image_id);
+          if (resultsRes.data?.result_bundle_id) {
+            setResultBundleId(resultsRes.data.result_bundle_id);
+          }
+        } catch { /* no results */ }
+      }
+    } catch { /* no images */ }
+  }
+
+  const currentCase = allCases.find(c => c.caseId === caseId);
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'images', label: 'Images' },
@@ -89,13 +127,38 @@ export default function App() {
         ))}
       </nav>
 
-      {caseId && (
-        <div className="bg-yellow-50 border-b border-yellow-200 px-6 py-2 text-xs text-yellow-800 flex gap-4">
-          <span>Case: <strong>{caseId}</strong></span>
-          {imageId && <span>Image: <strong>{imageId}</strong></span>}
-          {resultBundleId && <span>Results: <strong>{resultBundleId}</strong></span>}
+      {/* Case selector bar */}
+      <div className="bg-yellow-50 border-b border-yellow-200 px-6 py-2 text-xs text-yellow-800 flex items-center gap-4">
+        <div className="relative">
+          <button
+            onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}
+            className="bg-white border border-yellow-300 rounded px-3 py-1 text-xs font-medium hover:bg-yellow-100 flex items-center gap-1"
+          >
+            <span>Slide: <strong>{currentCase?.patientName || 'Select...'}</strong></span>
+            <span className="text-gray-400 ml-1">▼</span>
+          </button>
+          {caseDropdownOpen && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 min-w-[250px] max-h-60 overflow-y-auto">
+              {allCases.map(entry => (
+                <button
+                  key={entry.caseId}
+                  onClick={() => selectCase(entry)}
+                  className={`w-full text-left px-3 py-2 text-xs hover:bg-blue-50 ${entry.caseId === caseId ? 'bg-blue-100 font-bold' : ''}`}
+                >
+                  <div>{entry.patientName}</div>
+                  <div className="text-gray-400 text-[10px]">{entry.caseId}</div>
+                </button>
+              ))}
+              {allCases.length === 0 && (
+                <div className="px-3 py-2 text-gray-400 text-xs">No cases found. Upload an image.</div>
+              )}
+            </div>
+          )}
         </div>
-      )}
+        {imageId && <span>Image: <strong>{imageId.slice(0, 12)}...</strong></span>}
+        {resultBundleId && <span>Results: <strong>{resultBundleId.slice(0, 12)}...</strong></span>}
+        <span className="text-gray-400 ml-auto">{allCases.length} slide(s) loaded</span>
+      </div>
 
       <main className="p-6">
         {tab === 'images' && caseId && (
@@ -104,10 +167,16 @@ export default function App() {
             imageId={imageId}
             onImageSelected={setImageId}
             onResultsReady={setResultBundleId}
+            onCaseChanged={(id) => {
+              setCaseId(id);
+              setImageId(null);
+              setResultBundleId(null);
+              loadAllCases();
+            }}
           />
         )}
         {tab === 'images' && !caseId && (
-          <p className="text-gray-500">Loading default case... If this persists, check that the system has data.</p>
+          <p className="text-gray-500">Upload an image to get started.</p>
         )}
         {tab === 'viewer' && caseId && (
           <ViewerPanel caseId={caseId} imageId={imageId} resultBundleId={resultBundleId} />
@@ -115,13 +184,13 @@ export default function App() {
         {tab === 'viewer' && !caseId && (
           <p className="text-gray-500">Upload and process an image first.</p>
         )}
-        {tab === 'graph' && caseId && <GraphPanel caseId={caseId} />}
+        {tab === 'graph' && caseId && <GraphPanel caseId={caseId} resultBundleId={resultBundleId} />}
         {tab === 'graph' && !caseId && (
           <p className="text-gray-500">Upload and process an image first.</p>
         )}
         {tab === 'shap' && resultBundleId && <ShapPanel resultBundleId={resultBundleId} />}
         {tab === 'shap' && !resultBundleId && (
-          <p className="text-gray-500">Process an image first to view SHAP results.</p>
+          <p className="text-gray-500">Process an image first to view explainability results.</p>
         )}
         {tab === 'admin' && <AdminPanel />}
       </main>

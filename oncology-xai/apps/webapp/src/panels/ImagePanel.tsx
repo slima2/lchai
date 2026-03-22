@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { getImages, uploadImage, processImage, getJob, getLatestResults, getArtifactUrl } from '../api';
+import { getImages, uploadImage, processImage, getJob, getLatestResults, getArtifactUrl, createPatient, createCase } from '../api';
 
 const PATTERN_COLORS: Record<string, string> = {
   lepidic: '#E6FF32',
@@ -18,9 +18,10 @@ interface Props {
   imageId?: string | null;
   onImageSelected: (id: string) => void;
   onResultsReady: (rbId: string) => void;
+  onCaseChanged: (caseId: string) => void;
 }
 
-export default function ImagePanel({ caseId, imageId: initialImageId, onImageSelected, onResultsReady }: Props) {
+export default function ImagePanel({ caseId, imageId: initialImageId, onImageSelected, onResultsReady, onCaseChanged }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [selImage, setSelImage] = useState<string | null>(initialImageId || null);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -32,6 +33,11 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
     queryKey: ['images', caseId],
     queryFn: () => getImages(caseId).then(r => r.data),
   });
+
+  useEffect(() => {
+    setAutoSelected(false);
+    setSelImage(null);
+  }, [caseId]);
 
   useEffect(() => {
     if (!autoSelected && images.data && images.data.length > 0 && !selImage) {
@@ -68,11 +74,23 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
   });
 
   const upload = useMutation({
-    mutationFn: (file: File) => uploadImage(caseId, file),
-    onSuccess: (r) => {
-      setSelImage(r.data.image_id);
-      onImageSelected(r.data.image_id);
-      images.refetch();
+    mutationFn: async (file: File) => {
+      const filename = file.name.replace(/\.[^.]+$/, '');
+      const patRes = await createPatient({ external_id: filename, species: 'human' });
+      const patientId = patRes.data.patient_id;
+      const caseRes = await createCase({ patient_id: patientId, diagnosis: 'Lung adenocarcinoma' });
+      const newCaseId = caseRes.data.case_id;
+      const imgRes = await uploadImage(newCaseId, file);
+      return { ...imgRes, newCaseId };
+    },
+    onSuccess: (r: any) => {
+      const newImageId = r.data.image_id;
+      onCaseChanged(r.newCaseId);
+      setTimeout(() => {
+        setSelImage(newImageId);
+        onImageSelected(newImageId);
+        setAutoSelected(true);
+      }, 200);
     },
   });
 
@@ -136,7 +154,33 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-96">
             <h3 className="font-bold text-lg mb-1">Processing Image</h3>
-            <p className="text-xs text-gray-500 mb-4">v2.0 Pipeline: CTransPath + ABMIL + Choquet</p>
+            {(() => {
+              const stage = job.data.stage || '';
+              const status = job.data.status || '';
+              const imgData = images.data?.find((img: any) => img.image_id === (processedImageId || selImage));
+              const slideName = imgData?.image_id?.slice(0, 12) || 'Unknown';
+              const slideFormat = imgData?.format?.toUpperCase() || '';
+              const tileMatch = stage.match(/(\d[\d,]*)\s*tiles/);
+              const tiles = tileMatch ? parseInt(tileMatch[1].replace(/,/g, '')) : 0;
+              const estMin = tiles > 0 ? Math.ceil(tiles * 0.05 / 60) : 0;
+              return (
+                <>
+                  <p className="text-xs text-gray-600 mb-1">
+                    Slide: <strong>{slideName}...</strong> {slideFormat && `(${slideFormat})`}
+                  </p>
+                  <p className="text-xs text-gray-500 mb-4">
+                    {status === 'PENDING' ? (
+                      <span className="text-amber-600 font-medium">Waiting in queue... another job is being processed.</span>
+                    ) : (
+                      <>
+                        v2.0 Pipeline: CTransPath + ABMIL + Choquet
+                        {tiles > 0 && <span className="ml-1 font-medium text-blue-600">— {tiles.toLocaleString()} tiles (~{estMin} min)</span>}
+                      </>
+                    )}
+                  </p>
+                </>
+              );
+            })()}
 
             {/* Progress bar */}
             <div className="bg-gray-200 rounded-full h-4 overflow-hidden mb-2">
@@ -156,7 +200,15 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                 <span>{(job.data.progress || 0) >= 0.10 ? '✓' : '⏳'}</span> Download image
               </div>
               <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.20 ? 'text-green-600' : ''}`}>
-                <span>{(job.data.progress || 0) >= 0.50 ? '✓' : (job.data.progress || 0) >= 0.20 ? '⏳' : '○'}</span> CTransPath tile inference (~7 min)
+                <span>{(job.data.progress || 0) >= 0.50 ? '✓' : (job.data.progress || 0) >= 0.20 ? '⏳' : '○'}</span> CTransPath tile inference {(() => {
+                  const tileMatch = (job.data.stage || '').match(/(\d+)\s*tiles/);
+                  if (tileMatch) {
+                    const tiles = parseInt(tileMatch[1]);
+                    const mins = Math.ceil(tiles * 0.05 / 60);
+                    return `(~${mins} min for ${tiles.toLocaleString()} tiles)`;
+                  }
+                  return '';
+                })()}
               </div>
               <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.55 ? 'text-green-600' : ''}`}>
                 <span>{(job.data.progress || 0) >= 0.65 ? '✓' : (job.data.progress || 0) >= 0.55 ? '⏳' : '○'}</span> Mutation prediction (ABMIL/Choquet)
@@ -171,6 +223,27 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                 <span>{(job.data.progress || 0) >= 0.95 ? '✓' : (job.data.progress || 0) >= 0.85 ? '⏳' : '○'}</span> Saving results
               </div>
             </div>
+
+            <button
+              className="mt-4 w-full py-2 bg-red-100 text-red-700 rounded text-sm font-medium hover:bg-red-200 transition"
+              onClick={async () => {
+                const currentJobId = jobId;
+                setJobId(null);
+                try {
+                  const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+                  const res = await fetch(`${API}/api/v1/jobs/${currentJobId}:cancel`, { method: 'POST' });
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data.cleaned) {
+                      onCaseChanged(caseId);
+                    }
+                  }
+                } catch { /* best effort */ }
+                images.refetch();
+              }}
+            >
+              Cancel and discard
+            </button>
           </div>
         </div>
       )}
