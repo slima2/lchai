@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { getImages, uploadImage, processImage, getJob, getLatestResults, getArtifactUrl, createPatient, createCase } from '../api';
+import { getImages, uploadImage, processImage, getJob, getLatestResults, getArtifactUrl, createPatient, createCase, api } from '../api';
 
 const PATTERN_COLORS: Record<string, string> = {
   lepidic: '#E6FF32',
@@ -127,8 +127,17 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
     }
   }, [results.data?.result_bundle_id, onResultsReady]);
 
+  const params = useQuery({
+    queryKey: ['system-params'],
+    queryFn: () => api.get('/parameters').then(r => r.data),
+    staleTime: 30000,
+  });
+
   const rb = results.data;
   const isV2 = rb?.pipeline_version?.startsWith('2');
+
+  const aurocValues: Record<string, number> = params.data?.auroc_values || {};
+  const aurocThreshold: number = params.data?.auroc_threshold ?? 0.70;
 
   const roiArt = rb?.xai_artifacts?.find((a: any) => a.type === 'roi_overlay');
   const attnArt = rb?.xai_artifacts?.find((a: any) => a.type === 'attention_overlay');
@@ -292,11 +301,11 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                 {rb.genetic_results.map((gr: any) => {
                   const prob = (gr.score || 0);
                   const pct = (prob * 100).toFixed(1);
-                  const isConcl = gr.confidence_label === 'Conclusive';
+                  const geneAuroc = aurocValues[gr.mutation] ?? 0;
+                  const isConcl = geneAuroc >= aurocThreshold;
                   const isPos = prob >= 0.5;
 
-                  const auroc = gr.ablation?.proposed_auroc;
-                  const aurocStr = auroc ? ` (AUROC=${auroc.toFixed(3)})` : '';
+                  const aurocStr = geneAuroc > 0 ? ` (AUROC=${geneAuroc.toFixed(3)})` : '';
                   let interpretation = '';
                   if (isConcl && isPos) {
                     interpretation = `High probability (${pct}%) of ${gr.mutation} mutation. This prediction is reliable${aurocStr}. Confirm with molecular testing.`;
@@ -316,7 +325,7 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                       <span className={`px-2 py-0.5 rounded text-xs font-bold ${
                         isConcl ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {gr.confidence_label || gr.status}
+                        {isConcl ? 'Conclusive' : 'Inconclusive'}
                       </span>
                     </td>
                     <td className="border px-3 py-2 text-center text-xs">
