@@ -76,9 +76,16 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
   const upload = useMutation({
     mutationFn: async (file: File) => {
       const filename = file.name.replace(/\.[^.]+$/, '');
-      const patRes = await createPatient({ external_id: filename, species: 'human' });
-      const patientId = patRes.data.patient_id;
-      const caseRes = await createCase({ patient_id: patientId, diagnosis: 'Lung adenocarcinoma' });
+      const uniqueId = `${filename}_${Date.now()}`;
+      let patientId: string;
+      try {
+        const patRes = await createPatient({ external_id: uniqueId });
+        patientId = patRes.data.patient_id;
+      } catch {
+        const patRes = await createPatient({ external_id: `${uniqueId}_${Math.random().toString(36).slice(2, 6)}` });
+        patientId = patRes.data.patient_id;
+      }
+      const caseRes = await createCase({ patient_id: patientId });
       const newCaseId = caseRes.data.case_id;
       const imgRes = await uploadImage(newCaseId, file);
       return { ...imgRes, newCaseId };
