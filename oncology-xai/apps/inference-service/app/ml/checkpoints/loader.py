@@ -34,9 +34,6 @@ BEST_FOLD: dict[str, int] = {
     "RBM10": 4,
 }
 
-CONCLUSIVE_GENES = {"TP53", "EGFR"}
-INCONCLUSIVE_GENES = {"KRAS", "STK11", "KEAP1", "RBM10"}
-
 AUROC_THRESHOLD = 0.70
 
 # Best method per gene (from thesis Table 6.7, Finding 2)
@@ -232,23 +229,31 @@ class CheckpointLoader:
                 "choquet_loaded": self._cache_key("choquet", gene) in _CACHE,
                 "choquet_exists": choquet_path.exists(),
                 "choquet_path": str(choquet_path),
-                "conclusive": gene in CONCLUSIVE_GENES,
+                "conclusive": PROPOSED_AUROC.get(gene, 0.0) >= AUROC_THRESHOLD,
             }
         return status
 
     @staticmethod
     def is_conclusive(gene: str) -> bool:
-        return gene in CONCLUSIVE_GENES
+        auroc = PROPOSED_AUROC.get(gene, 0.0)
+        return auroc >= AUROC_THRESHOLD
 
     @staticmethod
     def get_confidence_label(gene: str) -> str:
-        return "Conclusive" if gene in CONCLUSIVE_GENES else "Inconclusive"
+        auroc = PROPOSED_AUROC.get(gene, 0.0)
+        return "Conclusive" if auroc >= AUROC_THRESHOLD else "Inconclusive"
+
+    @staticmethod
+    def get_gene_auroc(gene: str) -> float:
+        return PROPOSED_AUROC.get(gene, 0.0)
 
     @staticmethod
     def get_disclaimer(gene: str) -> str | None:
-        if gene in INCONCLUSIVE_GENES:
+        auroc = PROPOSED_AUROC.get(gene, 0.0)
+        if auroc < AUROC_THRESHOLD:
             return (
-                "Molecular testing recommended. This gene cannot be reliably "
-                "predicted from histological features alone."
+                f"Molecular testing recommended. {gene} prediction has AUROC "
+                f"{auroc:.3f} < {AUROC_THRESHOLD} — cannot be reliably predicted "
+                f"from histological features alone."
             )
         return None

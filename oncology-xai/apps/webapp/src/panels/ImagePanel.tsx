@@ -295,15 +295,17 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                   const isConcl = gr.confidence_label === 'Conclusive';
                   const isPos = prob >= 0.5;
 
+                  const auroc = gr.ablation?.proposed_auroc;
+                  const aurocStr = auroc ? ` (AUROC=${auroc.toFixed(3)})` : '';
                   let interpretation = '';
                   if (isConcl && isPos) {
-                    interpretation = `High probability (${pct}%) of ${gr.mutation} mutation. This prediction is reliable (model AUROC ≥ 0.70). Confirm with molecular testing.`;
+                    interpretation = `High probability (${pct}%) of ${gr.mutation} mutation. This prediction is reliable${aurocStr}. Confirm with molecular testing.`;
                   } else if (isConcl && !isPos) {
-                    interpretation = `Low probability (${pct}%) of ${gr.mutation} mutation — likely wild-type. This prediction is reliable (model AUROC ≥ 0.70).`;
+                    interpretation = `Low probability (${pct}%) of ${gr.mutation} mutation — likely wild-type. This prediction is reliable${aurocStr}.`;
                   } else if (!isConcl && isPos) {
-                    interpretation = `Elevated probability (${pct}%) but the model cannot reliably predict ${gr.mutation} (AUROC < 0.70). Molecular testing required.`;
+                    interpretation = `Elevated probability (${pct}%) but the model has limited accuracy for ${gr.mutation}${aurocStr}. Molecular testing required.`;
                   } else {
-                    interpretation = `Low probability (${pct}%). However, ${gr.mutation} cannot be reliably predicted from histology alone. Molecular testing recommended.`;
+                    interpretation = `Low probability (${pct}%). However, ${gr.mutation} has limited predictive accuracy${aurocStr}. Molecular testing recommended.`;
                   }
 
                   return (
@@ -460,8 +462,8 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                         />
                       </div>
                       <span className="text-xs font-mono w-14">{(p.percentage || 0).toFixed(1)}%</span>
-                      <span className={`text-[10px] ${p.is_conclusive ? 'text-green-600' : 'text-red-500'}`}>
-                        {p.is_conclusive ? 'YES' : 'INC'}
+                      <span className={`text-[10px] ${(p.percentage || 0) >= 5 ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                        {(p.percentage || 0) >= 20 ? 'Major' : (p.percentage || 0) >= 5 ? 'Minor' : ''}
                       </span>
                     </div>
                   ))}
