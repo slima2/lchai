@@ -24,6 +24,8 @@ ROUTE_MAP: list[dict[str, Any]] = [
     # Inference service
     {"prefix": "/jobs", "upstream": "inference_service_url", "roles": ["clinician", "admin"]},
     {"prefix": "/results", "upstream": "inference_service_url", "roles": ["clinician", "admin"]},
+    {"prefix": "/parameters", "upstream": "inference_service_url", "roles": ["clinician", "admin"]},
+    {"prefix": "/checkpoints", "upstream": "inference_service_url", "roles": ["clinician", "admin"]},
     # EHR service
     {"prefix": "/ehr", "upstream": "ehr_service_url", "roles": ["clinician", "admin"]},
     # Graph service
