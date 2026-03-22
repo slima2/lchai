@@ -3,7 +3,7 @@ FROM python:3.12-slim
 RUN sed -i 's|http://deb.debian.org|https://cdn-aws.deb.debian.org|g' /etc/apt/sources.list.d/*.sources 2>/dev/null; \
     sed -i 's|http://deb.debian.org|https://cdn-aws.deb.debian.org|g' /etc/apt/sources.list 2>/dev/null; \
     apt-get update && apt-get install -y --no-install-recommends \
-    libgl1 libglib2.0-0 libopenslide0 && rm -rf /var/lib/apt/lists/*
+    libgl1 libglib2.0-0 libopenslide0 libvips42 && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /srv
 

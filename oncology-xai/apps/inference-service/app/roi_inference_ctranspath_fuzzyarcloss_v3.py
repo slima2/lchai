@@ -411,11 +411,43 @@ def _generate_shap_real(profile: dict[str, float], gene: str, model_dir: str) ->
 _WSI_SLIDE_HANDLE = None  # holds OpenSlide handle for full-resolution tiling
 
 
+def _convert_flat_tif_to_pyramidal(input_path: str) -> str:
+    """Convert a flat (non-pyramidal) TIFF to pyramidal TIFF using pyvips.
+
+    Returns path to the new pyramidal file. The caller owns the temp file.
+    """
+    import pyvips
+    import tempfile
+
+    logger.info("Converting flat TIFF to pyramidal: %s", input_path)
+    img = pyvips.Image.new_from_file(input_path, access="sequential")
+    logger.info("pyvips loaded: %dx%d, %d bands", img.width, img.height, img.bands)
+
+    out_fd, out_path = tempfile.mkstemp(suffix=".tiff")
+    import os
+    os.close(out_fd)
+
+    img.tiffsave(
+        out_path,
+        pyramid=True,
+        tile=True,
+        tile_width=256,
+        tile_height=256,
+        compression="jpeg",
+        Q=85,
+        bigtiff=True,
+    )
+    out_size = os.path.getsize(out_path)
+    logger.info("Pyramidal TIFF saved: %s (%.1f MB)", out_path, out_size / 1e6)
+    return out_path
+
+
 def _decode_image(image_bytes: bytes, image_format: str | None) -> Image.Image:
     """Decode image bytes to PIL RGB. Supports PNG, JPEG, TIFF (PIL) and SVS (OpenSlide).
 
     For WSI formats (svs, tif, tiff), returns a *thumbnail* for overlay rendering
     but stores the OpenSlide handle in _WSI_SLIDE_HANDLE for full-resolution tiling.
+    Flat TIFFs are automatically converted to pyramidal format via pyvips.
     """
     global _WSI_SLIDE_HANDLE
     _WSI_SLIDE_HANDLE = None
@@ -431,6 +463,8 @@ def _decode_image(image_bytes: bytes, image_format: str | None) -> Image.Image:
             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
                 f.write(image_bytes)
                 path = f.name
+
+            pyramidal_path = None
             try:
                 slide = openslide.OpenSlide(path)
                 _WSI_SLIDE_HANDLE = (slide, path)
@@ -440,20 +474,56 @@ def _decode_image(image_bytes: bytes, image_format: str | None) -> Image.Image:
                     slide.dimensions, thumb.size,
                 )
                 return thumb.convert("RGB")
-            except Exception:
+            except Exception as openslide_err:
+                logger.warning("OpenSlide failed for %s: %s — attempting pyramidal conversion", fmt, openslide_err)
                 try:
                     os.unlink(path)
                 except OSError:
                     pass
-                raise
+
+                if fmt in ("tif", "tiff"):
+                    try:
+                        with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as f2:
+                            f2.write(image_bytes)
+                            flat_path = f2.name
+                        pyramidal_path = _convert_flat_tif_to_pyramidal(flat_path)
+                        try:
+                            os.unlink(flat_path)
+                        except OSError:
+                            pass
+
+                        slide = openslide.OpenSlide(pyramidal_path)
+                        _WSI_SLIDE_HANDLE = (slide, pyramidal_path)
+                        thumb = slide.get_thumbnail((4096, 4096))
+                        logger.info(
+                            "OpenSlide WSI opened (converted pyramidal): dims=%s, thumbnail=%s",
+                            slide.dimensions, thumb.size,
+                        )
+                        return thumb.convert("RGB")
+                    except Exception as conv_err:
+                        logger.error("Pyramidal conversion failed: %s", conv_err)
+                        if pyramidal_path:
+                            try:
+                                os.unlink(pyramidal_path)
+                            except OSError:
+                                pass
+                        raise ValueError(
+                            f"TIFF decode failed: OpenSlide error: {openslide_err}; "
+                            f"Pyramidal conversion error: {conv_err}"
+                        ) from conv_err
+                else:
+                    raise ValueError(f"WSI decode failed for {fmt}: {openslide_err}") from openslide_err
+
         except ImportError as ie:
             logger.error("OpenSlide import failed: %s", ie)
             if fmt == "svs":
                 raise ValueError(
                     "SVS format requires openslide-python. Install with: pip install openslide-python (and system libopenslide)."
                 ) from None
+        except ValueError:
+            raise
         except Exception as e:
-            logger.warning("OpenSlide decode failed for %s: %s, trying PIL", fmt, e)
+            logger.warning("WSI decode failed for %s: %s, trying PIL", fmt, e)
             if fmt == "svs":
                 raise ValueError(f"SVS decode failed: {e}") from e
     # PIL path for regular images
