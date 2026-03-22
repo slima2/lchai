@@ -6,11 +6,11 @@ import {
   getKGSnapshots, createKGSnapshot, getKGChangelog,
 } from '../api';
 
-type Tab = 'pipeline' | 'versions' | 'ontologies' | 'audit';
+type Tab = 'parameters' | 'pipeline' | 'versions' | 'ontologies' | 'audit';
 
 export default function AdminPanel() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<Tab>('pipeline');
+  const [tab, setTab] = useState<Tab>('parameters');
   const [targets, setTargets] = useState('NCIt,MONDO');
   const [searchText, setSearchText] = useState('');
   const [selectedSnapshot, setSelectedSnapshot] = useState<string | null>(null);
@@ -78,6 +78,7 @@ export default function AdminPanel() {
   });
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
+    { key: 'parameters', label: 'Parameters', icon: '⚙' },
     { key: 'pipeline', label: 'DeepSearch Pipeline', icon: '🔬' },
     { key: 'versions', label: 'KG Versions', icon: '📦' },
     { key: 'ontologies', label: 'Ontology Management', icon: '🧬' },
@@ -95,6 +96,118 @@ export default function AdminPanel() {
           </button>
         ))}
       </div>
+
+      {/* ──── Parameters ──── */}
+      {tab === 'parameters' && (
+        <div>
+          <h3 className="font-semibold mb-3 text-lg">System Parameters</h3>
+          <p className="text-xs text-gray-500 mb-4">
+            These parameters control mutation prediction confidence labels. AUROC values come from the thesis benchmark
+            (687 LUAD slides, 5-fold stratified CV, best fold per gene). They can be updated if the model is retrained
+            on a larger population.
+          </p>
+
+          <div className="grid grid-cols-2 gap-6">
+            {/* AUROC Table */}
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Gene AUROC (Best Fold)</h4>
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border px-3 py-2 text-left">Gene</th>
+                    <th className="border px-3 py-2 text-right">AUROC</th>
+                    <th className="border px-3 py-2 text-center">Best Method</th>
+                    <th className="border px-3 py-2 text-center">Fold</th>
+                    <th className="border px-3 py-2 text-center">Label</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { gene: 'TP53', auroc: 0.8024, method: 'B2 (embeddings)', fold: 2 },
+                    { gene: 'EGFR', auroc: 0.7504, method: 'B2 (embeddings)', fold: 4 },
+                    { gene: 'RBM10', auroc: 0.7371, method: 'FC (Fuzzy Choquet)', fold: 4 },
+                    { gene: 'STK11', auroc: 0.6962, method: 'P (proposed)', fold: 3 },
+                    { gene: 'KRAS', auroc: 0.6800, method: 'FC (Fuzzy Choquet)', fold: 3 },
+                    { gene: 'KEAP1', auroc: 0.6218, method: 'P (proposed)', fold: 1 },
+                  ].map(row => (
+                    <tr key={row.gene} className="hover:bg-gray-50">
+                      <td className="border px-3 py-2 font-bold">{row.gene}</td>
+                      <td className="border px-3 py-2 text-right font-mono">{row.auroc.toFixed(4)}</td>
+                      <td className="border px-3 py-2 text-center text-xs">{row.method}</td>
+                      <td className="border px-3 py-2 text-center">{row.fold}</td>
+                      <td className="border px-3 py-2 text-center">
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                          row.auroc >= 0.70 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {row.auroc >= 0.70 ? 'Conclusive' : 'Inconclusive'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-xs text-gray-400 mt-2">
+                Source: thesis benchmark (Lima et al., 2026). 687 LUAD-only slides, 5-fold stratified CV.
+              </p>
+            </div>
+
+            {/* Threshold + Config */}
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Classification Threshold</h4>
+              <div className="bg-gray-50 rounded p-4 mb-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-sm font-medium">AUROC Threshold:</span>
+                  <span className="text-2xl font-bold text-blue-700">0.70</span>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Genes with AUROC ≥ 0.70 are labeled <strong className="text-green-700">Conclusive</strong> (reliable prediction).
+                  Genes below are labeled <strong className="text-yellow-700">Inconclusive</strong> (molecular testing recommended).
+                </p>
+                <p className="text-xs text-gray-400 mt-2">
+                  0.70 is a widely accepted threshold for "acceptable discrimination" in clinical prediction models
+                  (Hosmer & Lemeshow, 2000). To change this threshold, update <code>AUROC_CONCLUSIVE_THRESHOLD</code> in <code>.env</code>
+                  and restart the inference service.
+                </p>
+              </div>
+
+              <h4 className="font-semibold text-sm mb-2">Other Parameters</h4>
+              <div className="bg-gray-50 rounded p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Mutation threshold (POS/NEG)</span>
+                  <span className="font-mono font-bold">0.50</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Top-K attention tiles</span>
+                  <span className="font-mono font-bold">200</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Max tiles per WSI</span>
+                  <span className="font-mono font-bold">10,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tile size</span>
+                  <span className="font-mono font-bold">224 px</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Backbone</span>
+                  <span className="font-mono font-bold">CTransPath Swin Tiny</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Classifier</span>
+                  <span className="font-mono font-bold">FuzzyArcLoss V2</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Permutation repeats</span>
+                  <span className="font-mono font-bold">10</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                To modify these parameters, edit <code>.env</code> and restart the system with <code>docker compose up -d</code>.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ──── DeepSearch Pipeline ──── */}
       {tab === 'pipeline' && (
