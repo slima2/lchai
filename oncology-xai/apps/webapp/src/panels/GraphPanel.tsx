@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../auth/AuthProvider';
 import { getCaseGraph, rebuildGraph, explainGraph } from '../api';
 import * as d3 from 'd3';
 
@@ -62,6 +63,7 @@ interface Props {
 }
 
 export default function GraphPanel({ caseId, resultBundleId }: Props) {
+  const { preferredLanguage } = useAuth();
   const qc = useQueryClient();
   const [showInferred, setShowInferred] = useState(true);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
@@ -82,7 +84,7 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
   });
 
   const explain = useMutation({
-    mutationFn: () => explainGraph(caseId).then(r => r.data),
+    mutationFn: () => explainGraph(caseId, preferredLanguage).then(r => r.data),
   });
 
   const rawNodes: GraphNode[] = (graph.data?.nodes || []).map((n: any) => ({

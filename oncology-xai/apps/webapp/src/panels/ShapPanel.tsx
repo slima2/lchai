@@ -2,12 +2,13 @@ import React, { useState, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { api, getResultBundle, getArtifacts, getArtifactUrl } from '../api';
+import { useAuth } from '../auth/AuthProvider';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const _explanationCache: Record<string, string> = {};
 
-function GeneExplanation({ gene, geneResult }: { gene: string; geneResult: any }) {
+function GeneExplanation({ gene, geneResult, language = 'en' }: { gene: string; geneResult: any; language?: string }) {
   const [explanation, setExplanation] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -54,7 +55,7 @@ Explain what these numbers mean for this specific gene prediction. Which input f
           body: JSON.stringify({
             model: 'gpt-4o-mini', temperature: 0.3, max_tokens: 300,
             messages: [
-              { role: 'system', content: 'You are an expert pathologist assistant explaining AI mutation predictions. Be concise and clinical.' },
+              { role: 'system', content: `You are an expert pathologist assistant explaining AI mutation predictions. Be concise and clinical. Respond in ${({'en':'English','es':'Spanish','de':'German','fr':'French','pt':'Portuguese'} as Record<string,string>)[language] || 'English'}.` },
               { role: 'user', content: prompt },
             ],
           }),
@@ -146,6 +147,7 @@ function ArtifactImage({ uri, alt, className }: { uri: string; alt: string; clas
 }
 
 export default function ShapPanel({ resultBundleId }: Props) {
+  const { preferredLanguage } = useAuth();
   const [selGene, setSelGene] = useState('TP53');
 
   const bundle = useQuery({
@@ -262,7 +264,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
           </div>
           <div className="p-4">
             {/* LLM-generated explanation */}
-            <GeneExplanation gene={selGene} geneResult={geneResult} />
+            <GeneExplanation gene={selGene} geneResult={geneResult} language={preferredLanguage} />
 
             {/* Compact vertical bars — no redundant numbers above */}
             <div className="flex items-end justify-center gap-10 h-40">

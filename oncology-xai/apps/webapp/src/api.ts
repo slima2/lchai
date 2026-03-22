@@ -1,10 +1,21 @@
 import axios from 'axios';
+import keycloak from './auth/keycloak';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const api = axios.create({
   baseURL: `${API_URL}/api/v1`,
   headers: { 'Content-Type': 'application/json' },
+});
+
+api.interceptors.request.use(async (config) => {
+  if (keycloak.authenticated && keycloak.token) {
+    if (keycloak.isTokenExpired(10)) {
+      try { await keycloak.updateToken(30); } catch { keycloak.logout(); }
+    }
+    config.headers.Authorization = `Bearer ${keycloak.token}`;
+  }
+  return config;
 });
 
 // Patients
@@ -50,10 +61,10 @@ export const getMappings = (ehrId: string) => api.get(`/ehr/${ehrId}/mappings`);
 export const getCaseGraph = (caseId: string) => api.get(`/cases/${caseId}/graph`);
 export const rebuildGraph = (caseId: string, fromOntology = true) =>
   api.post(`/cases/${caseId}/graph:rebuild`, null, { params: { fromOntology } });
-export const explainGraph = (caseId: string) =>
-  api.post<{ case_id: string; explanation: string }>(`/cases/${caseId}/graph/explain`);
-export const explainResults = (caseId: string) =>
-  api.post<{ case_id: string; explanation: string }>(`/cases/${caseId}/graph/explain`);
+export const explainGraph = (caseId: string, language?: string) =>
+  api.post<{ case_id: string; explanation: string }>(`/cases/${caseId}/graph/explain`, { language });
+export const explainResults = (caseId: string, language?: string) =>
+  api.post<{ case_id: string; explanation: string }>(`/cases/${caseId}/graph/explain`, { language });
 
 // Ontology Admin
 export const getOntologies = () => api.get('/admin/ontologies');

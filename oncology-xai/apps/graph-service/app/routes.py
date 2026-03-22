@@ -181,10 +181,12 @@ async def rebuild_graph(
 @router.post("/cases/{case_id}/graph/explain")
 async def explain_graph(
     case_id: str,
+    body: dict | None = None,
     include_inferred: bool = Query(True, alias="includeInferred"),
     db: AsyncSession = Depends(get_db),
 ):
     """Generate natural language explanation of the case graph via LLM."""
+    language = (body or {}).get("language", "en")
     # Fetch graph (same logic as get_graph)
     stmt = (
         select(CaseGraphSnapshotDB)
@@ -213,6 +215,7 @@ async def explain_graph(
         openai_api_key=settings.openai_api_key,
         anthropic_api_key=settings.anthropic_api_key,
         llm_provider=settings.llm_provider,
+        language=language,
     )
     return {"case_id": case_id, "explanation": explanation}
 

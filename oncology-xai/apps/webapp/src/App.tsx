@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from './auth/AuthProvider';
 import ImagePanel from './panels/ImagePanel';
 import ViewerPanel from './panels/ViewerPanel';
 import GraphPanel from './panels/GraphPanel';
@@ -9,6 +10,14 @@ import { getPatients, getCases, getImages, getLatestResults } from './api';
 
 type Tab = 'images' | 'viewer' | 'graph' | 'shap' | 'admin';
 
+const LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'es', label: 'Espanol' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'fr', label: 'Francais' },
+  { code: 'pt', label: 'Portugues' },
+];
+
 interface CaseEntry {
   caseId: string;
   patientId: string;
@@ -17,12 +26,14 @@ interface CaseEntry {
 }
 
 export default function App() {
+  const { user, isAdmin, isClinician, isAuditor, logout, preferredLanguage, setPreferredLanguage } = useAuth();
   const [tab, setTab] = useState<Tab>('images');
   const [caseId, setCaseId] = useState<string | null>(null);
   const [imageId, setImageId] = useState<string | null>(null);
   const [resultBundleId, setResultBundleId] = useState<string | null>(null);
   const [allCases, setAllCases] = useState<CaseEntry[]>([]);
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
     loadAllCases();
@@ -91,12 +102,12 @@ export default function App() {
 
   const currentCase = allCases.find(c => c.caseId === caseId);
 
-  const tabs: { key: Tab; label: string }[] = [
+  const tabs: { key: Tab; label: string; roles?: string[] }[] = [
     { key: 'images', label: 'Images' },
     { key: 'viewer', label: 'Viewer' },
     { key: 'graph', label: 'Graph' },
     { key: 'shap', label: 'Explainability' },
-    { key: 'admin', label: 'Admin' },
+    ...(isAdmin ? [{ key: 'admin' as Tab, label: 'Admin' }] : []),
   ];
 
   return (
@@ -106,8 +117,57 @@ export default function App() {
           <h1 className="text-xl font-bold">LCHAI v2.0</h1>
           <p className="text-xs text-blue-200">Lung Cancer Histologic Analysis with AI — ABMIL + Choquet MIL</p>
         </div>
-        <div className="text-xs text-blue-300">
-          Research tool — NOT for clinical diagnosis
+        <div className="flex items-center gap-4">
+          <div className="text-xs text-blue-300">
+            Research tool — NOT for clinical diagnosis
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="flex items-center gap-2 bg-blue-800 hover:bg-blue-700 rounded-full px-3 py-1.5 text-xs"
+            >
+              <span className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                {(user?.name || 'U')[0].toUpperCase()}
+              </span>
+              <span>{user?.name || 'User'}</span>
+              <span className="text-blue-300 text-[10px]">({user?.roles?.filter(r => ['admin','clinician','auditor'].includes(r)).join(', ')})</span>
+            </button>
+            {userMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-white border rounded-lg shadow-xl z-50 min-w-[220px] text-gray-800">
+                <div className="px-4 py-3 border-b">
+                  <p className="font-semibold text-sm">{user?.name}</p>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
+                  <div className="flex gap-1 mt-1">
+                    {user?.roles?.filter(r => ['admin','clinician','auditor'].includes(r)).map(r => (
+                      <span key={r} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                        r === 'admin' ? 'bg-red-100 text-red-700' :
+                        r === 'clinician' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>{r}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="px-4 py-2 border-b">
+                  <label className="text-xs text-gray-500 block mb-1">Explanation language</label>
+                  <select
+                    value={preferredLanguage}
+                    onChange={(e) => { setPreferredLanguage(e.target.value); setUserMenuOpen(false); }}
+                    className="w-full text-xs border rounded px-2 py-1"
+                  >
+                    {LANGUAGES.map(l => (
+                      <option key={l.code} value={l.code}>{l.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={() => { setUserMenuOpen(false); logout(); }}
+                  className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 rounded-b-lg"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -192,7 +252,13 @@ export default function App() {
         {tab === 'shap' && !resultBundleId && (
           <p className="text-gray-500">Process an image first to view explainability results.</p>
         )}
-        {tab === 'admin' && <AdminPanel />}
+        {tab === 'admin' && isAdmin && <AdminPanel />}
+        {tab === 'admin' && !isAdmin && (
+          <div className="bg-red-50 border border-red-200 rounded p-6 text-center">
+            <p className="text-red-700 font-semibold">Access Denied</p>
+            <p className="text-red-500 text-sm mt-1">Admin panel requires administrator privileges.</p>
+          </div>
+        )}
       </main>
 
       <footer className="bg-gray-100 border-t px-6 py-3 text-xs text-gray-500 text-center">

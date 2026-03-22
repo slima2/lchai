@@ -9,7 +9,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are an assistant that explains oncology knowledge graphs in natural language.
+SYSTEM_PROMPT_TEMPLATE = """You are an assistant that explains oncology knowledge graphs in natural language.
 You receive the structure of a graph (nodes and edges) from a lung pathology case.
 Generate a clear, concise explanation that describes:
 1. What histological patterns were detected and their predominance.
@@ -17,7 +17,8 @@ Generate a clear, concise explanation that describes:
 3. For each predicted mutation, what targeted therapies or treatments are available according to current guidelines (OncoKB/FDA).
 4. Which predictions are reliable (Conclusive, AUROC >= 0.70) vs which require molecular testing.
 Keep a technical but accessible tone. Do NOT make definitive diagnostic statements.
-Always recommend molecular confirmation for any positive prediction."""
+Always recommend molecular confirmation for any positive prediction.
+IMPORTANT: Respond entirely in {language}."""
 
 USER_PROMPT_TEMPLATE = """Explain the following knowledge graph for case {case_id}:
 
@@ -128,8 +129,13 @@ async def generate_explanation(
     openai_api_key: str = "",
     anthropic_api_key: str = "",
     llm_provider: str = "openai",
+    language: str = "English",
 ) -> str:
     """Generate natural language explanation of the graph via LLM or mock."""
+    LANG_MAP = {"en": "English", "es": "Spanish", "de": "German", "fr": "French", "pt": "Portuguese"}
+    lang_name = LANG_MAP.get(language, language) if len(language) <= 3 else language
+    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(language=lang_name)
+
     nodes_text, edges_text = _format_graph_for_prompt(nodes, edges)
     user_prompt = USER_PROMPT_TEMPLATE.format(
         case_id=case_id,
@@ -137,7 +143,6 @@ async def generate_explanation(
         edges_text=edges_text,
     )
 
-    # Skip LLM if mock
     if llm_provider == "mock":
         return _mock_explanation(nodes, edges, case_id)
 
@@ -151,7 +156,7 @@ async def generate_explanation(
                     json={
                         "model": "gpt-4o-mini",
                         "messages": [
-                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "system", "content": system_prompt},
                             {"role": "user", "content": user_prompt},
                         ],
                         "temperature": 0.3,
@@ -179,7 +184,7 @@ async def generate_explanation(
                     json={
                         "model": "claude-3-5-haiku-20241022",
                         "max_tokens": 800,
-                        "system": SYSTEM_PROMPT,
+                        "system": system_prompt,
                         "messages": [{"role": "user", "content": user_prompt}],
                     },
                 )
