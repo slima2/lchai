@@ -130,7 +130,8 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
   const params = useQuery({
     queryKey: ['system-params'],
     queryFn: () => api.get('/parameters').then(r => r.data),
-    staleTime: 30000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const rb = results.data;
@@ -493,10 +494,11 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
           </div>
           <div className="p-4 text-sm text-gray-700 leading-relaxed">
             {(() => {
+              const isDynConcl = (gene: string) => (aurocValues[gene] ?? 0) >= aurocThreshold;
               const posGenes = rb.genetic_results.filter((g: any) => g.score >= 0.5);
               const negGenes = rb.genetic_results.filter((g: any) => g.score < 0.5);
-              const conclPos = posGenes.filter((g: any) => g.confidence_label === 'Conclusive');
-              const inconclPos = posGenes.filter((g: any) => g.confidence_label !== 'Conclusive');
+              const conclPos = posGenes.filter((g: any) => isDynConcl(g.mutation));
+              const inconclPos = posGenes.filter((g: any) => !isDynConcl(g.mutation));
               const predominant = rb.predominant_pattern;
               const tiles = rb.morphologic_profile?.n_tiles_total || 0;
 
@@ -523,16 +525,16 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                     <p>
                       <strong>Mutation predictions (reliable):</strong>{' '}
                       {conclPos.map((g: any) => `${g.mutation} (${((g.score || 0) * 100).toFixed(1)}%)`).join(', ')}
-                      {' '}— these genes have model AUROC ≥ 0.70 and the predictions are considered reliable.
+                      {' '}— these genes have model AUROC ≥ {aurocThreshold.toFixed(3)} and the predictions are considered reliable.
                       {conclPos.some((g: any) => g.mutation === 'TP53') && ' TP53 mutations are commonly associated with solid and micropapillary patterns.'}
                       {conclPos.some((g: any) => g.mutation === 'EGFR') && ' EGFR mutations correlate with lepidic and papillary patterns.'}
                     </p>
                   )}
 
-                  {negGenes.filter((g: any) => g.confidence_label === 'Conclusive').length > 0 && (
+                  {negGenes.filter((g: any) => isDynConcl(g.mutation)).length > 0 && (
                     <p>
                       <strong>Likely wild-type (reliable):</strong>{' '}
-                      {negGenes.filter((g: any) => g.confidence_label === 'Conclusive')
+                      {negGenes.filter((g: any) => isDynConcl(g.mutation))
                         .map((g: any) => `${g.mutation} (${((g.score || 0) * 100).toFixed(1)}%)`).join(', ')}.
                     </p>
                   )}
@@ -541,7 +543,7 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                     <p className="text-yellow-800 bg-yellow-50 p-2 rounded">
                       <strong>Requires molecular testing:</strong>{' '}
                       {inconclPos.map((g: any) => `${g.mutation} (${((g.score || 0) * 100).toFixed(1)}%)`).join(', ')}
-                      {' '}— these genes cannot be reliably predicted from histology alone (AUROC &lt; 0.70).
+                      {' '}— these genes cannot be reliably predicted from histology alone (AUROC &lt; {aurocThreshold.toFixed(3)}).
                     </p>
                   )}
 

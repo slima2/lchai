@@ -73,6 +73,7 @@ class InferenceConfig:
     v2_checkpoint_dir: str = ""
     use_choquet: bool = True
     top_k_tiles: int = 200
+    max_tiles_wsi: int = 50000
     genes: list[str] = field(default_factory=lambda: list(GENES_V2))
     shap_enabled: bool = True
     shap_decomposition_enabled: bool = True
@@ -491,7 +492,7 @@ def _tile_wsi_full_resolution(
     tile_size: int = 224,
     level: int = 0,
     tissue_threshold: float = 0.15,
-    max_tiles: int = 15000,
+    max_tiles: int = 50000,
 ) -> list[tuple[int, int, Image.Image]] | None:
     """Tile a WSI at full resolution using OpenSlide read_region.
 
@@ -621,7 +622,7 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
         tile_sz = pipe["img_size"]
 
     wsi_tiles = _tile_wsi_full_resolution(
-        tile_size=tile_sz, tissue_threshold=0.15, max_tiles=config.top_k_tiles * 50,
+        tile_size=tile_sz, tissue_threshold=0.15, max_tiles=config.max_tiles_wsi,
     )
     if wsi_tiles is not None and len(wsi_tiles) > 0:
         tiles = wsi_tiles

@@ -31,7 +31,7 @@ function ParametersPanel() {
   const [threshold, setThreshold] = useState(0.70);
   const [mutThreshold, setMutThreshold] = useState(0.50);
   const [topK, setTopK] = useState(200);
-  const [maxTiles, setMaxTiles] = useState(10000);
+  const [maxTiles, setMaxTiles] = useState(50000);
   const [permRepeats, setPermRepeats] = useState(10);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -158,8 +158,8 @@ function ParametersPanel() {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Max tiles per WSI</span>
-              <input type="number" step="1000" min="1000" max="50000" className="w-24 text-center font-mono border rounded px-1 py-1 text-sm"
-                value={maxTiles} onChange={e => setMaxTiles(parseInt(e.target.value) || 10000)} />
+              <input type="number" step="1000" min="1000" max="100000" className="w-24 text-center font-mono border rounded px-1 py-1 text-sm"
+                value={maxTiles} onChange={e => setMaxTiles(parseInt(e.target.value) || 50000)} />
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Permutation repeats</span>

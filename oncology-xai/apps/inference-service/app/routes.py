@@ -186,7 +186,7 @@ async def get_parameters():
         "best_fold": BEST_FOLD,
         "mutation_threshold": settings.mutation_threshold,
         "top_k_tiles": settings.v2_top_k_tiles,
-        "max_tiles": settings.v2_top_k_tiles * 50,
+        "max_tiles": settings.v2_max_tiles_wsi,
         "permutation_repeats": 10,
     }
 
@@ -222,9 +222,8 @@ async def update_parameters(body: dict[str, Any]):
         updated.append(f"top_k_tiles={body['top_k_tiles']}")
 
     if "max_tiles" in body:
-        new_top_k = max(1, int(body["max_tiles"]) // 50)
-        settings.v2_top_k_tiles = new_top_k
-        updated.append(f"max_tiles={body['max_tiles']} (top_k={new_top_k})")
+        settings.v2_max_tiles_wsi = int(body["max_tiles"])
+        updated.append(f"max_tiles={body['max_tiles']}")
 
     return {"status": "updated", "changes": updated}
 

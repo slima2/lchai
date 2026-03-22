@@ -98,6 +98,7 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
             v2_checkpoint_dir=settings.v2_checkpoint_dir,
             use_choquet=settings.use_choquet,
             top_k_tiles=settings.v2_top_k_tiles,
+            max_tiles_wsi=settings.v2_max_tiles_wsi,
             genes=settings.genes_list,
             pattern_threshold=thr.get("pattern", settings.pattern_threshold),
             mutation_threshold=thr.get("mutation", settings.mutation_threshold),
