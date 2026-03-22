@@ -175,6 +175,37 @@ async def get_checkpoint_status():
         return {"error": str(e), "checkpoint_dir": settings.v2_checkpoint_dir}
 
 
+@router.get("/parameters")
+async def get_parameters():
+    """Return current system parameters (AUROC values + threshold)."""
+    from app.ml.checkpoints.loader import PROPOSED_AUROC, AUROC_THRESHOLD, BEST_METHOD, BEST_FOLD
+    return {
+        "auroc_values": PROPOSED_AUROC,
+        "auroc_threshold": AUROC_THRESHOLD,
+        "best_method": BEST_METHOD,
+        "best_fold": BEST_FOLD,
+    }
+
+
+@router.put("/parameters")
+async def update_parameters(body: dict[str, Any]):
+    """Update AUROC values and/or threshold at runtime."""
+    import app.ml.checkpoints.loader as loader_mod
+    updated = []
+
+    if "auroc_values" in body and isinstance(body["auroc_values"], dict):
+        for gene, val in body["auroc_values"].items():
+            if gene in loader_mod.PROPOSED_AUROC:
+                loader_mod.PROPOSED_AUROC[gene] = float(val)
+                updated.append(f"AUROC[{gene}]={val}")
+
+    if "auroc_threshold" in body:
+        loader_mod.AUROC_THRESHOLD = float(body["auroc_threshold"])
+        updated.append(f"threshold={body['auroc_threshold']}")
+
+    return {"status": "updated", "changes": updated}
+
+
 def _bundle_dict(b: ResultBundleDB) -> dict:
     mp = b.morphologic_profile
     return {

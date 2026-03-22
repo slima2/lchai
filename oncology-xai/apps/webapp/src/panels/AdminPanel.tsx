@@ -3,10 +3,152 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getOntologies, createProposal, getAuditEvents,
   runDeepSearch, runBatchDeepSearch, getDeepSearchJobs, getDiscoveredRelations,
-  getKGSnapshots, createKGSnapshot, getKGChangelog,
+  getKGSnapshots, createKGSnapshot, getKGChangelog, api,
 } from '../api';
 
 type Tab = 'parameters' | 'pipeline' | 'versions' | 'ontologies' | 'audit';
+
+const METHODS: Record<string, string> = {
+  TP53: 'B2 (embeddings)', EGFR: 'B2 (embeddings)', RBM10: 'FC (Fuzzy Choquet)',
+  STK11: 'P (proposed)', KRAS: 'FC (Fuzzy Choquet)', KEAP1: 'P (proposed)',
+};
+const FOLDS: Record<string, number> = { TP53: 2, EGFR: 4, KRAS: 3, STK11: 3, KEAP1: 1, RBM10: 4 };
+const GENE_ORDER = ['TP53', 'EGFR', 'RBM10', 'STK11', 'KRAS', 'KEAP1'];
+
+function ParametersPanel() {
+  const [aurocs, setAurocs] = useState<Record<string, number>>({
+    TP53: 0.8024, EGFR: 0.7504, RBM10: 0.7371, STK11: 0.6962, KRAS: 0.6800, KEAP1: 0.6218,
+  });
+  const [threshold, setThreshold] = useState(0.70);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  React.useEffect(() => {
+    api.get('/parameters').then(r => {
+      if (r.data?.auroc_values) setAurocs(r.data.auroc_values);
+      if (r.data?.auroc_threshold != null) setThreshold(r.data.auroc_threshold);
+      setLoaded(true);
+    }).catch(() => setLoaded(true));
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    setSaved(false);
+    try {
+      await api.put('/parameters', { auroc_values: aurocs, auroc_threshold: threshold });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch { /* */ }
+    setSaving(false);
+  };
+
+  return (
+    <div>
+      <h3 className="font-semibold mb-3 text-lg">System Parameters</h3>
+      <p className="text-xs text-gray-500 mb-4">
+        These parameters control mutation prediction confidence labels. Edit AUROC values and threshold below.
+        Changes take effect on the next image analysis. Default values come from the thesis benchmark (687 LUAD slides, 5-fold CV).
+      </p>
+
+      <div className="grid grid-cols-2 gap-6">
+        <div>
+          <h4 className="font-semibold text-sm mb-2">Gene AUROC (Best Fold) — editable</h4>
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border px-3 py-2 text-left">Gene</th>
+                <th className="border px-3 py-2 text-center">AUROC</th>
+                <th className="border px-3 py-2 text-center">Method</th>
+                <th className="border px-3 py-2 text-center">Fold</th>
+                <th className="border px-3 py-2 text-center">Label</th>
+              </tr>
+            </thead>
+            <tbody>
+              {GENE_ORDER.map(gene => (
+                <tr key={gene} className="hover:bg-gray-50">
+                  <td className="border px-3 py-2 font-bold">{gene}</td>
+                  <td className="border px-1 py-1 text-center">
+                    <input
+                      type="number" step="0.001" min="0" max="1"
+                      className="w-20 text-center font-mono border rounded px-1 py-1 text-sm"
+                      value={aurocs[gene] ?? 0}
+                      onChange={e => setAurocs({ ...aurocs, [gene]: parseFloat(e.target.value) || 0 })}
+                    />
+                  </td>
+                  <td className="border px-3 py-2 text-center text-xs">{METHODS[gene]}</td>
+                  <td className="border px-3 py-2 text-center">{FOLDS[gene]}</td>
+                  <td className="border px-3 py-2 text-center">
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                      (aurocs[gene] ?? 0) >= threshold ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {(aurocs[gene] ?? 0) >= threshold ? 'Conclusive' : 'Inconclusive'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="text-xs text-gray-400 mt-2">
+            Source: thesis benchmark (Lima et al., 2026). 687 LUAD-only slides, 5-fold stratified CV.
+          </p>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-sm mb-2">Classification Threshold — editable</h4>
+          <div className="bg-gray-50 rounded p-4 mb-4">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-sm font-medium">AUROC Threshold:</span>
+              <input
+                type="number" step="0.01" min="0.5" max="1"
+                className="w-20 text-center text-xl font-bold text-blue-700 border rounded px-2 py-1"
+                value={threshold}
+                onChange={e => setThreshold(parseFloat(e.target.value) || 0.70)}
+              />
+            </div>
+            <p className="text-xs text-gray-600">
+              Genes with AUROC ≥ threshold → <strong className="text-green-700">Conclusive</strong>.
+              Below → <strong className="text-yellow-700">Inconclusive</strong>.
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              Default 0.70 = "acceptable discrimination" (Hosmer & Lemeshow, 2000).
+            </p>
+          </div>
+
+          <button
+            onClick={save}
+            disabled={saving}
+            className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Parameters'}
+          </button>
+          {saved && <p className="text-green-600 text-xs mt-2">Parameters saved. Changes apply to the next image analysis.</p>}
+
+          <h4 className="font-semibold text-sm mt-6 mb-2">Other Parameters (read-only)</h4>
+          <div className="bg-gray-50 rounded p-4 space-y-2 text-sm">
+            {[
+              ['Mutation threshold (POS/NEG)', '0.50'],
+              ['Top-K attention tiles', '200'],
+              ['Max tiles per WSI', '10,000'],
+              ['Tile size', '224 px'],
+              ['Backbone', 'CTransPath Swin Tiny'],
+              ['Classifier', 'FuzzyArcLoss V2'],
+              ['Permutation repeats', '10'],
+            ].map(([label, val]) => (
+              <div key={label} className="flex justify-between">
+                <span className="text-gray-600">{label}</span>
+                <span className="font-mono font-bold">{val}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400 mt-2">
+            To modify these, edit <code>.env</code> and restart with <code>docker compose up -d</code>.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPanel() {
   const qc = useQueryClient();
@@ -98,116 +240,7 @@ export default function AdminPanel() {
       </div>
 
       {/* ──── Parameters ──── */}
-      {tab === 'parameters' && (
-        <div>
-          <h3 className="font-semibold mb-3 text-lg">System Parameters</h3>
-          <p className="text-xs text-gray-500 mb-4">
-            These parameters control mutation prediction confidence labels. AUROC values come from the thesis benchmark
-            (687 LUAD slides, 5-fold stratified CV, best fold per gene). They can be updated if the model is retrained
-            on a larger population.
-          </p>
-
-          <div className="grid grid-cols-2 gap-6">
-            {/* AUROC Table */}
-            <div>
-              <h4 className="font-semibold text-sm mb-2">Gene AUROC (Best Fold)</h4>
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border px-3 py-2 text-left">Gene</th>
-                    <th className="border px-3 py-2 text-right">AUROC</th>
-                    <th className="border px-3 py-2 text-center">Best Method</th>
-                    <th className="border px-3 py-2 text-center">Fold</th>
-                    <th className="border px-3 py-2 text-center">Label</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { gene: 'TP53', auroc: 0.8024, method: 'B2 (embeddings)', fold: 2 },
-                    { gene: 'EGFR', auroc: 0.7504, method: 'B2 (embeddings)', fold: 4 },
-                    { gene: 'RBM10', auroc: 0.7371, method: 'FC (Fuzzy Choquet)', fold: 4 },
-                    { gene: 'STK11', auroc: 0.6962, method: 'P (proposed)', fold: 3 },
-                    { gene: 'KRAS', auroc: 0.6800, method: 'FC (Fuzzy Choquet)', fold: 3 },
-                    { gene: 'KEAP1', auroc: 0.6218, method: 'P (proposed)', fold: 1 },
-                  ].map(row => (
-                    <tr key={row.gene} className="hover:bg-gray-50">
-                      <td className="border px-3 py-2 font-bold">{row.gene}</td>
-                      <td className="border px-3 py-2 text-right font-mono">{row.auroc.toFixed(4)}</td>
-                      <td className="border px-3 py-2 text-center text-xs">{row.method}</td>
-                      <td className="border px-3 py-2 text-center">{row.fold}</td>
-                      <td className="border px-3 py-2 text-center">
-                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                          row.auroc >= 0.70 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {row.auroc >= 0.70 ? 'Conclusive' : 'Inconclusive'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="text-xs text-gray-400 mt-2">
-                Source: thesis benchmark (Lima et al., 2026). 687 LUAD-only slides, 5-fold stratified CV.
-              </p>
-            </div>
-
-            {/* Threshold + Config */}
-            <div>
-              <h4 className="font-semibold text-sm mb-2">Classification Threshold</h4>
-              <div className="bg-gray-50 rounded p-4 mb-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-sm font-medium">AUROC Threshold:</span>
-                  <span className="text-2xl font-bold text-blue-700">0.70</span>
-                </div>
-                <p className="text-xs text-gray-600">
-                  Genes with AUROC ≥ 0.70 are labeled <strong className="text-green-700">Conclusive</strong> (reliable prediction).
-                  Genes below are labeled <strong className="text-yellow-700">Inconclusive</strong> (molecular testing recommended).
-                </p>
-                <p className="text-xs text-gray-400 mt-2">
-                  0.70 is a widely accepted threshold for "acceptable discrimination" in clinical prediction models
-                  (Hosmer & Lemeshow, 2000). To change this threshold, update <code>AUROC_CONCLUSIVE_THRESHOLD</code> in <code>.env</code>
-                  and restart the inference service.
-                </p>
-              </div>
-
-              <h4 className="font-semibold text-sm mb-2">Other Parameters</h4>
-              <div className="bg-gray-50 rounded p-4 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Mutation threshold (POS/NEG)</span>
-                  <span className="font-mono font-bold">0.50</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Top-K attention tiles</span>
-                  <span className="font-mono font-bold">200</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Max tiles per WSI</span>
-                  <span className="font-mono font-bold">10,000</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Tile size</span>
-                  <span className="font-mono font-bold">224 px</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Backbone</span>
-                  <span className="font-mono font-bold">CTransPath Swin Tiny</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Classifier</span>
-                  <span className="font-mono font-bold">FuzzyArcLoss V2</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Permutation repeats</span>
-                  <span className="font-mono font-bold">10</span>
-                </div>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">
-                To modify these parameters, edit <code>.env</code> and restart the system with <code>docker compose up -d</code>.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {tab === 'parameters' && <ParametersPanel />}
 
       {/* ──── DeepSearch Pipeline ──── */}
       {tab === 'pipeline' && (
