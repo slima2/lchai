@@ -533,6 +533,37 @@ def _tile_wsi_full_resolution(
             if tissue_frac < tissue_threshold:
                 continue
 
+            # Artifact rejection: skip tiles with non-tissue content
+            r, g, b = arr[:,:,0].astype(float), arr[:,:,1].astype(float), arr[:,:,2].astype(float)
+
+            # H&E tissue is pink/purple: high in R and B, moderate G
+            # Reject tiles that are mostly gray/black (ink, barcodes, text)
+            very_dark = (gray < 50).mean()
+            if very_dark > 0.3:
+                continue
+
+            # Reject tiles with very low color saturation (gray artifacts, pen marks)
+            max_rgb = np.maximum(np.maximum(r, g), b)
+            min_rgb = np.minimum(np.minimum(r, g), b)
+            saturation = np.where(max_rgb > 0, (max_rgb - min_rgb) / max_rgb, 0)
+            mean_sat = saturation.mean()
+            if mean_sat < 0.04:
+                continue
+
+            # Reject tiles with too many straight edges (barcodes, text, labels)
+            # High-frequency content in one direction = lines/text
+            gray_uint8 = gray.astype(np.uint8)
+            dx = np.abs(np.diff(gray_uint8, axis=1)).mean()
+            dy = np.abs(np.diff(gray_uint8, axis=0)).mean()
+            edge_ratio = max(dx, dy) / (min(dx, dy) + 1e-6)
+            if edge_ratio > 3.0 and (dx > 15 or dy > 15):
+                continue
+
+            # Reject tiles where green channel dominates (marker pen, green ink)
+            green_dominant = ((g > r + 20) & (g > b + 20)).mean()
+            if green_dominant > 0.4:
+                continue
+
             tiles.append((x, y, tile_rgb))
             count += 1
         if count >= max_tiles:
