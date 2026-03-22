@@ -411,20 +411,33 @@ def _generate_shap_real(profile: dict[str, float], gene: str, model_dir: str) ->
 _WSI_SLIDE_HANDLE = None  # holds OpenSlide handle for full-resolution tiling
 
 
-def _convert_flat_tif_to_pyramidal(input_path: str) -> str:
-    """Convert a flat (non-pyramidal) TIFF to pyramidal TIFF using pyvips.
+def _convert_to_pyramidal_tiff(input_path: str, source_format: str = "tif") -> str:
+    """Convert a flat TIFF or BIF to pyramidal TIFF using pyvips.
+
+    pyvips/libvips can read many formats (TIFF, BIF/Ventana, JPEG, PNG, etc.)
+    via its built-in loaders and OpenSlide integration. The output is always
+    a standard pyramidal TIFF that OpenSlide can open reliably.
 
     Returns path to the new pyramidal file. The caller owns the temp file.
     """
     import pyvips
     import tempfile
+    import os
 
-    logger.info("Converting flat TIFF to pyramidal: %s", input_path)
-    img = pyvips.Image.new_from_file(input_path, access="sequential")
+    logger.info("Converting %s to pyramidal TIFF: %s (%.1f MB)",
+                source_format.upper(), input_path, os.path.getsize(input_path) / 1e6)
+
+    try:
+        img = pyvips.Image.new_from_file(input_path, access="sequential")
+    except Exception:
+        img = pyvips.Image.openslideload(input_path, level=0)
+
     logger.info("pyvips loaded: %dx%d, %d bands", img.width, img.height, img.bands)
 
+    if img.bands == 4:
+        img = img[:3]
+
     out_fd, out_path = tempfile.mkstemp(suffix=".tiff")
-    import os
     os.close(out_fd)
 
     img.tiffsave(
@@ -475,20 +488,21 @@ def _decode_image(image_bytes: bytes, image_format: str | None) -> Image.Image:
                 )
                 return thumb.convert("RGB")
             except Exception as openslide_err:
-                logger.warning("OpenSlide failed for %s: %s — attempting pyramidal conversion", fmt, openslide_err)
+                logger.warning("OpenSlide failed for %s: %s — attempting pyramidal conversion via pyvips", fmt, openslide_err)
                 try:
                     os.unlink(path)
                 except OSError:
                     pass
 
-                if fmt in ("tif", "tiff"):
+                if fmt in ("tif", "tiff", "bif"):
                     try:
-                        with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as f2:
+                        src_suffix = {"bif": ".bif"}.get(fmt, ".tif")
+                        with tempfile.NamedTemporaryFile(suffix=src_suffix, delete=False) as f2:
                             f2.write(image_bytes)
-                            flat_path = f2.name
-                        pyramidal_path = _convert_flat_tif_to_pyramidal(flat_path)
+                            src_path = f2.name
+                        pyramidal_path = _convert_to_pyramidal_tiff(src_path, source_format=fmt)
                         try:
-                            os.unlink(flat_path)
+                            os.unlink(src_path)
                         except OSError:
                             pass
 
@@ -496,19 +510,19 @@ def _decode_image(image_bytes: bytes, image_format: str | None) -> Image.Image:
                         _WSI_SLIDE_HANDLE = (slide, pyramidal_path)
                         thumb = slide.get_thumbnail((4096, 4096))
                         logger.info(
-                            "OpenSlide WSI opened (converted pyramidal): dims=%s, thumbnail=%s",
-                            slide.dimensions, thumb.size,
+                            "OpenSlide WSI opened (converted from %s): dims=%s, thumbnail=%s",
+                            fmt.upper(), slide.dimensions, thumb.size,
                         )
                         return thumb.convert("RGB")
                     except Exception as conv_err:
-                        logger.error("Pyramidal conversion failed: %s", conv_err)
+                        logger.error("Pyramidal conversion failed for %s: %s", fmt, conv_err)
                         if pyramidal_path:
                             try:
                                 os.unlink(pyramidal_path)
                             except OSError:
                                 pass
                         raise ValueError(
-                            f"TIFF decode failed: OpenSlide error: {openslide_err}; "
+                            f"{fmt.upper()} decode failed: OpenSlide error: {openslide_err}; "
                             f"Pyramidal conversion error: {conv_err}"
                         ) from conv_err
                 else:
