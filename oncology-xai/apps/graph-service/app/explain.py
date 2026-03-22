@@ -19,7 +19,7 @@ Generate a clear, concise explanation that describes:
 Keep a technical but accessible tone. Do NOT make definitive diagnostic statements.
 Always recommend molecular confirmation for any positive prediction."""
 
-USER_PROMPT_TEMPLATE = """Explica el siguiente grafo de conocimiento para el caso {case_id}:
+USER_PROMPT_TEMPLATE = """Explain the following knowledge graph for case {case_id}:
 
 NODOS:
 {nodes_text}
@@ -27,7 +27,7 @@ NODOS:
 ARISTAS (relaciones):
 {edges_text}
 
-Genera una explicación en 2-4 párrafos."""
+Generate an explanation in 2-4 paragraphs in English."""
 
 
 def _format_graph_for_prompt(nodes: list[dict], edges: list[dict]) -> tuple[str, str]:

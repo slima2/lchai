@@ -384,12 +384,12 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
                 className="text-xs text-amber-600 hover:underline"
                 onClick={() => explain.mutate()}
               >
-                Regenerar explicación
+                Regenerate explanation
               </button>
             </div>
           )}
           {explain.isError && (
-            <p className="text-red-600 text-sm">Error al generar la explicación. Intenta de nuevo.</p>
+            <p className="text-red-600 text-sm">Error generating explanation. Please try again.</p>
           )}
         </div>
       </details>

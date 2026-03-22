@@ -52,12 +52,12 @@ async def get_case_subgraph(
         if not nodes:
             nodes, edges = _mock_case_graph(case_id)
             logger.warning("Curated graph returned empty, using mock graph")
-            return {"nodes": list(nodes.values()), "edges": edges, "source": "mock", "source_message": "Grafo mockup de demostración."}
+            return {"nodes": list(nodes.values()), "edges": edges, "source": "mock", "source_message": "Demo mockup graph."}
         is_dynamic = kwargs.get("pattern_results") is not None
         has_discovered = bool(kwargs.get("discovered_relations"))
-        msg = "Grafo dinámico basado en resultados del caso"
+        msg = "Dynamic graph based on case results"
         if has_discovered:
-            msg += " + relaciones descubiertas por DeepSearch (literatura)"
+            msg += " + relations discovered by DeepSearch (literature)"
         msg += " (NCIt/MONDO/OncoKB/CIViC/COSMIC/WHO)."
         logger.info("Built curated knowledge graph for case %s (dynamic=%s, discovered=%s)", case_id, is_dynamic, has_discovered)
         return {"nodes": list(nodes.values()), "edges": edges, "source": "curated", "source_message": msg}
@@ -99,7 +99,7 @@ async def get_case_subgraph(
 
     # If empty: try real OWL ontologies first, then fall back to mock
     if not nodes:
-        reason = f"No se encontró grafo en Fuseki para este caso (GRAPH <graph:case:{case_id}> vacío)."
+        reason = f"No graph found in Fuseki for this case (GRAPH <graph:case:{case_id}> empty)."
         if fuseki_error:
             reason += f" Fuseki devolvió: {fuseki_error[:200]}"
         ncit = getattr(settings, "ncit_owl_path", "") or ""
@@ -108,11 +108,11 @@ async def get_case_subgraph(
         if not nodes:
             nodes, edges = _mock_case_graph(case_id)
             logger.info("Using mock graph: %s", reason)
-            return {"nodes": list(nodes.values()), "edges": edges, "source": "mock", "source_message": reason + " OWL no devolvió datos; se muestra grafo mockup de demostración."}
+            return {"nodes": list(nodes.values()), "edges": edges, "source": "mock", "source_message": reason + " OWL returned no data; showing demo mockup graph."}
         logger.info("Graph built from OWL ontologies (real)")
         nodes = dict(nodes)
-        return {"nodes": list(nodes.values()), "edges": edges, "source": "owl", "source_message": reason + " Se usó grafo desde ontologías OWL (NCIt/MONDO)."}
-    return {"nodes": list(nodes.values()), "edges": edges, "source": "fuseki", "source_message": "Grafo cargado desde Fuseki (triplestore)."}
+        return {"nodes": list(nodes.values()), "edges": edges, "source": "owl", "source_message": reason + " Graph built from OWL ontologies (NCIt/MONDO)."}
+    return {"nodes": list(nodes.values()), "edges": edges, "source": "fuseki", "source_message": "Graph loaded from Fuseki (triplestore)."}
 
 
 def _mock_case_graph(case_id: str) -> tuple[dict, list]:
