@@ -1,5 +1,7 @@
 {
   "realm": "oncology",
+  "displayName": "LCHAI v2.0",
+  "displayNameHtml": "<strong>LCHAI v2.0</strong><br><span style=\"font-size:0.8em;color:#666\">Lung Cancer Histologic Analysis with AI</span>",
   "enabled": true,
   "sslRequired": "external",
   "registrationAllowed": false,
