@@ -56,20 +56,20 @@ BEST_METHOD_LABEL: dict[str, str] = {
 }
 
 PROPOSED_AUROC: dict[str, float] = {
-    "TP53": 0.8024, "EGFR": 0.7504, "KRAS": 0.6800,
-    "STK11": 0.6962, "KEAP1": 0.6218, "RBM10": 0.7371,
+    "TP53": 0.718, "EGFR": 0.701, "KRAS": 0.609,
+    "STK11": 0.695, "KEAP1": 0.610, "RBM10": 0.661,
 }
 BASELINE2_AUROC: dict[str, float] = {
-    "TP53": 0.7929, "EGFR": 0.7302, "KRAS": 0.7148,
-    "STK11": 0.6708, "KEAP1": 0.6600, "RBM10": 0.6930,
+    "TP53": 0.718, "EGFR": 0.701, "KRAS": 0.607,
+    "STK11": 0.684, "KEAP1": 0.597, "RBM10": 0.642,
 }
 BASELINE3_AUROC: dict[str, float] = {
-    "TP53": 0.5518, "EGFR": 0.6806, "KRAS": 0.6155,
-    "STK11": 0.5419, "KEAP1": 0.5361, "RBM10": 0.7644,
+    "TP53": 0.616, "EGFR": 0.625, "KRAS": 0.545,
+    "STK11": 0.617, "KEAP1": 0.588, "RBM10": 0.653,
 }
 CHOQUET_AUROC: dict[str, float] = {
-    "TP53": 0.7835, "EGFR": 0.7171, "KRAS": 0.6698,
-    "STK11": 0.5287, "KEAP1": 0.6760, "RBM10": 0.7082,
+    "TP53": 0.716, "EGFR": 0.684, "KRAS": 0.609,
+    "STK11": 0.658, "KEAP1": 0.589, "RBM10": 0.661,
 }
 
 _CACHE: dict[str, Any] = {}

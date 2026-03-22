@@ -23,7 +23,7 @@ const METHOD_OPTIONS = [
 
 function ParametersPanel() {
   const [aurocs, setAurocs] = useState<Record<string, number>>({
-    TP53: 0.8024, EGFR: 0.7504, RBM10: 0.7371, STK11: 0.6962, KRAS: 0.6800, KEAP1: 0.6218,
+    TP53: 0.718, EGFR: 0.701, RBM10: 0.661, STK11: 0.695, KRAS: 0.609, KEAP1: 0.610,
   });
   const [methods, setMethods] = useState<Record<string, string>>({
     TP53: 'baseline2', EGFR: 'baseline2', STK11: 'proposed', KEAP1: 'proposed', KRAS: 'choquet', RBM10: 'choquet',
@@ -67,13 +67,14 @@ function ParametersPanel() {
     <div>
       <h3 className="font-semibold mb-3 text-lg">System Parameters</h3>
       <p className="text-xs text-gray-500 mb-4">
-        These parameters control mutation prediction confidence labels. Edit AUROC values and threshold below.
-        Changes take effect on the next image analysis. Default values come from the thesis benchmark (687 LUAD slides, 5-fold CV).
+        Edit values below and click "Save Parameters". Changes take effect on the next image analysis.
+        Default AUROC values = mean across 5-fold CV on 687 LUAD slides (thesis benchmark).
       </p>
 
+      <div className="border-2 border-blue-200 rounded-lg p-4 mb-4">
       <div className="grid grid-cols-2 gap-6">
         <div>
-          <h4 className="font-semibold text-sm mb-2">Gene AUROC (Best Fold) — editable</h4>
+          <h4 className="font-semibold text-sm mb-2">Gene AUROC (mean, 5-fold CV) — editable</h4>
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="bg-gray-100">
@@ -120,7 +121,7 @@ function ParametersPanel() {
             </tbody>
           </table>
           <p className="text-xs text-gray-400 mt-2">
-            Source: thesis benchmark (Lima et al., 2026). 687 LUAD-only slides, 5-fold stratified CV.
+            Source: thesis benchmark (Lima et al., 2026). Mean across 5-fold CV on 687 LUAD-only slides.
           </p>
         </div>
 
@@ -145,16 +146,7 @@ function ParametersPanel() {
             </p>
           </div>
 
-          <button
-            onClick={save}
-            disabled={saving}
-            className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Parameters'}
-          </button>
-          {saved && <p className="text-green-600 text-xs mt-2">Parameters saved. Changes apply to the next image analysis.</p>}
-
-          <h4 className="font-semibold text-sm mt-6 mb-2">Inference Parameters — editable</h4>
+          <h4 className="font-semibold text-sm mt-4 mb-2">Inference Parameters — editable</h4>
           <div className="bg-gray-50 rounded p-4 space-y-3 text-sm">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Mutation threshold (POS/NEG)</span>
@@ -176,19 +168,28 @@ function ParametersPanel() {
               <input type="number" step="5" min="5" max="100" className="w-20 text-center font-mono border rounded px-1 py-1 text-sm"
                 value={permRepeats} onChange={e => setPermRepeats(parseInt(e.target.value) || 10)} />
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Tile size</span>
-              <span className="font-mono font-bold">224 px</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Backbone</span>
-              <span className="font-mono font-bold">CTransPath Swin Tiny</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Classifier</span>
-              <span className="font-mono font-bold">FuzzyArcLoss V2</span>
-            </div>
           </div>
+        </div>
+      </div>
+
+      {/* Save button inside bordered section */}
+      <div className="mt-4 flex items-center gap-4">
+        <button onClick={save} disabled={saving}
+          className="bg-blue-600 text-white px-8 py-2.5 rounded text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50">
+          {saving ? 'Saving...' : saved ? 'Saved!' : 'Save All Parameters'}
+        </button>
+        {saved && <span className="text-green-600 text-sm font-medium">Parameters saved. Changes apply to the next image analysis.</span>}
+      </div>
+
+      </div>{/* end bordered editable section */}
+
+      {/* Non-editable system info */}
+      <div className="mt-4 p-4 bg-gray-50 rounded">
+        <h4 className="font-semibold text-sm mb-2 text-gray-500">Fixed System Configuration (requires rebuild to change)</h4>
+        <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="flex justify-between"><span className="text-gray-500">Tile size</span><span className="font-mono">224 px</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Backbone</span><span className="font-mono">CTransPath Swin Tiny</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Classifier</span><span className="font-mono">FuzzyArcLoss V2</span></div>
         </div>
       </div>
     </div>
