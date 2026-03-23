@@ -28,6 +28,7 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
   const [processedImageId, setProcessedImageId] = useState<string | null>(null);
   const [autoSelected, setAutoSelected] = useState(false);
   const [showAttnOverlay, setShowAttnOverlay] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const images = useQuery({
     queryKey: ['images', caseId],
@@ -87,10 +88,13 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
       }
       const caseRes = await createCase({ patient_id: patientId });
       const newCaseId = caseRes.data.case_id;
-      const imgRes = await uploadImage(newCaseId, file);
-      return { ...imgRes, newCaseId };
+      setUploadProgress(0);
+      const imgRes = await uploadImage(newCaseId, file, (pct) => setUploadProgress(pct));
+      setUploadProgress(null);
+      return { ...imgRes, newCaseId, fileName: file.name, fileSize: file.size };
     },
     onSuccess: (r: any) => {
+      setUploadProgress(null);
       const newImageId = r.data.image_id;
       onCaseChanged(r.newCaseId);
       setTimeout(() => {
@@ -98,6 +102,9 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
         onImageSelected(newImageId);
         setAutoSelected(true);
       }, 200);
+    },
+    onError: () => {
+      setUploadProgress(null);
     },
   });
 
@@ -150,10 +157,22 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
         <input ref={fileRef} type="file" accept=".png,.jpg,.jpeg,.tif,.tiff,.svs,.bif" className="hidden" onChange={e => {
           if (e.target.files?.[0]) upload.mutate(e.target.files[0]);
         }} />
-        <button className="bg-blue-600 text-white px-4 py-2 rounded text-sm" onClick={() => fileRef.current?.click()}>
-          Upload Image
+        <button
+          className="bg-blue-600 text-white px-4 py-2 rounded text-sm disabled:opacity-50"
+          onClick={() => fileRef.current?.click()}
+          disabled={upload.isPending}
+        >
+          {upload.isPending ? 'Uploading...' : 'Upload Image'}
         </button>
-        <span className="text-gray-500 text-xs self-center">Supported: PNG, JPEG, TIFF, SVS, BIF</span>
+        {uploadProgress !== null && (
+          <div className="flex items-center gap-2 flex-1 max-w-xs">
+            <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div className="bg-blue-500 h-full rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+            </div>
+            <span className="text-xs font-mono text-blue-700 whitespace-nowrap">{uploadProgress}%</span>
+          </div>
+        )}
+        {uploadProgress === null && <span className="text-gray-500 text-xs self-center">Supported: PNG, JPEG, TIFF, SVS, BIF</span>}
         {selImage && (
           <button className="bg-purple-600 text-white px-4 py-2 rounded text-sm" onClick={() => process.mutate()}>
             Analyze Slide

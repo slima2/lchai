@@ -30,11 +30,15 @@ export const getCase = (id: string) => api.get(`/cases/${id}`);
 export const updateCase = (id: string, data: any) => api.patch(`/cases/${id}`, data);
 
 // Images
-export const uploadImage = (caseId: string, file: File) => {
+export const uploadImage = (caseId: string, file: File, onProgress?: (pct: number) => void) => {
   const form = new FormData();
   form.append('file', file);
   return api.post(`/cases/${caseId}/images:upload`, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 600000,
+    onUploadProgress: (e) => {
+      if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100));
+    },
   });
 };
 export const getImages = (caseId: string) => api.get(`/cases/${caseId}/images`);
