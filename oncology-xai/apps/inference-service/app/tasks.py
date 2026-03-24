@@ -94,8 +94,9 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
             logger.info("GPU: %s, VRAM: %.1f GB", torch.cuda.get_device_name(0), torch.cuda.get_device_properties(0).total_memory / 1e9)
 
         thr = thresholds or {}
+        original_filename = key if row and row[0] else f"image:{image_id}"
         config = InferenceConfig(
-            image_uri=f"image:{image_id}",
+            image_uri=original_filename,
             image_format=image_format,
             device=device,
             model_backend=settings.model_backend,
