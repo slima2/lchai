@@ -377,9 +377,9 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                               .sort(([, a], [, b]) => (b as number) - (a as number))
                               .slice(0, 3)
                               .map(([pat, val]) => (
-                                <span key={pat} className="bg-gray-100 rounded px-1 py-0.5">
+                                <span key={pat} className="bg-gray-100 rounded px-1 py-0.5 text-[10px]">
                                   <span className="w-2 h-2 rounded-full inline-block mr-0.5" style={{ backgroundColor: PATTERN_COLORS[pat] || '#ccc' }} />
-                                  {(val as number).toFixed(4)}
+                                  <span className="capitalize">{pat.slice(0, 3)}</span> {(val as number).toFixed(3)}
                                 </span>
                               ))}
                           </div>
