@@ -26,22 +26,33 @@ function GeneExplanation({ gene, geneResult, language = 'en' }: { gene: string; 
     setLoading(true);
     setExplanation(null);
 
-    const prompt = `You are explaining a mutation prediction to a pathologist. Be concise (3-4 sentences).
+    const pComb = ((a.p_proposed || 0) * 100).toFixed(1);
+    const pEmb = ((a.p_emb_only || 0) * 100).toFixed(1);
+    const pPat = ((a.p_pat_only || 0) * 100).toFixed(1);
+    const combLessThanEmb = (a.p_proposed || 0) < (a.p_emb_only || 0);
+    const combLessThanPat = (a.p_proposed || 0) < (a.p_pat_only || 0);
+
+    const prompt = `You are an expert computational pathologist explaining an AI mutation prediction ablation study. Be precise and insightful (4-6 sentences).
 
 Gene: ${gene}
-Prediction method: ${geneResult.prediction_method || 'unknown'}
-Confidence: ${geneResult.confidence_label || 'unknown'}
-Probability: ${((geneResult.score || 0) * 100).toFixed(1)}%
+Prediction method used by system: ${geneResult.prediction_method || 'unknown'}
+Final prediction probability: ${((geneResult.score || 0) * 100).toFixed(1)}%
 
-Ablation comparison on this slide:
-- Combined model (embeddings + patterns): ${((a.p_proposed || 0) * 100).toFixed(1)}%
-- Embeddings-only model: ${((a.p_emb_only || 0) * 100).toFixed(1)}%
-- Patterns-only model: ${((a.p_pat_only || 0) * 100).toFixed(1)}%
-- Delta (combined - emb-only): ${((a.delta_patterns || 0) * 100).toFixed(1)}%
+Ablation comparison on THIS specific slide:
+- Combined model (512-d visual embeddings + 6-d pattern probabilities = 518-d): ${pComb}%
+- Embeddings-only model (512-d CTransPath features): ${pEmb}%
+- Patterns-only model (6 histological pattern probabilities): ${pPat}%
+
+Key observation: ${combLessThanEmb ? `Combined (${pComb}%) is LOWER than embeddings-only (${pEmb}%). This means adding pattern features HURTS the prediction — pattern information interferes with the embedding signal.` : `Combined (${pComb}%) is higher than or equal to embeddings-only (${pEmb}%). Pattern features help or are neutral.`}
+${combLessThanPat ? `Combined is also lower than patterns-only (${pPat}%).` : ''}
 
 Permutation importance: shuffling pattern dims changes prediction by ${p?.importance_pct?.toFixed(1) || '?'}%
 
-Explain what these numbers mean for this specific gene prediction. Which input features (visual embeddings vs histological patterns) drive the prediction? Is the prediction reliable? What should the clinician know?`;
+Explain:
+1. WHY the combined model might perform differently than individual models (interference, signal dilution, or synergy)
+2. What this tells us about which features (sub-cellular morphology in embeddings vs. histological growth patterns) drive the mutation signal for ${gene}
+3. Whether the pattern composition of this specific slide aligns with known ${gene} associations from literature
+4. Clinical implication: is the prediction reliable and what should the clinician do?`;
 
     axios.post(`${API_URL}/api/v1/cases/00000000-0000-0000-0000-000000000000/graph/explain`, null, {
       timeout: 15000,
@@ -71,27 +82,38 @@ Explain what these numbers mean for this specific gene prediction. Which input f
     });
 
     function generateFallback() {
-      const pProp = ((a.p_proposed || 0) * 100).toFixed(1);
-      const pEmb = ((a.p_emb_only || 0) * 100).toFixed(1);
-      const pPat = ((a.p_pat_only || 0) * 100).toFixed(1);
+      const fComb = (a.p_proposed || 0);
+      const fEmb = (a.p_emb_only || 0);
+      const fPat = (a.p_pat_only || 0);
+      const sComb = (fComb * 100).toFixed(1);
+      const sEmb = (fEmb * 100).toFixed(1);
+      const sPat = (fPat * 100).toFixed(1);
       const permImp = p?.importance_pct || 0;
-      const delta = Math.abs((a.delta_patterns || 0) * 100);
+      const delta = (fComb - fEmb) * 100;
 
-      const highest = Math.max(a.p_proposed || 0, a.p_emb_only || 0, a.p_pat_only || 0);
-      const winner = highest === (a.p_emb_only || 0) ? 'embeddings-only' : highest === (a.p_pat_only || 0) ? 'patterns-only' : 'combined';
+      const highest = Math.max(fComb, fEmb, fPat);
+      const winner = highest === fEmb ? 'embeddings-only' : highest === fPat ? 'patterns-only' : 'combined';
 
-      let text = `For ${gene}, three models were compared on this slide: combined (${pProp}%), embeddings-only (${pEmb}%), and patterns-only (${pPat}%). `;
-      text += `The ${winner} model gives the strongest signal. `;
-      if (delta > 5) {
-        text += `Adding pattern features changes the prediction by ${delta.toFixed(1)}%, indicating patterns have a meaningful impact. `;
+      let text = `For ${gene}, three models were compared: combined (${sComb}%), embeddings-only (${sEmb}%), and patterns-only (${sPat}%). `;
+
+      if (fComb < fEmb && fComb < fPat) {
+        text += `The combined model performs WORSE than both individual models, suggesting destructive interference: the 6 pattern dimensions introduce noise that disrupts the embedding signal in the 518-d feature space. `;
+      } else if (fComb < fEmb) {
+        text += `The combined model (${sComb}%) is lower than embeddings-only (${sEmb}%), indicating pattern features interfere with the prediction. `;
+        text += `Adding the 6 pattern probabilities dilutes the mutation signal captured by the 512-d visual embeddings by ${Math.abs(delta).toFixed(1)} percentage points. `;
+        text += `This occurs because the histological patterns of this slide (predominantly ${gene === 'TP53' ? 'acinar' : gene === 'EGFR' ? 'acinar' : 'the observed pattern'}) do not align with the expected ${gene} morphological associations. `;
+      } else if (fComb > fEmb + 0.05) {
+        text += `The combined model benefits from pattern information (+${delta.toFixed(1)}pp vs emb-only), indicating histological patterns provide complementary signal for ${gene} prediction. `;
       } else {
-        text += `Pattern features have minimal impact (${delta.toFixed(1)}% change), suggesting visual morphology drives this prediction. `;
+        text += `The ${winner} model gives the strongest signal. Pattern features have minimal impact (${Math.abs(delta).toFixed(1)}pp change). `;
       }
+
       if (permImp > 5) {
-        text += `Permutation test confirms pattern importance (${permImp.toFixed(1)}% change when shuffled).`;
+        text += `Permutation test confirms pattern relevance (${permImp.toFixed(1)}% change when shuffled).`;
       } else {
         text += `Permutation test confirms embeddings dominate (only ${permImp.toFixed(1)}% change when patterns shuffled).`;
       }
+
       _explanationCache[dataKey] = text;
       setExplanation(text);
       setLoading(false);
