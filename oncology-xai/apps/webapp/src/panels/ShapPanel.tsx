@@ -391,25 +391,35 @@ export default function ShapPanel({ resultBundleId }: Props) {
                 <h4 className="text-xs font-semibold text-gray-600 mb-2">Pattern Shapley Values (singleton importance)</h4>
                 {choquetData.shapley_values && (
                   <div className="space-y-1">
-                    {Object.entries(choquetData.shapley_values as Record<string, number>)
-                      .sort(([, a], [, b]) => (b as number) - (a as number))
-                      .map(([pattern, val]) => (
-                        <div key={pattern} className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: PATTERN_COLORS[pattern] || '#ccc' }} />
-                          <span className="text-xs w-24 capitalize">{pattern}</span>
-                          <div className="flex-1 bg-gray-100 rounded h-4 overflow-hidden">
-                            <div
-                              className="h-full rounded"
-                              style={{
-                                width: `${Math.min((val as number) * 100, 100)}%`,
-                                backgroundColor: PATTERN_COLORS[pattern] || '#888',
-                                opacity: 0.7,
-                              }}
-                            />
+                    {(() => {
+                      const entries = Object.entries(choquetData.shapley_values as Record<string, number>)
+                        .sort(([, a], [, b]) => (b as number) - (a as number));
+                      const maxVal = Math.max(...entries.map(([, v]) => v as number), 0.001);
+                      const uniform = 1.0 / entries.length;
+                      return entries.map(([pattern, val]) => {
+                        const delta = (val as number) - uniform;
+                        return (
+                          <div key={pattern} className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: PATTERN_COLORS[pattern] || '#ccc' }} />
+                            <span className="text-xs w-24 capitalize">{pattern}</span>
+                            <div className="flex-1 bg-gray-100 rounded h-4 overflow-hidden">
+                              <div
+                                className="h-full rounded"
+                                style={{
+                                  width: `${Math.min(((val as number) / maxVal) * 100, 100)}%`,
+                                  backgroundColor: PATTERN_COLORS[pattern] || '#888',
+                                  opacity: 0.7,
+                                }}
+                              />
+                            </div>
+                            <span className="text-xs font-mono w-16">{(val as number).toFixed(4)}</span>
+                            <span className={`text-[10px] font-mono w-14 ${delta > 0.002 ? 'text-green-600' : delta < -0.002 ? 'text-red-600' : 'text-gray-400'}`}>
+                              {delta > 0 ? '+' : ''}{(delta * 100).toFixed(2)}%
+                            </span>
                           </div>
-                          <span className="text-xs font-mono w-12">{(val as number).toFixed(3)}</span>
-                        </div>
-                      ))}
+                        );
+                      });
+                    })()}
                   </div>
                 )}
               </div>

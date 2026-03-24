@@ -34,11 +34,14 @@ class FuzzyMeasure(nn.Module):
         return torch.sigmoid(singleton + interaction)
 
     def shapley_values(self) -> dict[str, float]:
-        """Extract normalised Shapley values from singleton params."""
+        """Extract normalised Shapley values from singleton params.
+
+        Uses softmax over raw v params for a more discriminative distribution
+        than sigmoid+normalize (which flattens values near 0.5).
+        """
         with torch.no_grad():
-            sv = torch.sigmoid(self.v).cpu().numpy()
-            total = sv.sum()
-            return {str(i): float(sv[i] / total) if total > 0 else 0.0 for i in range(self.K)}
+            sv = torch.softmax(self.v, dim=0).cpu().numpy()
+            return {str(i): round(float(sv[i]), 4) for i in range(self.K)}
 
     def interaction_indices(self) -> dict[str, float]:
         """Extract upper-triangle interaction weights."""

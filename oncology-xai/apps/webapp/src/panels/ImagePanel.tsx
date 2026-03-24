@@ -379,7 +379,7 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                               .map(([pat, val]) => (
                                 <span key={pat} className="bg-gray-100 rounded px-1 py-0.5">
                                   <span className="w-2 h-2 rounded-full inline-block mr-0.5" style={{ backgroundColor: PATTERN_COLORS[pat] || '#ccc' }} />
-                                  {(val as number).toFixed(2)}
+                                  {(val as number).toFixed(4)}
                                 </span>
                               ))}
                           </div>

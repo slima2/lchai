@@ -65,13 +65,16 @@ def run_shap_decomposition(
         return _mock_decomposition(gene)
 
     abs_shap = np.abs(shap_vals)
-    embed_contrib = abs_shap[:EMBED_DIM].sum()
-    pattern_contrib = abs_shap[EMBED_DIM:EMBED_DIM + PATTERN_DIM].sum()
-    total = embed_contrib + pattern_contrib
 
-    if total > 0:
-        result.embedding_contribution_pct = round(float(embed_contrib / total * 100), 1)
-        result.pattern_contribution_pct = round(float(pattern_contrib / total * 100), 1)
+    # Normalize by MEAN per-dimension (not sum) to fairly compare
+    # 512 embedding dims vs 6 pattern dims
+    embed_mean = abs_shap[:EMBED_DIM].mean() if EMBED_DIM > 0 else 0.0
+    pattern_mean = abs_shap[EMBED_DIM:EMBED_DIM + PATTERN_DIM].mean() if PATTERN_DIM > 0 else 0.0
+    total_mean = embed_mean + pattern_mean
+
+    if total_mean > 0:
+        result.embedding_contribution_pct = round(float(embed_mean / total_mean * 100), 1)
+        result.pattern_contribution_pct = round(float(pattern_mean / total_mean * 100), 1)
     else:
         result.embedding_contribution_pct = 50.0
         result.pattern_contribution_pct = 50.0
