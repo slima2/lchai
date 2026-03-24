@@ -93,8 +93,19 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
         if device == "cuda":
             logger.info("GPU: %s, VRAM: %.1f GB", torch.cuda.get_device_name(0), torch.cuda.get_device_properties(0).total_memory / 1e9)
 
+        # Resolve original slide name for TCGA detection (via patient external_id)
+        slide_name_row = db.execute(
+            text("""SELECT p.external_id FROM images i
+                    JOIN cases c ON i.case_id = c.id
+                    JOIN patients p ON c.patient_id = p.id
+                    WHERE i.id = :id"""),
+            {"id": image_id},
+        ).fetchone()
+        slide_name = slide_name_row[0] if slide_name_row and slide_name_row[0] else ""
+        original_filename = slide_name or (key if row and row[0] else f"image:{image_id}")
+        logger.info("Slide origin: name=%s, is_tcga=%s", slide_name[:60] if slide_name else "unknown", "TCGA" in original_filename.upper())
+
         thr = thresholds or {}
-        original_filename = key if row and row[0] else f"image:{image_id}"
         config = InferenceConfig(
             image_uri=original_filename,
             image_format=image_format,
