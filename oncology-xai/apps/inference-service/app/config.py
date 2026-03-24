@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     v2_checkpoint_dir: str = "/data/checkpoints"
     use_choquet: bool = True
     v2_top_k_tiles: int = 200
-    v2_max_tiles_wsi: int = 10000
+    v2_max_tiles_wsi: int = 20000
 
     # v2 genes (expanded from v1's EGFR/KRAS/TP53)
     v2_genes: str = "TP53,EGFR,KRAS,STK11,KEAP1,RBM10"
