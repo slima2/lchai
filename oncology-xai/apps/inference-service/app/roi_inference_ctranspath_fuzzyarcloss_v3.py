@@ -571,23 +571,36 @@ def _cleanup_wsi():
             pass
 
 
+def _is_tcga_slide() -> bool:
+    """Detect if current slide is from TCGA (curated, no pen markers)."""
+    if _WSI_SLIDE_HANDLE is None:
+        return False
+    _, path = _WSI_SLIDE_HANDLE
+    return "TCGA" in (path or "").upper()
+
+
 def _tile_wsi_full_resolution(
     tile_size: int = 224,
     level: int = 0,
     tissue_threshold: float = 0.15,
     max_tiles: int = 50000,
+    image_uri: str = "",
 ) -> list[tuple[int, int, Image.Image]] | None:
     """Tile a WSI at full resolution using OpenSlide read_region.
 
-    Skips background tiles (>85% white) to focus on tissue.
-    Returns list of (x, y, tile_image) or None if no WSI handle.
+    Applies two filtering levels:
+    - TCGA slides (curated): minimal filters (background + very dark only)
+    - Hospital/real slides: full artifact rejection (pen markers, saturation, etc.)
     """
     if _WSI_SLIDE_HANDLE is None:
         return None
 
+    is_tcga = _is_tcga_slide() or "TCGA" in image_uri.upper()
     slide, _ = _WSI_SLIDE_HANDLE
     w, h = slide.level_dimensions[level]
-    logger.info("WSI full-resolution tiling: level=%d, dims=(%d, %d), tile=%d", level, w, h, tile_size)
+    filter_mode = "TCGA-minimal" if is_tcga else "hospital-full"
+    logger.info("WSI full-resolution tiling: level=%d, dims=(%d, %d), tile=%d, filters=%s",
+                level, w, h, tile_size, filter_mode)
 
     tiles = []
     step = tile_size
@@ -602,6 +615,9 @@ def _tile_wsi_full_resolution(
         logger.info("WSI subsampling with stride=%d to stay under max_tiles", stride)
 
     count = 0
+    rejected_bg = 0
+    rejected_artifact = 0
+
     for yi in range(0, n_y, stride):
         for xi in range(0, n_x, stride):
             if count >= max_tiles:
@@ -613,72 +629,84 @@ def _tile_wsi_full_resolution(
 
             arr = np.array(tile_rgb)
             gray = arr.mean(axis=2)
+
+            # --- FILTER 1: Background (both TCGA and hospital) ---
             tissue_frac = (gray < 220).mean()
             if tissue_frac < tissue_threshold:
+                rejected_bg += 1
                 continue
 
-            # Artifact rejection: skip tiles with non-tissue content
-            r, g, b = arr[:,:,0].astype(float), arr[:,:,1].astype(float), arr[:,:,2].astype(float)
-
-            # H&E tissue is pink/purple: high in R and B, moderate G
-            # Reject tiles that are mostly gray/black (ink, barcodes, text)
+            # --- FILTER 2: Very dark tiles (both TCGA and hospital) ---
             very_dark = (gray < 50).mean()
             if very_dark > 0.3:
+                rejected_artifact += 1
                 continue
 
-            # Reject tiles with very low color saturation (gray artifacts, pen marks)
+            # --- FILTER 3: Low saturation (both, but lenient for TCGA) ---
+            r, g, b = arr[:,:,0].astype(float), arr[:,:,1].astype(float), arr[:,:,2].astype(float)
             max_rgb = np.maximum(np.maximum(r, g), b)
             min_rgb = np.minimum(np.minimum(r, g), b)
             saturation = np.where(max_rgb > 0, (max_rgb - min_rgb) / max_rgb, 0)
             mean_sat = saturation.mean()
-            if mean_sat < 0.04:
+            if mean_sat < 0.03:
+                rejected_artifact += 1
                 continue
 
-            # Reject tiles with too many straight edges (barcodes, text, labels)
-            # High-frequency content in one direction = lines/text
-            gray_uint8 = gray.astype(np.uint8)
-            dx = np.abs(np.diff(gray_uint8, axis=1)).mean()
-            dy = np.abs(np.diff(gray_uint8, axis=0)).mean()
-            edge_ratio = max(dx, dy) / (min(dx, dy) + 1e-6)
-            if edge_ratio > 3.0 and (dx > 15 or dy > 15):
-                continue
+            # --- TCGA: skip all marker filters (curated images) ---
+            if not is_tcga:
+                # Straight edges (barcodes, text, labels)
+                gray_uint8 = gray.astype(np.uint8)
+                dx = np.abs(np.diff(gray_uint8, axis=1)).mean()
+                dy = np.abs(np.diff(gray_uint8, axis=0)).mean()
+                edge_ratio = max(dx, dy) / (min(dx, dy) + 1e-6)
+                if edge_ratio > 3.0 and (dx > 15 or dy > 15):
+                    rejected_artifact += 1
+                    continue
 
-            # Reject tiles where green channel dominates (marker pen, green ink)
-            green_dominant = ((g > r + 20) & (g > b + 20)).mean()
-            if green_dominant > 0.4:
-                continue
+                # Green marker pen
+                green_dominant = ((g > r + 20) & (g > b + 20)).mean()
+                if green_dominant > 0.4:
+                    rejected_artifact += 1
+                    continue
 
-            # Reject tiles with red marker/pen (high R, low G and B)
-            red_marker = ((r > 150) & (r > g + 40) & (r > b + 40)).mean()
-            if red_marker > 0.3:
-                continue
+                # Red marker pen
+                red_marker = ((r > 150) & (r > g + 40) & (r > b + 40)).mean()
+                if red_marker > 0.3:
+                    rejected_artifact += 1
+                    continue
 
-            # Reject tiles with olive/yellow marker (high R and G, low B)
-            olive_marker = ((r > 140) & (g > 120) & (b < 100) & ((r + g) > 2.5 * b)).mean()
-            if olive_marker > 0.3:
-                continue
+                # Olive/yellow marker
+                olive_marker = ((r > 140) & (g > 120) & (b < 100) & ((r + g) > 2.5 * b)).mean()
+                if olive_marker > 0.3:
+                    rejected_artifact += 1
+                    continue
 
-            # Reject tiles with blue/teal marker pen (B strongly dominates)
-            blue_marker = ((b > r + 30) & (b > g + 20) & (b > 100)).mean()
-            if blue_marker > 0.25:
-                continue
+                # Blue/teal marker pen
+                blue_marker = ((b > r + 30) & (b > g + 20) & (b > 100)).mean()
+                if blue_marker > 0.25:
+                    rejected_artifact += 1
+                    continue
 
-            # Reject tiles with teal/cyan marker (G and B high, R clearly low)
-            teal_marker = ((g > r + 20) & (b > r + 20) & (r < 100)).mean()
-            if teal_marker > 0.30:
-                continue
+                # Teal/cyan marker
+                teal_marker = ((g > r + 20) & (b > r + 20) & (r < 100)).mean()
+                if teal_marker > 0.30:
+                    rejected_artifact += 1
+                    continue
 
-            # Reject non-H&E highly saturated regions (strong marker ink only)
-            high_sat = (saturation > 0.6).mean()
-            if high_sat > 0.5 and mean_sat > 0.45:
-                continue
+                # Non-H&E highly saturated regions
+                high_sat = (saturation > 0.6).mean()
+                if high_sat > 0.5 and mean_sat > 0.45:
+                    rejected_artifact += 1
+                    continue
 
             tiles.append((x, y, tile_rgb))
             count += 1
         if count >= max_tiles:
             break
 
-    logger.info("WSI tiling complete: %d tissue tiles from %d candidates", len(tiles), total_candidates)
+    logger.info("WSI tiling complete: %d tissue tiles from %d candidates "
+                "(rejected: %d background, %d artifacts, filters=%s)",
+                len(tiles), total_candidates, rejected_bg, rejected_artifact, filter_mode)
     return tiles if tiles else None
 
 
@@ -731,6 +759,7 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
 
     wsi_tiles = _tile_wsi_full_resolution(
         tile_size=tile_sz, tissue_threshold=0.15, max_tiles=config.max_tiles_wsi,
+        image_uri=config.image_uri,
     )
     if wsi_tiles is not None and len(wsi_tiles) > 0:
         tiles = wsi_tiles
