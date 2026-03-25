@@ -29,6 +29,9 @@ function ParametersPanel() {
     TP53: 'baseline2', EGFR: 'baseline2', STK11: 'proposed', KEAP1: 'proposed', KRAS: 'choquet', RBM10: 'choquet',
   });
   const [threshold, setThreshold] = useState(0.70);
+  const [geneThresholds, setGeneThresholds] = useState<Record<string, number>>({
+    TP53: 0.45, EGFR: 0.20, KRAS: 0.25, STK11: 0.20, KEAP1: 0.20, RBM10: 0.15,
+  });
   const [mutThreshold, setMutThreshold] = useState(0.50);
   const [topK, setTopK] = useState(200);
   const [maxTiles, setMaxTiles] = useState(20000);
@@ -41,6 +44,7 @@ function ParametersPanel() {
       if (r.data?.auroc_values) setAurocs(r.data.auroc_values);
       if (r.data?.auroc_threshold != null) setThreshold(r.data.auroc_threshold);
       if (r.data?.best_method) setMethods(r.data.best_method);
+      if (r.data?.gene_mutation_thresholds) setGeneThresholds(r.data.gene_mutation_thresholds);
       if (r.data?.mutation_threshold != null) setMutThreshold(r.data.mutation_threshold);
       if (r.data?.top_k_tiles != null) setTopK(r.data.top_k_tiles);
       if (r.data?.max_tiles != null) setMaxTiles(r.data.max_tiles);
@@ -54,6 +58,7 @@ function ParametersPanel() {
     try {
       await api.put('/parameters', {
         auroc_values: aurocs, auroc_threshold: threshold, best_method: methods,
+        gene_mutation_thresholds: geneThresholds,
         mutation_threshold: mutThreshold, top_k_tiles: topK, max_tiles: maxTiles,
         permutation_repeats: permRepeats,
       });
@@ -81,6 +86,7 @@ function ParametersPanel() {
                 <th className="border px-3 py-2 text-left">Gene</th>
                 <th className="border px-3 py-2 text-center">AUROC</th>
                 <th className="border px-3 py-2 text-center">Method</th>
+                <th className="border px-3 py-2 text-center">Mut. Threshold</th>
                 <th className="border px-3 py-2 text-center">Label</th>
               </tr>
             </thead>
@@ -106,6 +112,14 @@ function ParametersPanel() {
                         <option key={o.value} value={o.value}>{o.label}</option>
                       ))}
                     </select>
+                  </td>
+                  <td className="border px-1 py-1 text-center">
+                    <input
+                      type="number" step="0.05" min="0.05" max="0.90"
+                      className="w-16 text-center font-mono border rounded px-1 py-1 text-sm"
+                      value={geneThresholds[gene] ?? 0.50}
+                      onChange={e => setGeneThresholds({ ...geneThresholds, [gene]: parseFloat(e.target.value) || 0.50 })}
+                    />
                   </td>
                   <td className="border px-3 py-2 text-center">
                     <span className={`px-2 py-0.5 rounded text-xs font-bold ${
@@ -146,11 +160,6 @@ function ParametersPanel() {
 
           <h4 className="font-semibold text-sm mt-4 mb-2">Inference Parameters — editable</h4>
           <div className="bg-gray-50 rounded p-4 space-y-3 text-sm">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Mutation threshold (POS/NEG)</span>
-              <input type="number" step="0.05" min="0.1" max="0.9" className="w-20 text-center font-mono border rounded px-1 py-1 text-sm"
-                value={mutThreshold} onChange={e => setMutThreshold(parseFloat(e.target.value) || 0.5)} />
-            </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Top-K attention tiles</span>
               <input type="number" step="50" min="50" max="1000" className="w-20 text-center font-mono border rounded px-1 py-1 text-sm"
