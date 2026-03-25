@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to git
+
+domain_name    = "lchai.yourdomain.com"
+db_password    = "your-secure-password-here"
+openai_api_key = "sk-..."
+
+# Optional overrides
+# region           = "us-east-1"
+# eks_cpu_instance = "t3.xlarge"
+# eks_gpu_instance = "g4dn.xlarge"
+# rds_instance     = "db.t3.medium"
+# redis_instance   = "cache.t3.micro"
