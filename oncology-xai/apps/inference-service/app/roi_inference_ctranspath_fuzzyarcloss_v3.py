@@ -144,6 +144,8 @@ class InferenceResult:
     permutation_results: list[Any] = field(default_factory=list)
     # Image quality warnings
     quality_warnings: list[str] = field(default_factory=list)
+    # Pattern region map for interactive hover (thumbnail coordinates)
+    pattern_region_map: list[dict] = field(default_factory=list)
     # Metrics
     metrics: dict[str, Any] = field(default_factory=dict)
 
@@ -938,6 +940,17 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
         result.overlay_combined_bytes = _build_overlay(img, overlay_coords, tile_labels, overlay_tile_sz, alpha=160)
     else:
         result.overlay_combined_bytes = _build_overlay(img, tile_coords, tile_labels, tile_sz)
+
+    # 6b) Build pattern region map for interactive hover
+    use_oc = overlay_coords if _WSI_SLIDE_HANDLE is not None else tile_coords
+    use_ts = overlay_tile_sz if _WSI_SLIDE_HANDLE is not None else tile_sz
+    thumb_w_actual, thumb_h_actual = img.size
+    result.pattern_region_map = [
+        {"x": int(tx), "y": int(ty), "w": use_ts, "h": use_ts, "pattern": lbl,
+         "xn": round(tx / thumb_w_actual, 4), "yn": round(ty / thumb_h_actual, 4),
+         "wn": round(use_ts / thumb_w_actual, 4), "hn": round(use_ts / thumb_h_actual, 4)}
+        for (tx, ty), lbl in zip(use_oc, tile_labels)
+    ]
 
     # 7) Morphologic profile
     profile = {

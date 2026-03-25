@@ -183,6 +183,20 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
             )
             db.add(comb_art)
 
+        # Upload pattern region map (JSON) for interactive hover
+        if result.pattern_region_map:
+            region_json = json.dumps(result.pattern_region_map).encode()
+            region_key = f"{prefix}/pattern_region_map.json"
+            storage.upload_bytes(region_key, region_json, "application/json")
+            region_art = XAIArtifactDB(
+                result_bundle_id=rb_id,
+                artifact_type="pattern_region_map",
+                gene=None,
+                uri=f"s3://{settings.s3_bucket}/{region_key}",
+                hash=hashlib.sha256(region_json).hexdigest(),
+            )
+            db.add(region_art)
+
         # Persist ResultBundle to DB (v2)
         bundle = ResultBundleDB(
             id=rb_id,

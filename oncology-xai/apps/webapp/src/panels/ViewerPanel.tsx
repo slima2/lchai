@@ -25,6 +25,9 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
   const [overlayOpacity, setOverlayOpacity] = useState(0.85);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; pattern: string } | null>(null);
+  const [regionMap, setRegionMap] = useState<any[] | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   const images = useQuery({
     queryKey: ['viewer-images', caseId],
@@ -61,6 +64,14 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
   const roiArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'roi_overlay');
   const attnArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'attention_overlay');
   const combArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'combined_overlay');
+  const regionMapArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'pattern_region_map');
+
+  useEffect(() => {
+    if (regionMapArt?.uri) {
+      const url = getArtifactUrl(regionMapArt.uri);
+      fetch(url).then(r => r.json()).then(data => setRegionMap(data)).catch(() => setRegionMap(null));
+    }
+  }, [regionMapArt?.uri]);
 
   const thumbnailUrl = thumbArt?.uri ? getArtifactUrl(thumbArt.uri) : null;
   const patternUrl = roiArt?.uri ? getArtifactUrl(roiArt.uri) : null;
@@ -167,8 +178,25 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
               {imgError && (
                 <div className="text-red-400 text-sm absolute">Failed to load image</div>
               )}
-              <img src={activeUrl} alt={`${layer} view`} draggable={false}
+              <img ref={imgRef} src={activeUrl} alt={`${layer} view`} draggable={false}
                 onLoad={() => setImgLoaded(true)} onError={() => setImgError(true)}
+                onMouseMove={(e) => {
+                  if (!regionMap || (layer !== 'pattern' && layer !== 'combined')) { setTooltip(null); return; }
+                  const img = imgRef.current;
+                  if (!img) return;
+                  const rect = img.getBoundingClientRect();
+                  const xn = (e.clientX - rect.left) / rect.width;
+                  const yn = (e.clientY - rect.top) / rect.height;
+                  const hit = regionMap.find((r: any) =>
+                    xn >= r.xn && xn <= r.xn + r.wn && yn >= r.yn && yn <= r.yn + r.hn
+                  );
+                  if (hit) {
+                    setTooltip({ x: e.clientX, y: e.clientY, pattern: hit.pattern });
+                  } else {
+                    setTooltip(null);
+                  }
+                }}
+                onMouseLeave={() => setTooltip(null)}
                 style={{
                   maxWidth: 'none', maxHeight: 'none',
                   opacity: imgLoaded ? (layer === 'original' ? 1 : overlayOpacity) : 0,
@@ -190,6 +218,20 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
             </div>
           )}
 
+          {tooltip && (
+            <div
+              className="fixed z-50 pointer-events-none bg-black/85 text-white text-xs font-bold px-3 py-1.5 rounded shadow-lg capitalize"
+              style={{ left: tooltip.x + 12, top: tooltip.y - 30 }}
+            >
+              <span className="inline-block w-2.5 h-2.5 rounded-full mr-1.5" style={{
+                backgroundColor: ({
+                  acinar: '#00FF00', lepidic: '#E6FF32', papillary: '#0000FF',
+                  micropapillary: '#FFD700', solid: '#FF0000', mucinous: '#FFA500',
+                } as Record<string, string>)[tooltip.pattern] || '#888'
+              }} />
+              {tooltip.pattern}
+            </div>
+          )}
           <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs font-mono px-2 py-1 rounded">
             {(zoom * 100).toFixed(0)}% | {layer} {imgLoaded ? '✓' : '⏳'}
           </div>
