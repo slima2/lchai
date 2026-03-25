@@ -1,0 +1,253 @@
+// LCHAI v2.0 — AWS EKS Infrastructure
+// Render:  dot -Tpng lchai_aws_infrastructure.gv -o lchai_aws_infrastructure.png -Gdpi=150
+//          dot -Tsvg lchai_aws_infrastructure.gv -o lchai_aws_infrastructure.svg
+
+digraph LCHAI_AWS {
+  compound=true;
+  rankdir=TB;
+  splines=polyline;
+  nodesep=0.5;
+  ranksep=0.7;
+  pad=0.3;
+
+  graph [fontname="Segoe UI", fontsize=14,
+         label=<<B>LCHAI v2.0 — AWS EKS Production Infrastructure</B><BR/>
+                <FONT POINT-SIZE="10">Region: us-east-1 | Domain: lchai.gptfy.biz | GPU: g4dn.xlarge (T4 Spot)</FONT>>,
+         labelloc=t, labeljust=c, bgcolor="#F8F9FA"];
+  node  [fontname="Segoe UI", fontsize=9, shape=box,
+         style="rounded,filled", margin="0.15,0.08"];
+  edge  [fontname="Segoe UI", fontsize=7, color="#666666"];
+
+  // ===================================================================
+  //  INTERNET
+  // ===================================================================
+  subgraph cluster_internet {
+    label=<<B>Internet</B>>;
+    labelloc=t; style="rounded,dashed"; color="#999999"; bgcolor="#FFFFFF";
+
+    user [label="Users / Browsers", shape=ellipse, fillcolor="#E3F2FD", color="#1565C0"];
+    domain [label=<<B>lchai.gptfy.biz</B><BR/><FONT POINT-SIZE="8">Hostinger DNS (CNAME)</FONT>>,
+            shape=oval, fillcolor="#E8EAF6", color="#3F51B5"];
+  }
+
+  // ===================================================================
+  //  AWS CLOUD
+  // ===================================================================
+  subgraph cluster_aws {
+    label=<<B>AWS Cloud</B>  <FONT POINT-SIZE="9">(us-east-1, Account 632100838024)</FONT>>;
+    labelloc=t; style=rounded; bgcolor="#FFF8E1"; color="#FFB300";
+
+    // ── Route53 + ACM ──
+    subgraph cluster_edge {
+      label=<<B>Edge / SSL</B>>;
+      labelloc=t; style=rounded; bgcolor="#FFF3E0"; color="#FF9800";
+
+      acm [label=<<B>ACM Certificate</B><BR/><FONT POINT-SIZE="8">lchai.gptfy.biz<BR/>Auto-renewing SSL</FONT>>,
+           fillcolor="#FFE0B2", color="#E65100", shape=note];
+
+      alb [label=<<B>Application Load Balancer</B><BR/><FONT POINT-SIZE="8">k8s-default-lchaiing-ac1c...<BR/>HTTPS :443 + HTTP :80 redirect<BR/>3 target groups (webapp, api, keycloak)</FONT>>,
+           fillcolor="#FFE0B2", color="#E65100"];
+    }
+
+    // ── VPC ──
+    subgraph cluster_vpc {
+      label=<<B>VPC</B>  <FONT POINT-SIZE="8">10.0.0.0/16 | 2 AZs (us-east-1a, us-east-1b)</FONT>>;
+      labelloc=t; style=rounded; bgcolor="#E8F5E9"; color="#66BB6A";
+
+      // ── Public Subnets ──
+      subgraph cluster_public {
+        label=<<B>Public Subnets</B>  <FONT POINT-SIZE="8">10.0.1.0/24, 10.0.2.0/24</FONT>>;
+        labelloc=t; style="rounded,dashed"; bgcolor="#C8E6C9"; color="#43A047";
+
+        nat [label=<<B>NAT Gateway</B><BR/><FONT POINT-SIZE="8">Outbound internet<BR/>for private subnets</FONT>>,
+             fillcolor="#A5D6A7", color="#2E7D32"];
+      }
+
+      // ── Private Subnets ──
+      subgraph cluster_private {
+        label=<<B>Private Subnets</B>  <FONT POINT-SIZE="8">10.0.10.0/24, 10.0.11.0/24</FONT>>;
+        labelloc=t; style=rounded; bgcolor="#E3F2FD"; color="#42A5F5";
+
+        // ── EKS Cluster ──
+        subgraph cluster_eks {
+          label=<<B>EKS Cluster</B>  <FONT POINT-SIZE="8">lchai-prod-eks | Kubernetes 1.29</FONT>>;
+          labelloc=t; style=rounded; bgcolor="#BBDEFB"; color="#1E88E5";
+
+          // ── CPU Node Group ──
+          subgraph cluster_cpu_nodes {
+            label=<<B>CPU Node Group</B>  <FONT POINT-SIZE="8">2x t3.xlarge (4 vCPU, 16GB) | ON_DEMAND</FONT>>;
+            labelloc=t; style=rounded; bgcolor="#E1F5FE"; color="#0288D1";
+
+            gw1 [label="api-gateway\nx2", fillcolor="#B3E5FC", color="#0277BD"];
+            webapp_pod [label="webapp\nx2 (nginx)", fillcolor="#B3E5FC", color="#0277BD"];
+            case_pod [label="case-service", fillcolor="#B3E5FC", color="#0277BD"];
+            image_pod [label="image-service", fillcolor="#B3E5FC", color="#0277BD"];
+            infer_pod [label="inference-service", fillcolor="#B3E5FC", color="#0277BD"];
+            ehr_pod [label="ehr-service", fillcolor="#B3E5FC", color="#0277BD"];
+            graph_pod [label="graph-service", fillcolor="#B3E5FC", color="#0277BD"];
+            ont_pod [label="ontology-admin", fillcolor="#B3E5FC", color="#0277BD"];
+            audit_pod [label="audit-service", fillcolor="#B3E5FC", color="#0277BD"];
+            kc_pod [label="keycloak", fillcolor="#B3E5FC", color="#0277BD"];
+
+            // StatefulSets
+            rmq_pod [label="rabbitmq\nStatefulSet\nEBS 5GB", fillcolor="#DCEDC8", color="#689F38", shape=box3d];
+            fuseki_pod [label="fuseki\nStatefulSet\nEBS 10GB", fillcolor="#DCEDC8", color="#689F38", shape=box3d];
+          }
+
+          // ── GPU Node Group ──
+          subgraph cluster_gpu_nodes {
+            label=<<B>GPU Node Group</B>  <FONT POINT-SIZE="8">1x g4dn.xlarge (T4 GPU, 16GB) | SPOT ~$0.16/hr</FONT>>;
+            labelloc=t; style=rounded; bgcolor="#FFF3E0"; color="#E65100";
+
+            worker_pod [label=<<B>inference-worker</B><BR/><FONT POINT-SIZE="8">Celery + PyTorch CUDA 12.4<BR/>CTransPath + ABMIL + Choquet<BR/>batch_size=64 on T4 GPU</FONT>>,
+                        fillcolor="#FFCCBC", color="#BF360C", shape=box3d];
+          }
+
+          // ── System Pods ──
+          subgraph cluster_system {
+            label=""; labelloc=t; style=invis;
+
+            alb_ctrl [label="ALB Controller\n(kube-system)", fillcolor="#E0E0E0", color="#757575"];
+            nvidia_plugin [label="NVIDIA Device\nPlugin DaemonSet", fillcolor="#E0E0E0", color="#757575"];
+            ebs_csi [label="EBS CSI\nDriver", fillcolor="#E0E0E0", color="#757575"];
+          }
+        }
+
+        // ── Managed Services ──
+        subgraph cluster_managed {
+          label=<<B>AWS Managed Services</B>>;
+          labelloc=t; style=rounded; bgcolor="#F3E5F5"; color="#AB47BC";
+
+          rds [label=<<B>RDS PostgreSQL 16</B><BR/><FONT POINT-SIZE="8">db.t3.medium<BR/>lchai-prod-postgres<BR/>20-100GB auto-scaling<BR/>Encrypted + 7-day backup</FONT>>,
+               fillcolor="#E1BEE7", color="#7B1FA2", shape=cylinder];
+
+          redis [label=<<B>ElastiCache Redis 7</B><BR/><FONT POINT-SIZE="8">cache.t3.micro<BR/>lchai-prod-redis<BR/>Celery backend + progress</FONT>>,
+                 fillcolor="#E1BEE7", color="#7B1FA2", shape=cylinder];
+        }
+      }
+    }
+
+    // ── S3 Buckets ──
+    subgraph cluster_s3 {
+      label=<<B>S3 Storage</B>>;
+      labelloc=t; style=rounded; bgcolor="#E0F7FA"; color="#00ACC1";
+
+      s3_artifacts [label=<<B>lchai-prod-artifacts</B><BR/><FONT POINT-SIZE="8">Images, overlays, SHAP PNGs<BR/>Pattern region maps<BR/>Versioned + AES-256</FONT>>,
+                    fillcolor="#B2EBF2", color="#00838F", shape=folder];
+
+      s3_models [label=<<B>lchai-prod-models</B><BR/><FONT POINT-SIZE="8">CTransPath backbone (107MB)<BR/>FuzzyArcLoss V2 head (3MB)<BR/>ABMIL/Choquet checkpoints (4.6GB)<BR/>171 files across 6 genes x 5 folds</FONT>>,
+                 fillcolor="#B2EBF2", color="#00838F", shape=folder];
+
+      s3_tfstate [label=<<B>lchai-terraform-state</B><BR/><FONT POINT-SIZE="8">Terraform state file</FONT>>,
+                  fillcolor="#B2EBF2", color="#00838F", shape=folder];
+    }
+
+    // ── ECR ──
+    subgraph cluster_ecr {
+      label=<<B>ECR Container Registry</B>>;
+      labelloc=t; style=rounded; bgcolor="#ECEFF1"; color="#78909C";
+
+      ecr [label=<<B>9 Repositories</B><BR/><FONT POINT-SIZE="8">632100838024.dkr.ecr.us-east-1.amazonaws.com/lchai-prod/*<BR/>api-gateway, case-service, image-service,<BR/>inference-service, ehr-service, graph-service,<BR/>ontology-admin-service, audit-service, webapp</FONT>>,
+           fillcolor="#CFD8DC", color="#455A64"];
+    }
+
+    // ── Secrets Manager ──
+    secrets [label=<<B>Secrets Manager</B><BR/><FONT POINT-SIZE="8">DB password, OpenAI key</FONT>>,
+             fillcolor="#FFECB3", color="#FF8F00", shape=note];
+  }
+
+  // ── External Services ──
+  subgraph cluster_external {
+    label=<<B>External APIs</B>>;
+    labelloc=t; style="rounded,dashed"; bgcolor="#FAFAFA"; color="#BDBDBD";
+
+    openai [label="OpenAI API\nGPT-4o-mini", shape=oval, fillcolor="#FFCDD2", color="#E53935"];
+    gdc [label="GDC / TCGA\nSVS downloads", shape=oval, fillcolor="#E0E0E0", color="#757575"];
+  }
+
+  // ===================================================================
+  //  EDGES
+  // ===================================================================
+
+  // User flow
+  user -> domain [label="browser", color="#1565C0"];
+  domain -> alb [label="CNAME\nresolves to ALB", color="#3F51B5", style=dashed];
+  acm -> alb [label="SSL cert", color="#E65100", style=dashed];
+
+  // ALB to pods
+  alb -> webapp_pod [label="/ (HTTPS terminated)", color="#E65100", penwidth=1.5];
+  alb -> gw1 [label="/api/v1/*", color="#E65100", penwidth=1.5];
+  alb -> kc_pod [label="/auth/*", color="#E65100", penwidth=1.5];
+
+  // Gateway to services
+  gw1 -> case_pod [color="#0288D1"];
+  gw1 -> image_pod [color="#0288D1"];
+  gw1 -> infer_pod [color="#0288D1"];
+  gw1 -> ehr_pod [color="#0288D1"];
+  gw1 -> graph_pod [color="#0288D1"];
+  gw1 -> ont_pod [color="#0288D1"];
+  gw1 -> audit_pod [color="#0288D1"];
+
+  // Inference flow
+  infer_pod -> rmq_pod [label="Celery task", color="#689F38"];
+  rmq_pod -> worker_pod [label="consume", color="#689F38"];
+  infer_pod -> redis [label="progress", color="#7B1FA2"];
+  worker_pod -> redis [label="results", color="#7B1FA2"];
+
+  // Database
+  case_pod -> rds [color="#7B1FA2"];
+  image_pod -> rds [color="#7B1FA2"];
+  infer_pod -> rds [color="#7B1FA2"];
+  ehr_pod -> rds [color="#7B1FA2"];
+  graph_pod -> rds [color="#7B1FA2"];
+  ont_pod -> rds [color="#7B1FA2"];
+  audit_pod -> rds [color="#7B1FA2"];
+  kc_pod -> rds [label="Keycloak DB", color="#7B1FA2"];
+
+  // S3
+  image_pod -> s3_artifacts [label="store images", color="#00838F"];
+  worker_pod -> s3_artifacts [label="store overlays\nSHAP, region maps", color="#00838F"];
+  worker_pod -> s3_models [label="init: download\ncheckpoints", color="#00838F", style=dashed];
+
+  // Fuseki
+  graph_pod -> fuseki_pod [label="SPARQL", color="#689F38"];
+  ont_pod -> fuseki_pod [color="#689F38"];
+  ehr_pod -> fuseki_pod [color="#689F38"];
+
+  // External
+  graph_pod -> openai [label="LLM explain", color="#E53935", style=dashed];
+  infer_pod -> openai [label="gene explain", color="#E53935", style=dashed];
+
+  // ECR
+  ecr -> worker_pod [style=dotted, color="#78909C", arrowsize=0.5, label="pull image"];
+  ecr -> gw1 [style=dotted, color="#78909C", arrowsize=0.5];
+
+  // NAT
+  worker_pod -> nat [style=dotted, color="#2E7D32", arrowsize=0.5, label="outbound"];
+
+  // System
+  alb_ctrl -> alb [label="manage", style=dotted, color="#757575"];
+  nvidia_plugin -> worker_pod [label="GPU access", style=dotted, color="#757575"];
+  ebs_csi -> rmq_pod [label="EBS volumes", style=dotted, color="#757575"];
+  ebs_csi -> fuseki_pod [style=dotted, color="#757575"];
+
+  // ===================================================================
+  //  COST LEGEND
+  // ===================================================================
+  subgraph cluster_cost {
+    label=<<B>Estimated Monthly Cost: ~$235/mo</B>>;
+    labelloc=t; style=rounded; bgcolor="#FAFAFA"; color="#E0E0E0";
+
+    cost_table [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+      <TR><TD><B>Component</B></TD><TD><B>Cost/mo</B></TD></TR>
+      <TR><TD>EKS Cluster</TD><TD>$73</TD></TR>
+      <TR><TD>2x t3.xlarge (CPU)</TD><TD>$120</TD></TR>
+      <TR><TD>1x g4dn.xlarge Spot (GPU)</TD><TD>~$50</TD></TR>
+      <TR><TD>RDS db.t3.medium</TD><TD>$35</TD></TR>
+      <TR><TD>NAT Gateway</TD><TD>$35</TD></TR>
+      <TR><TD>ElastiCache</TD><TD>$13</TD></TR>
+      <TR><TD>ALB + S3 + ECR</TD><TD>~$10</TD></TR>
+    </TABLE>>,
+    shape=none];
+  }
+}
