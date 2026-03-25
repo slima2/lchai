@@ -8,7 +8,7 @@ data:
   POSTGRES_PORT: {{ .Values.postgres.port | quote }}
   POSTGRES_DB: {{ .Values.postgres.database | quote }}
   POSTGRES_USER: {{ .Values.postgres.username | quote }}
-  POSTGRES_DSN: "postgresql+asyncpg://{{ .Values.postgres.username }}:{{ .Values.postgres.password }}@{{ .Values.postgres.host }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}?ssl=true"
+  POSTGRES_DSN: "postgresql+asyncpg://{{ .Values.postgres.username }}:{{ .Values.postgres.password }}@{{ .Values.postgres.host }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}?ssl=require"
   POSTGRES_DSN_SYNC: "postgresql://{{ .Values.postgres.username }}:{{ .Values.postgres.password }}@{{ .Values.postgres.host }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}?sslmode=prefer"
   REDIS_URL: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port }}/0"
   RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
@@ -16,6 +16,8 @@ data:
   S3_BUCKET: {{ .Values.s3.bucket | quote }}
   KEYCLOAK_URL: "http://keycloak:8080"
   KEYCLOAK_REALM: "oncology"
+  KEYCLOAK_CLIENT_ID: "oncology-api"
+  JWKS_URL: "http://keycloak:8080/realms/oncology/protocol/openid-connect/certs"
   FUSEKI_URL: "http://fuseki:3030"
   FUSEKI_DATASET: "oncology"
   MODEL_BACKEND: {{ .Values.inferenceWorker.modelBackend | quote }}

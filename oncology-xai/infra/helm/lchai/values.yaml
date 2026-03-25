@@ -22,7 +22,7 @@ s3:
 
 acmCertificateArn: "arn:aws:acm:us-east-1:632100838024:certificate/0b8be42a-de6d-4296-ad66-7ded2bf1c263"
 
-environment: production
+environment: development
 
 keycloak:
   adminPassword: admin
