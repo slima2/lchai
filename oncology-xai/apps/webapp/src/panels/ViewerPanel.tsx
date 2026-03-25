@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getResultBundle, getArtifacts, getArtifactUrl, getImages } from '../api';
+import { api, getResultBundle, getArtifacts, getArtifactUrl, getImages } from '../api';
 
 interface Props {
   caseId: string;
@@ -30,6 +30,16 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
     queryKey: ['viewer-images', caseId],
     queryFn: () => getImages(caseId).then(r => r.data),
   });
+
+  const params = useQuery({
+    queryKey: ['system-params'],
+    queryFn: () => api.get('/parameters').then(r => r.data),
+    staleTime: 0,
+    refetchOnMount: 'always' as const,
+  });
+  const aurocValues: Record<string, number> = params.data?.auroc_values || {};
+  const aurocThreshold: number = params.data?.auroc_threshold ?? 0.70;
+  const isDynConcl = (gene: string) => (aurocValues[gene] ?? 0) >= aurocThreshold;
 
   const bundle = useQuery({
     queryKey: ['viewer-bundle', resultBundleId],
@@ -193,8 +203,8 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
               <div className="flex justify-between items-center">
                 <span className="text-white text-sm font-bold">{gr.mutation}</span>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                  gr.confidence_label === 'Conclusive' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'
-                }`}>{gr.confidence_label || gr.status}</span>
+                  isDynConcl(gr.mutation) ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'
+                }`}>{isDynConcl(gr.mutation) ? 'Conclusive' : 'Inconclusive'}</span>
               </div>
               <div className="flex justify-between mt-1">
                 <span className="text-gray-400 text-xs">P(mut)</span>
