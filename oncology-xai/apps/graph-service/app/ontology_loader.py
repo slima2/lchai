@@ -454,6 +454,9 @@ def build_case_graph_from_ontology(
             })
             discovered_count += 1
 
+    # Deduplicate nodes: merge nodes with same label (case-insensitive)
+    nodes, edges = _deduplicate_graph(nodes, edges)
+
     logger.info(
         "Built case-specific graph for %s: %d nodes, %d edges "
         "(patterns=%d, genes=%d, treatments=%d, discovered=%d)",
@@ -462,3 +465,66 @@ def build_case_graph_from_ontology(
         len(relevant_treatment_ids), discovered_count,
     )
     return nodes, edges
+
+
+def _deduplicate_graph(
+    nodes: dict[str, dict], edges: list[dict]
+) -> tuple[dict[str, dict], list[dict]]:
+    """Merge nodes that have the same label (case-insensitive).
+
+    When two nodes have labels like "Sotorasib" and "sotorasib", keep the
+    one with more metadata (higher priority source) and remap all edges.
+    """
+    label_to_canonical: dict[str, str] = {}
+    id_remap: dict[str, str] = {}
+
+    source_priority = {"curated": 3, "ehr": 2, "system": 2, "discovered": 1, "inferred": 0}
+
+    for nid, node in sorted(nodes.items()):
+        label_key = (node.get("label", "") or nid).strip().lower()
+        # Remove status suffixes for comparison: "TP53 [POS]" → "tp53"
+        clean_key = label_key.split("[")[0].split("(")[0].strip()
+        if not clean_key:
+            clean_key = label_key
+
+        if clean_key in label_to_canonical:
+            canonical_id = label_to_canonical[clean_key]
+            canonical_node = nodes[canonical_id]
+            current_prio = source_priority.get(node.get("source", ""), 0)
+            canonical_prio = source_priority.get(canonical_node.get("source", ""), 0)
+            if current_prio > canonical_prio:
+                id_remap[canonical_id] = nid
+                label_to_canonical[clean_key] = nid
+            else:
+                id_remap[nid] = canonical_id
+        else:
+            label_to_canonical[clean_key] = nid
+
+    if not id_remap:
+        return nodes, edges
+
+    # Remove remapped nodes
+    deduped_nodes = {nid: node for nid, node in nodes.items() if nid not in id_remap}
+
+    # Remap edges
+    deduped_edges = []
+    seen_edges: set[str] = set()
+    for e in edges:
+        src = id_remap.get(e["source"], e["source"])
+        tgt = id_remap.get(e["target"], e["target"])
+        if src == tgt:
+            continue
+        if src not in deduped_nodes or tgt not in deduped_nodes:
+            continue
+        edge_key = f"{src}-{e['label']}-{tgt}"
+        if edge_key in seen_edges:
+            continue
+        seen_edges.add(edge_key)
+        deduped_edges.append({**e, "source": src, "target": tgt})
+
+    n_merged = len(id_remap)
+    n_edge_deduped = len(edges) - len(deduped_edges)
+    if n_merged > 0:
+        logger.info("Graph dedup: merged %d duplicate nodes, removed %d duplicate edges", n_merged, n_edge_deduped)
+
+    return deduped_nodes, deduped_edges
