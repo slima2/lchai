@@ -210,8 +210,8 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
                 <span className="text-gray-400 text-xs">P(mut)</span>
                 <span className="text-white text-xs font-mono">{((gr.score || 0) * 100).toFixed(1)}%</span>
               </div>
-              {gr.shap_decomposition?.embedding_contribution_pct != null && (
-                <div className="mt-1 h-1.5 rounded bg-gray-700 overflow-hidden flex">
+              {gr.shap_decomposition?.embedding_contribution_pct != null && (gr.prediction_method || '').includes('proposed') && (
+                <div className="mt-1 h-1.5 rounded bg-gray-700 overflow-hidden flex" title={`Emb ${gr.shap_decomposition.embedding_contribution_pct}% / Pat ${gr.shap_decomposition.pattern_contribution_pct}%`}>
                   <div className="bg-blue-500 h-full" style={{ width: `${gr.shap_decomposition.embedding_contribution_pct}%` }} />
                   <div className="bg-red-400 h-full" style={{ width: `${gr.shap_decomposition.pattern_contribution_pct}%` }} />
                 </div>
