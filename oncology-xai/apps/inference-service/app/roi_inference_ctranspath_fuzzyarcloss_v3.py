@@ -732,6 +732,14 @@ def _tile_wsi_full_resolution(
                 rejected_artifact += 1
                 continue
 
+            # --- FILTER 2c: Low texture (holes, glass, mounting medium) ---
+            # Real tissue has high intensity variance (nuclei, stroma, glands)
+            # Empty areas (lumen, holes, glass) have very uniform appearance
+            gray_std = gray.std()
+            if gray_std < 12:
+                rejected_artifact += 1
+                continue
+
             # --- FILTER 3: Low saturation (both, but lenient for TCGA) ---
             r, g, b = arr[:,:,0].astype(float), arr[:,:,1].astype(float), arr[:,:,2].astype(float)
             max_rgb = np.maximum(np.maximum(r, g), b)
