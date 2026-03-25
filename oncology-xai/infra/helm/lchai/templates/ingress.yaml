@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lchai-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.acmCertificateArn | quote }}
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/healthcheck-path: /metrics
+spec:
+  rules:
+    - host: {{ .Values.domain }}
+      http:
+        paths:
+          - path: /api/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8000
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: webapp
+                port:
+                  number: 3000

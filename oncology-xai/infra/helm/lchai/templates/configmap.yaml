@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lchai-config
+data:
+  ENVIRONMENT: {{ .Values.environment | quote }}
+  POSTGRES_HOST: {{ .Values.postgres.host | quote }}
+  POSTGRES_PORT: {{ .Values.postgres.port | quote }}
+  POSTGRES_DB: {{ .Values.postgres.database | quote }}
+  POSTGRES_USER: {{ .Values.postgres.username | quote }}
+  POSTGRES_DSN: "postgresql+asyncpg://{{ .Values.postgres.username }}:$(POSTGRES_PASSWORD)@{{ .Values.postgres.host }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}"
+  POSTGRES_DSN_SYNC: "postgresql://{{ .Values.postgres.username }}:$(POSTGRES_PASSWORD)@{{ .Values.postgres.host }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}"
+  REDIS_URL: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port }}/0"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+  S3_ENDPOINT: "https://s3.{{ .Values.s3.region }}.amazonaws.com"
+  S3_BUCKET: {{ .Values.s3.bucket | quote }}
+  KEYCLOAK_URL: "http://keycloak:8080"
+  KEYCLOAK_REALM: "oncology"
+  FUSEKI_URL: "http://fuseki:3030"
+  FUSEKI_DATASET: "oncology"
+  MODEL_BACKEND: {{ .Values.inferenceWorker.modelBackend | quote }}
+  V2_MAX_TILES_WSI: {{ .Values.inferenceWorker.maxTilesWsi | quote }}
+  LOG_LEVEL: "INFO"
+  # Service URLs (ClusterIP)
+  CASE_SERVICE_URL: "http://case-service:8001"
+  IMAGE_SERVICE_URL: "http://image-service:8002"
+  INFERENCE_SERVICE_URL: "http://inference-service:8003"
+  EHR_SERVICE_URL: "http://ehr-service:8004"
+  GRAPH_SERVICE_URL: "http://graph-service:8005"
+  ONTOLOGY_ADMIN_SERVICE_URL: "http://ontology-admin:8006"
+  AUDIT_SERVICE_URL: "http://audit-service:8007"

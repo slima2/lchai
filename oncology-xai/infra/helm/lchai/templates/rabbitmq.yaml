@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+spec:
+  serviceName: rabbitmq
+  replicas: {{ .Values.rabbitmq.replicas }}
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      nodeSelector:
+        workload: general
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3.12-management-alpine
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: guest
+            - name: RABBITMQ_DEFAULT_PASS
+              value: guest
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/rabbitmq
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: gp3
+        resources:
+          requests:
+            storage: {{ .Values.rabbitmq.storage }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+    - name: management
+      port: 15672

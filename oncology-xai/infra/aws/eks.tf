@@ -56,8 +56,4 @@ module "eks" {
   }
 }
 
-resource "aws_eks_addon" "nvidia_device_plugin" {
-  cluster_name = module.eks.cluster_name
-  addon_name   = "nvidia-device-plugin"
-  depends_on   = [module.eks]
-}
+# NVIDIA device plugin is installed via Helm in Phase 2, not as EKS addon

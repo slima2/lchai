@@ -1,0 +1,63 @@
+{{- $services := list
+  (dict "name" "api-gateway" "port" 8000 "replicas" .Values.services.gateway.replicas)
+  (dict "name" "case-service" "port" 8001 "replicas" .Values.services.caseService.replicas)
+  (dict "name" "image-service" "port" 8002 "replicas" .Values.services.imageService.replicas)
+  (dict "name" "inference-service" "port" 8003 "replicas" .Values.services.inferenceService.replicas)
+  (dict "name" "ehr-service" "port" 8004 "replicas" .Values.services.ehrService.replicas)
+  (dict "name" "graph-service" "port" 8005 "replicas" .Values.services.graphService.replicas)
+  (dict "name" "ontology-admin-service" "port" 8006 "replicas" .Values.services.ontologyAdmin.replicas)
+  (dict "name" "audit-service" "port" 8007 "replicas" .Values.services.auditService.replicas)
+}}
+{{- range $svc := $services }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $svc.name }}
+spec:
+  replicas: {{ $svc.replicas }}
+  selector:
+    matchLabels:
+      app: {{ $svc.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $svc.name }}
+    spec:
+      nodeSelector:
+        workload: general
+      containers:
+        - name: {{ $svc.name }}
+          image: {{ $.Values.image.registry }}/{{ $.Values.image.prefix }}/{{ $svc.name }}:{{ $.Values.image.tag }}
+          ports:
+            - containerPort: {{ $svc.port }}
+          envFrom:
+            - configMapRef:
+                name: lchai-config
+            - secretRef:
+                name: lchai-secrets
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: {{ $svc.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $svc.name }}
+spec:
+  selector:
+    app: {{ $svc.name }}
+  ports:
+    - port: {{ $svc.port }}
+      targetPort: {{ $svc.port }}
+{{- end }}

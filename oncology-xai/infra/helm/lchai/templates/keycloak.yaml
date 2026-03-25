@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      nodeSelector:
+        workload: general
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:23.0
+          args: ["start-dev", "--proxy=edge", "--hostname-strict=false"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KEYCLOAK_ADMIN
+              value: admin
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: {{ .Values.keycloak.adminPassword | quote }}
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_URL
+              value: "jdbc:postgresql://{{ .Values.postgres.host }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}"
+            - name: KC_DB_USERNAME
+              value: {{ .Values.postgres.username | quote }}
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: lchai-secrets
+                  key: POSTGRES_PASSWORD
+            - name: KC_PROXY
+              value: edge
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - port: 8080
+      targetPort: 8080

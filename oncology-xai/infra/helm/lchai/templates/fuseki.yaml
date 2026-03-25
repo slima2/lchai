@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fuseki
+spec:
+  serviceName: fuseki
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fuseki
+  template:
+    metadata:
+      labels:
+        app: fuseki
+    spec:
+      nodeSelector:
+        workload: general
+      containers:
+        - name: fuseki
+          image: stain/jena-fuseki:latest
+          ports:
+            - containerPort: 3030
+          env:
+            - name: ADMIN_PASSWORD
+              value: admin
+            - name: FUSEKI_DATASET_1
+              value: oncology
+          volumeMounts:
+            - name: data
+              mountPath: /fuseki/databases
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: gp3
+        resources:
+          requests:
+            storage: {{ .Values.fuseki.storage }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fuseki
+spec:
+  selector:
+    app: fuseki
+  ports:
+    - port: 3030
+      targetPort: 3030

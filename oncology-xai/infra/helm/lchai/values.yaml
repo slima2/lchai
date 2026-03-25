@@ -1,0 +1,60 @@
+domain: lchai.gptfy.biz
+
+image:
+  registry: 632100838024.dkr.ecr.us-east-1.amazonaws.com
+  prefix: lchai-prod
+  tag: latest
+
+postgres:
+  host: lchai-prod-postgres.cslc0oga28vr.us-east-1.rds.amazonaws.com
+  port: 5432
+  database: oncology_xai
+  username: oncology
+
+redis:
+  host: lchai-prod-redis.wgz0ng.0001.use1.cache.amazonaws.com
+  port: 6379
+
+s3:
+  bucket: lchai-prod-artifacts
+  region: us-east-1
+  modelsBucket: lchai-prod-models
+
+acmCertificateArn: "arn:aws:acm:us-east-1:632100838024:certificate/0b8be42a-de6d-4296-ad66-7ded2bf1c263"
+
+environment: production
+
+keycloak:
+  adminPassword: admin
+
+rabbitmq:
+  replicas: 1
+  storage: 5Gi
+
+fuseki:
+  storage: 10Gi
+
+inferenceWorker:
+  gpu: true
+  modelBackend: local
+  maxTilesWsi: 20000
+
+services:
+  gateway:
+    replicas: 2
+  webapp:
+    replicas: 2
+  caseService:
+    replicas: 1
+  imageService:
+    replicas: 1
+  inferenceService:
+    replicas: 1
+  ehrService:
+    replicas: 1
+  graphService:
+    replicas: 1
+  ontologyAdmin:
+    replicas: 1
+  auditService:
+    replicas: 1
