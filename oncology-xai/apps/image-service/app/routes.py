@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import logging
 from uuid import uuid4
 
+import numpy as np
+from PIL import Image as PILImage
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +20,77 @@ from app.database import get_db
 from app.models import ImageDB
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_he_stain(data: bytes, ext: str) -> None:
+    """Reject images that are not H&E stained. LCHAI was trained exclusively on H&E.
+
+    Analyzes a thumbnail of the image to detect non-H&E color profiles:
+    - IHC/DAB (brown chromogen)
+    - Alcian Blue, PAS, trichrome (non-pink/purple dominant)
+    - Immunofluorescence (very dark with bright spots)
+    """
+    try:
+        if ext in ("svs", "bif", "biff"):
+            try:
+                import openslide
+                import tempfile, os
+                suffix = {"svs": ".svs", "bif": ".bif", "biff": ".bif"}.get(ext, ".tif")
+                with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+                    f.write(data[:min(len(data), 100_000_000)])
+                    tmp = f.name
+                try:
+                    slide = openslide.OpenSlide(tmp)
+                    thumb = slide.get_thumbnail((512, 512))
+                    slide.close()
+                finally:
+                    os.unlink(tmp)
+                arr = np.array(thumb.convert("RGB"))
+            except Exception:
+                return
+        else:
+            img = PILImage.open(io.BytesIO(data))
+            img.thumbnail((512, 512))
+            arr = np.array(img.convert("RGB"))
+
+        r_mean = float(arr[:, :, 0].mean())
+        g_mean = float(arr[:, :, 1].mean())
+        b_mean = float(arr[:, :, 2].mean())
+        brightness = (r_mean + g_mean + b_mean) / 3
+
+        # H&E tissue: pink (R dominant) or purple (R~B, both > G)
+        # Background is white/near-white, tissue is pink/purple
+        # Non-H&E indicators:
+        is_blue_dominant = b_mean > r_mean + 15 and b_mean > g_mean + 15 and r_mean < 160
+        is_brown_dominant = r_mean > 150 and g_mean > 100 and b_mean < 90 and (r_mean - b_mean) > 60
+        is_very_dark = brightness < 60
+        is_green_dominant = g_mean > r_mean + 10 and g_mean > b_mean + 10
+
+        reasons = []
+        if is_blue_dominant:
+            reasons.append("blue-dominant stain detected (possible Alcian Blue, trichrome, or special stain)")
+        if is_brown_dominant:
+            reasons.append("brown chromogen detected (possible IHC/DAB stain)")
+        if is_very_dark and not is_brown_dominant:
+            reasons.append("very dark image (possible immunofluorescence or unstained)")
+        if is_green_dominant:
+            reasons.append("green-dominant image (not compatible with H&E)")
+
+        if reasons:
+            detail = (
+                f"NON-H&E IMAGE REJECTED: {'; '.join(reasons)}. "
+                f"Color profile: R={r_mean:.0f} G={g_mean:.0f} B={b_mean:.0f}. "
+                f"LCHAI v2.0 was trained exclusively on H&E-stained slides. "
+                f"Please upload an H&E-stained image."
+            )
+            logger.warning("Upload rejected: %s", detail)
+            raise HTTPException(status_code=422, detail=detail)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning("H&E validation skipped (could not analyze thumbnail): %s", e)
+
 
 router = APIRouter(prefix="/api/v1", tags=["Images"])
 
@@ -42,6 +116,9 @@ async def upload_image(
     allowed = ("png", "jpg", "jpeg", "tif", "tiff", "svs", "bif", "biff")
     if ext not in allowed:
         raise HTTPException(status_code=400, detail=f"Unsupported format: {ext}. Supported: {', '.join(allowed)}")
+
+    # Validate H&E staining color profile (reject IHC, special stains)
+    _validate_he_stain(data, ext)
 
     checksum = hashlib.sha256(data).hexdigest()
     image_id = str(uuid4())
