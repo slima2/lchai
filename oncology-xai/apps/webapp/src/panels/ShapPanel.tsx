@@ -272,6 +272,50 @@ export default function ShapPanel({ resultBundleId }: Props) {
         </div>
       )}
 
+      {/* Method-specific P(mut) formula */}
+      {geneResult && (
+        <div className="bg-gray-50 border rounded p-3 mb-4 text-xs text-gray-700 font-mono">
+          <div className="text-[11px] font-sans font-semibold text-gray-500 mb-2">How P(mut) is computed for {selGene}:</div>
+          {(geneResult.prediction_method || '').includes('embedding') ? (
+            <pre className="whitespace-pre-wrap leading-relaxed">{`tiles (224×224) → CTransPath → embeddings (N×512)
+        ↓
+  encoder(512→256) → LayerNorm → ReLU
+        ↓
+  Gated Attention: αᵢ = softmax(w·tanh(V·hᵢ) ⊙ σ(U·hᵢ))
+        ↓
+  z = Σ αᵢ·hᵢ  (weighted sum, 256-dim)
+        ↓
+  Linear(256→1) → sigmoid → P(mut)`}</pre>
+          ) : (geneResult.prediction_method || '').includes('proposed') ? (
+            <pre className="whitespace-pre-wrap leading-relaxed">{`tiles (224×224) → CTransPath → embeddings (N×512)
+                → FuzzyArcLoss V2 → patterns (N×6)
+        ↓
+  concat(emb₅₁₂, pat₆) = 518-dim per tile
+        ↓
+  encoder(518→256) → LayerNorm → ReLU
+        ↓
+  Gated Attention: αᵢ = softmax(w·tanh(V·hᵢ) ⊙ σ(U·hᵢ))
+        ↓
+  z = Σ αᵢ·hᵢ  (weighted sum, 256-dim)
+        ↓
+  Linear(256→1) → sigmoid → P(mut)`}</pre>
+          ) : (geneResult.prediction_method || '').includes('Choquet') ? (
+            <pre className="whitespace-pre-wrap leading-relaxed">{`tiles (224×224) → CTransPath → embeddings (N×512)
+                → FuzzyArcLoss V2 → patterns (N×6)
+        ↓
+  encoder(512→256) → Gated Attention → z (256-dim)
+        ↓
+  proj(concat(z₂₅₆, pattern_composition₆) = 262-dim → 256)
+        ↓
+  Choquet Aggregation: ∫ f dμ  (fuzzy measure μ with 6 Shapley + 15 interactions)
+        ↓
+  Linear(256→1) → sigmoid → P(mut)`}</pre>
+          ) : (
+            <pre className="whitespace-pre-wrap leading-relaxed">{`pattern_composition (6-dim) → XGBoost → P(mut)`}</pre>
+          )}
+        </div>
+      )}
+
       {geneResult && !isDynConcl(selGene) && (
         <div className="bg-yellow-50 border border-yellow-300 rounded p-2 mb-4 text-xs text-yellow-800">
           ⚠ Molecular testing recommended. {selGene} prediction has AUROC {(aurocValues[selGene] ?? 0).toFixed(3)} &lt; {aurocThreshold.toFixed(3)} — cannot be reliably predicted from histological features alone.
