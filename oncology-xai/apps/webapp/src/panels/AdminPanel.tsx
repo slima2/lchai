@@ -6,7 +6,7 @@ import {
   getKGSnapshots, createKGSnapshot, getKGChangelog, api,
 } from '../api';
 
-type Tab = 'parameters' | 'pipeline' | 'versions' | 'ontologies' | 'audit';
+type Tab = 'parameters' | 'reference' | 'pipeline' | 'versions' | 'ontologies' | 'audit';
 
 const METHODS: Record<string, string> = {
   TP53: 'B2 (embeddings)', EGFR: 'B2 (embeddings)', RBM10: 'FC (Fuzzy Choquet)',
@@ -266,6 +266,7 @@ export default function AdminPanel() {
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: 'parameters', label: 'Parameters', icon: '⚙' },
     { key: 'pipeline', label: 'DeepSearch Pipeline', icon: '🔬' },
+    { key: 'reference', label: 'Reference', icon: '📖' },
     { key: 'versions', label: 'KG Versions', icon: '📦' },
     { key: 'ontologies', label: 'Ontology Management', icon: '🧬' },
     { key: 'audit', label: 'Audit Log', icon: '📋' },
@@ -285,6 +286,124 @@ export default function AdminPanel() {
 
       {/* ──── Parameters ──── */}
       {tab === 'parameters' && <ParametersPanel />}
+
+      {/* ──── Reference ──── */}
+      {tab === 'reference' && (
+        <div className="space-y-6">
+          <h3 className="font-semibold text-lg">Reference — Methods, Formulas & Clinical Associations</h3>
+
+          {/* P(mut) formulas per method */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-blue-50 border-b px-4 py-2">
+              <h4 className="font-bold text-blue-900">How P(mut) is Computed — by Method</h4>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <h5 className="font-semibold text-sm mb-1">B2 — Embeddings-only ABMIL (TP53, EGFR)</h5>
+                <pre className="bg-gray-50 rounded p-3 text-xs font-mono whitespace-pre-wrap leading-relaxed">{`tiles (224×224) → CTransPath Swin Tiny → embeddings (N×512)
+      ↓
+encoder(512→256) → LayerNorm → ReLU
+      ↓
+Gated Attention: αᵢ = softmax(w·tanh(V·hᵢ) ⊙ σ(U·hᵢ))
+      ↓
+z = Σ αᵢ·hᵢ  (attention-weighted sum, 256-dim)
+      ↓
+Linear(256→1) → sigmoid → P(mut)`}</pre>
+                <p className="text-xs text-gray-500 mt-1">Input: only visual embeddings (512-d). Patterns are not used. Best for genes where sub-cellular morphology drives the mutation signal.</p>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-sm mb-1">P — Pattern-Informed ABMIL (STK11, KEAP1)</h5>
+                <pre className="bg-gray-50 rounded p-3 text-xs font-mono whitespace-pre-wrap leading-relaxed">{`tiles (224×224) → CTransPath → embeddings (N×512)
+              → FuzzyArcLoss V2 → pattern probs (N×6)
+      ↓
+concat(emb₅₁₂, pat₆) = 518-dim per tile
+      ↓
+encoder(518→256) → LayerNorm → ReLU
+      ↓
+Gated Attention: αᵢ = softmax(w·tanh(V·hᵢ) ⊙ σ(U·hᵢ))
+      ↓
+z = Σ αᵢ·hᵢ  (attention-weighted sum, 256-dim)
+      ↓
+Linear(256→1) → sigmoid → P(mut)`}</pre>
+                <p className="text-xs text-gray-500 mt-1">Input: visual embeddings + histological pattern probabilities concatenated (518-d). Injects validated domain knowledge as structured prior.</p>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-sm mb-1">FC — Fuzzy Choquet MIL (KRAS, RBM10)</h5>
+                <pre className="bg-gray-50 rounded p-3 text-xs font-mono whitespace-pre-wrap leading-relaxed">{`tiles (224×224) → CTransPath → embeddings (N×512)
+              → FuzzyArcLoss V2 → pattern probs (N×6)
+      ↓
+encoder(512→256) → Gated Attention → z (256-dim)
+      ↓
+proj(concat(z₂₅₆, pattern_composition₆) = 262-dim → 256)
+      ↓
+Choquet Aggregation: ∫ f dμ
+  (learned fuzzy measure μ: 6 Shapley values + 15 interaction indices = 21 params)
+      ↓
+Linear(256→1) → sigmoid → P(mut)`}</pre>
+                <p className="text-xs text-gray-500 mt-1">Models supra-additive interactions among histological patterns via a 2-additive fuzzy measure with Choquet integral aggregation.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Mutation probability interpretation */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-green-50 border-b px-4 py-2">
+              <h4 className="font-bold text-green-900">Mutation Probability Interpretation</h4>
+            </div>
+            <div className="p-4">
+              <p className="text-xs text-gray-600 mb-3">The probability (0-100%) represents the model's confidence that the gene is mutated based on histological features:</p>
+              <table className="w-full text-sm border-collapse">
+                <thead><tr className="bg-gray-50 text-left"><th className="border px-3 py-2 font-semibold">Probability</th><th className="border px-3 py-2 font-semibold">Interpretation</th></tr></thead>
+                <tbody>
+                  <tr><td className="border px-3 py-2 font-mono text-green-700 font-bold">&gt; 70%</td><td className="border px-3 py-2">Strong evidence of mutation — confirm with molecular testing</td></tr>
+                  <tr><td className="border px-3 py-2 font-mono text-yellow-700 font-bold">50–70%</td><td className="border px-3 py-2">Moderate evidence — molecular testing recommended</td></tr>
+                  <tr><td className="border px-3 py-2 font-mono text-orange-600 font-bold">30–50%</td><td className="border px-3 py-2">Weak/ambiguous signal — molecular testing needed</td></tr>
+                  <tr><td className="border px-3 py-2 font-mono text-blue-600 font-bold">&lt; 30%</td><td className="border px-3 py-2">Likely wild-type (not mutated)</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Gene-specific clinical associations */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-purple-50 border-b px-4 py-2">
+              <h4 className="font-bold text-purple-900">Gene-Specific Clinical Associations</h4>
+            </div>
+            <div className="p-4">
+              <table className="w-full text-sm border-collapse">
+                <thead><tr className="bg-gray-50 text-left">
+                  <th className="border px-3 py-2 font-semibold">Gene</th>
+                  <th className="border px-3 py-2 font-semibold">Pattern Association</th>
+                  <th className="border px-3 py-2 font-semibold">Treatment Implications</th>
+                </tr></thead>
+                <tbody>
+                  <tr><td className="border px-3 py-2 font-bold">TP53</td><td className="border px-3 py-2">Solid, micropapillary</td><td className="border px-3 py-2">No targeted therapy; immunotherapy may benefit</td></tr>
+                  <tr><td className="border px-3 py-2 font-bold">EGFR</td><td className="border px-3 py-2">Lepidic, papillary</td><td className="border px-3 py-2">Osimertinib (3rd gen TKI), erlotinib, gefitinib</td></tr>
+                  <tr><td className="border px-3 py-2 font-bold">KRAS</td><td className="border px-3 py-2">Mucinous, solid</td><td className="border px-3 py-2">Sotorasib (G12C-specific), adagrasib</td></tr>
+                  <tr><td className="border px-3 py-2 font-bold">STK11</td><td className="border px-3 py-2">Various</td><td className="border px-3 py-2">May predict immunotherapy resistance</td></tr>
+                  <tr><td className="border px-3 py-2 font-bold">KEAP1</td><td className="border px-3 py-2">Various</td><td className="border px-3 py-2">Associated with oxidative stress pathway alterations</td></tr>
+                  <tr><td className="border px-3 py-2 font-bold">RBM10</td><td className="border px-3 py-2">Various</td><td className="border px-3 py-2">RNA splicing factor; research-stage implications</td></tr>
+                </tbody>
+              </table>
+              <p className="text-xs text-gray-500 mt-2 italic">Sources: IASLC/ATS/ERS classification, OncoKB, NCCN NSCLC guidelines, Lima et al. 2026 thesis.</p>
+            </div>
+          </div>
+
+          {/* Conclusive vs Inconclusive */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-amber-50 border-b px-4 py-2">
+              <h4 className="font-bold text-amber-900">Conclusive vs. Inconclusive Labels</h4>
+            </div>
+            <div className="p-4 text-sm text-gray-700 space-y-2">
+              <p><strong>Conclusive</strong> (AUROC ≥ threshold): The model has demonstrated acceptable discrimination on the TCGA-LUAD cohort. The prediction is considered reliable (though not diagnostic).</p>
+              <p><strong>Inconclusive</strong> (AUROC &lt; threshold): The model has limited accuracy for this gene. The prediction should not be relied upon. Molecular testing is strongly recommended.</p>
+              <p className="text-xs text-gray-500 italic">The threshold is configurable in the Parameters tab. Default: 0.70 ("acceptable discrimination", Hosmer & Lemeshow, 2000).</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ──── DeepSearch Pipeline ──── */}
       {tab === 'pipeline' && (

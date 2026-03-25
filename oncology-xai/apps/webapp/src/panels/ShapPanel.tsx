@@ -54,32 +54,13 @@ Explain:
 3. Whether the pattern composition of this specific slide aligns with known ${gene} associations from literature
 4. Clinical implication: is the prediction reliable and what should the clinician do?`;
 
-    axios.post(`${API_URL}/api/v1/cases/00000000-0000-0000-0000-000000000000/graph/explain`, null, {
-      timeout: 15000,
-    }).catch(() => null).then(() => {
-      // Use OpenAI directly via proxy-free call
-      const key = (window as any).__openai_key;
-      if (key) {
-        return fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini', temperature: 0.3, max_tokens: 300,
-            messages: [
-              { role: 'system', content: `You are an expert pathologist assistant explaining AI mutation predictions. Be concise and clinical. Respond in ${({'en':'English','es':'Spanish','de':'German','fr':'French','pt':'Portuguese'} as Record<string,string>)[language] || 'English'}.` },
-              { role: 'user', content: prompt },
-            ],
-          }),
-        }).then(r => r.json()).then(d => {
-          const txt = d.choices?.[0]?.message?.content || null;
-          if (txt) _explanationCache[dataKey] = txt;
-          setExplanation(txt);
-          setLoading(false);
-        }).catch(() => { setLoading(false); generateFallback(); });
-      } else {
-        generateFallback();
-      }
-    });
+    api.post('/gene-explain', { gene, prompt, language })
+      .then(r => {
+        const txt = r.data?.explanation;
+        if (txt) { _explanationCache[dataKey] = txt; setExplanation(txt); setLoading(false); }
+        else { generateFallback(); }
+      })
+      .catch(() => { generateFallback(); });
 
     function generateFallback() {
       const fComb = (a.p_proposed || 0);
@@ -269,50 +250,6 @@ export default function ShapPanel({ resultBundleId }: Props) {
             <span className="ml-2 text-xs text-gray-500">via {geneResult.prediction_method || 'xgboost'}</span>
           </div>
           <span className="text-sm font-mono">P(mut) = {((geneResult.score || 0) * 100).toFixed(1)}%</span>
-        </div>
-      )}
-
-      {/* Method-specific P(mut) formula */}
-      {geneResult && (
-        <div className="bg-gray-50 border rounded p-3 mb-4 text-xs text-gray-700 font-mono">
-          <div className="text-[11px] font-sans font-semibold text-gray-500 mb-2">How P(mut) is computed for {selGene}:</div>
-          {(geneResult.prediction_method || '').includes('embedding') ? (
-            <pre className="whitespace-pre-wrap leading-relaxed">{`tiles (224×224) → CTransPath → embeddings (N×512)
-        ↓
-  encoder(512→256) → LayerNorm → ReLU
-        ↓
-  Gated Attention: αᵢ = softmax(w·tanh(V·hᵢ) ⊙ σ(U·hᵢ))
-        ↓
-  z = Σ αᵢ·hᵢ  (weighted sum, 256-dim)
-        ↓
-  Linear(256→1) → sigmoid → P(mut)`}</pre>
-          ) : (geneResult.prediction_method || '').includes('proposed') ? (
-            <pre className="whitespace-pre-wrap leading-relaxed">{`tiles (224×224) → CTransPath → embeddings (N×512)
-                → FuzzyArcLoss V2 → patterns (N×6)
-        ↓
-  concat(emb₅₁₂, pat₆) = 518-dim per tile
-        ↓
-  encoder(518→256) → LayerNorm → ReLU
-        ↓
-  Gated Attention: αᵢ = softmax(w·tanh(V·hᵢ) ⊙ σ(U·hᵢ))
-        ↓
-  z = Σ αᵢ·hᵢ  (weighted sum, 256-dim)
-        ↓
-  Linear(256→1) → sigmoid → P(mut)`}</pre>
-          ) : (geneResult.prediction_method || '').includes('Choquet') ? (
-            <pre className="whitespace-pre-wrap leading-relaxed">{`tiles (224×224) → CTransPath → embeddings (N×512)
-                → FuzzyArcLoss V2 → patterns (N×6)
-        ↓
-  encoder(512→256) → Gated Attention → z (256-dim)
-        ↓
-  proj(concat(z₂₅₆, pattern_composition₆) = 262-dim → 256)
-        ↓
-  Choquet Aggregation: ∫ f dμ  (fuzzy measure μ with 6 Shapley + 15 interactions)
-        ↓
-  Linear(256→1) → sigmoid → P(mut)`}</pre>
-          ) : (
-            <pre className="whitespace-pre-wrap leading-relaxed">{`pattern_composition (6-dim) → XGBoost → P(mut)`}</pre>
-          )}
         </div>
       )}
 

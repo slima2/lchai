@@ -301,3 +301,42 @@ def _bundle_dict(b: ResultBundleDB) -> dict:
         ],
         "created_at": b.created_at.isoformat() if b.created_at else None,
     }
+
+
+@router.post("/gene-explain")
+async def gene_explain(body: dict[str, Any]):
+    """Generate LLM explanation for a gene prediction using backend OpenAI key."""
+    import httpx
+    import os
+
+    prompt = body.get("prompt", "")
+    language = body.get("language", "en")
+    lang_map = {"en": "English", "es": "Spanish", "de": "German", "fr": "French", "pt": "Portuguese"}
+    lang_name = lang_map.get(language, "English")
+
+    openai_key = os.getenv("OPENAI_API_KEY", "")
+    if not openai_key or not prompt:
+        return {"explanation": None}
+
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {openai_key}"},
+                json={
+                    "model": "gpt-4o-mini",
+                    "temperature": 0.3,
+                    "max_tokens": 400,
+                    "messages": [
+                        {"role": "system", "content": f"You are an expert computational pathologist explaining AI mutation predictions. Be concise and clinical (4-6 sentences). Respond in {lang_name}."},
+                        {"role": "user", "content": prompt},
+                    ],
+                },
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                txt = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                return {"explanation": txt}
+    except Exception:
+        pass
+    return {"explanation": None}
