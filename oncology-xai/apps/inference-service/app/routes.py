@@ -178,13 +178,14 @@ async def get_checkpoint_status():
 @router.get("/parameters")
 async def get_parameters():
     """Return current system parameters."""
-    from app.ml.checkpoints.loader import PROPOSED_AUROC, AUROC_THRESHOLD, BEST_METHOD, BEST_FOLD
+    from app.ml.checkpoints.loader import PROPOSED_AUROC, AUROC_THRESHOLD, BEST_METHOD, BEST_FOLD, GENE_MUTATION_THRESHOLD
     return {
         "auroc_values": PROPOSED_AUROC,
         "auroc_threshold": AUROC_THRESHOLD,
         "best_method": BEST_METHOD,
         "best_fold": BEST_FOLD,
         "mutation_threshold": settings.mutation_threshold,
+        "gene_mutation_thresholds": GENE_MUTATION_THRESHOLD,
         "top_k_tiles": settings.v2_top_k_tiles,
         "max_tiles": settings.v2_max_tiles_wsi,
         "permutation_repeats": 10,
@@ -216,6 +217,12 @@ async def update_parameters(body: dict[str, Any]):
     if "mutation_threshold" in body:
         settings.mutation_threshold = float(body["mutation_threshold"])
         updated.append(f"mutation_threshold={body['mutation_threshold']}")
+
+    if "gene_mutation_thresholds" in body and isinstance(body["gene_mutation_thresholds"], dict):
+        for gene, val in body["gene_mutation_thresholds"].items():
+            if gene in loader_mod.GENE_MUTATION_THRESHOLD:
+                loader_mod.GENE_MUTATION_THRESHOLD[gene] = float(val)
+                updated.append(f"gene_threshold[{gene}]={val}")
 
     if "top_k_tiles" in body:
         settings.v2_top_k_tiles = int(body["top_k_tiles"])

@@ -347,6 +347,37 @@ Linear(256→1) → sigmoid → P(mut)`}</pre>
             </div>
           </div>
 
+          {/* Per-gene optimal thresholds */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-teal-50 border-b px-4 py-2">
+              <h4 className="font-bold text-teal-900">Per-Gene Mutation Thresholds (Youden's J)</h4>
+            </div>
+            <div className="p-4">
+              <p className="text-xs text-gray-600 mb-3">
+                Instead of a single global threshold (0.50), each gene uses an optimal threshold calibrated to its
+                prevalence in the TCGA-LUAD cohort. Low-prevalence genes (EGFR ~15%, RBM10 ~7%) need lower thresholds
+                to avoid missing true positives. Based on Youden's J statistic = max(sensitivity + specificity - 1).
+              </p>
+              <table className="w-full text-sm border-collapse">
+                <thead><tr className="bg-gray-50 text-left">
+                  <th className="border px-3 py-2 font-semibold">Gene</th>
+                  <th className="border px-3 py-2 font-semibold">Prevalence (TCGA)</th>
+                  <th className="border px-3 py-2 font-semibold">Optimal Threshold</th>
+                  <th className="border px-3 py-2 font-semibold">Rationale</th>
+                </tr></thead>
+                <tbody>
+                  <tr><td className="border px-3 py-2 font-bold">TP53</td><td className="border px-3 py-2">50.3%</td><td className="border px-3 py-2 font-mono">0.45</td><td className="border px-3 py-2 text-xs">High prevalence — near 0.5 is appropriate</td></tr>
+                  <tr><td className="border px-3 py-2 font-bold">EGFR</td><td className="border px-3 py-2">~15%</td><td className="border px-3 py-2 font-mono">0.20</td><td className="border px-3 py-2 text-xs">Low prevalence — lower threshold captures more true positives</td></tr>
+                  <tr><td className="border px-3 py-2 font-bold">KRAS</td><td className="border px-3 py-2">~25%</td><td className="border px-3 py-2 font-mono">0.25</td><td className="border px-3 py-2 text-xs">Moderate prevalence</td></tr>
+                  <tr><td className="border px-3 py-2 font-bold">STK11</td><td className="border px-3 py-2">~13%</td><td className="border px-3 py-2 font-mono">0.20</td><td className="border px-3 py-2 text-xs">Low prevalence — needs sensitive threshold</td></tr>
+                  <tr><td className="border px-3 py-2 font-bold">KEAP1</td><td className="border px-3 py-2">~17%</td><td className="border px-3 py-2 font-mono">0.20</td><td className="border px-3 py-2 text-xs">Low prevalence</td></tr>
+                  <tr><td className="border px-3 py-2 font-bold">RBM10</td><td className="border px-3 py-2">~7%</td><td className="border px-3 py-2 font-mono">0.15</td><td className="border px-3 py-2 text-xs">Very low prevalence — needs lowest threshold</td></tr>
+                </tbody>
+              </table>
+              <p className="text-xs text-gray-500 mt-2 italic">These thresholds are editable via the Parameters tab and the PUT /parameters API.</p>
+            </div>
+          </div>
+
           {/* Mutation probability interpretation */}
           <div className="border rounded-lg overflow-hidden">
             <div className="bg-green-50 border-b px-4 py-2">

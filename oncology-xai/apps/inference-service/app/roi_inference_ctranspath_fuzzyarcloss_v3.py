@@ -881,9 +881,9 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
                 method=gr.method or "abmil",
             ))
             result.mutation_scores[gr.gene] = gr.probability
-            status = "POS" if gr.probability >= config.mutation_threshold else (
-                "INCONCLUSIVE" if gr.probability >= 0.40 else "NEG"
-            )
+            from app.ml.checkpoints.loader import GENE_MUTATION_THRESHOLD
+            gene_thr = GENE_MUTATION_THRESHOLD.get(gr.gene, config.mutation_threshold)
+            status = "POS" if gr.probability >= gene_thr else "NEG"
             result.mutation_status[gr.gene] = status
 
         result.attention_top_k_indices = abmil_output.top_k_indices

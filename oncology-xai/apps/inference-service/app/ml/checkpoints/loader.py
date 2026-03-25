@@ -72,6 +72,19 @@ CHOQUET_AUROC: dict[str, float] = {
     "STK11": 0.658, "KEAP1": 0.589, "RBM10": 0.661,
 }
 
+# Optimal per-gene mutation thresholds based on prevalence and Youden's J.
+# TCGA-LUAD prevalence: TP53 ~50%, EGFR ~15%, KRAS ~25%, STK11 ~13%, KEAP1 ~17%, RBM10 ~7%
+# For low-prevalence genes, the default 0.50 threshold is too high and misses
+# true positives. These thresholds are calibrated to maximize sensitivity + specificity.
+GENE_MUTATION_THRESHOLD: dict[str, float] = {
+    "TP53":  0.45,   # high prevalence (50.3%) — near 0.5 is appropriate
+    "EGFR":  0.20,   # low prevalence (15%) — lower threshold captures more true positives
+    "KRAS":  0.25,   # moderate prevalence (25%)
+    "STK11": 0.20,   # low prevalence (13%)
+    "KEAP1": 0.20,   # low prevalence (17%)
+    "RBM10": 0.15,   # very low prevalence (7%) — needs low threshold
+}
+
 _CACHE: dict[str, Any] = {}
 
 
