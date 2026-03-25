@@ -844,18 +844,21 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
             Image.MAX_IMAGE_PIXELS = old_max
 
     _p = progress_callback or (lambda *a: None)
-    _p(0.12, "Decoding image...")
+    _p(0.08, "Decoding image...")
 
     # Save clean thumbnail (no overlay) for the Viewer "Original" layer
     thumb_buf = io.BytesIO()
     img.save(thumb_buf, format="PNG")
     result.thumbnail_bytes = thumb_buf.getvalue()
+    _p(0.10, "Image decoded. Loading CTransPath model...")
 
     # 2) Tile — use full-resolution WSI tiling when available
     tile_sz = config.tile_size
     if config.model_backend == "local" and config.fuzzyarc_checkpoint:
         pipe = _load_real_pipeline(config.fuzzyarc_checkpoint, config.device)
         tile_sz = pipe["img_size"]
+
+    _p(0.12, "Extracting tissue tiles from WSI (filtering artifacts)...")
 
     wsi_tiles = _tile_wsi_full_resolution(
         tile_size=tile_sz, tissue_threshold=0.15, max_tiles=config.max_tiles_wsi,
@@ -872,6 +875,7 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
     tile_coords = [(x, y) for x, y, _ in tiles]
     result.tile_coords = tile_coords
     logger.info("Total tiles for inference: %d", len(tiles))
+    _p(0.18, f"Tiling complete: {len(tiles)} tissue tiles. Starting CTransPath inference...")
     _p(0.20, f"Running CTransPath on {len(tiles)} tiles...")
 
     # 3-4) Pattern inference
