@@ -7,7 +7,7 @@ RUN npm install
 COPY apps/webapp/ .
 
 ARG VITE_API_URL=https://lchai.gptfy.biz
-ARG VITE_KEYCLOAK_URL=https://lchai.gptfy.biz/auth
+ARG VITE_KEYCLOAK_URL=https://lchai.gptfy.biz
 ARG VITE_KEYCLOAK_REALM=oncology
 ARG VITE_KEYCLOAK_CLIENT_ID=oncology-webapp
 

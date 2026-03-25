@@ -23,7 +23,7 @@ spec:
             - name: VITE_API_URL
               value: "https://{{ .Values.domain }}"
             - name: VITE_KEYCLOAK_URL
-              value: "https://{{ .Values.domain }}/auth"
+              value: "https://{{ .Values.domain }}"
             - name: VITE_KEYCLOAK_REALM
               value: "oncology"
             - name: VITE_KEYCLOAK_CLIENT_ID

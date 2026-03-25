@@ -22,7 +22,28 @@ spec:
                 name: api-gateway
                 port:
                   number: 8000
-          - path: /auth
+          - path: /realms
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 8080
+          - path: /resources
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 8080
+          - path: /js
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 8080
+          - path: /admin
             pathType: Prefix
             backend:
               service:
