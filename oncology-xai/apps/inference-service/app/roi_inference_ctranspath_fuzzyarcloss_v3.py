@@ -726,9 +726,16 @@ def _tile_wsi_full_resolution(
                 continue
 
             # --- FILTER 2b: Tissue folds (dark thick areas, both TCGA and hospital) ---
-            # Folds appear as unnaturally dark bands with high local intensity variance
+            # Folds appear as unnaturally dark regions where tissue is folded/overlapping.
+            # Double-layered H&E staining makes them darker and more intensely colored.
             dark_moderate = (gray < 100).mean()
-            if dark_moderate > 0.5:
+            if dark_moderate > 0.4:
+                rejected_artifact += 1
+                continue
+
+            # Folds also have very low mean brightness compared to normal H&E tissue
+            mean_gray = gray.mean()
+            if mean_gray < 120 and dark_moderate > 0.25:
                 rejected_artifact += 1
                 continue
 
