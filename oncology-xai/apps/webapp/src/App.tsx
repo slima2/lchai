@@ -221,9 +221,9 @@ export default function App() {
       </div>
 
       <main className="p-6">
-        {tab === 'images' && caseId && (
+        {tab === 'images' && (
           <ImagePanel
-            caseId={caseId}
+            caseId={caseId || '__new__'}
             imageId={imageId}
             onImageSelected={setImageId}
             onResultsReady={setResultBundleId}
@@ -234,9 +234,6 @@ export default function App() {
               loadAllCases();
             }}
           />
-        )}
-        {tab === 'images' && !caseId && (
-          <p className="text-gray-500">Upload an image to get started.</p>
         )}
         {tab === 'viewer' && caseId && (
           <ViewerPanel caseId={caseId} imageId={imageId} resultBundleId={resultBundleId} />
