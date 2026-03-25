@@ -39,6 +39,7 @@ module "eks" {
       desired_size   = var.eks_gpu_min
 
       ami_type = "AL2_x86_64_GPU"
+      disk_size = 50
 
       capacity_type = "SPOT"
 
