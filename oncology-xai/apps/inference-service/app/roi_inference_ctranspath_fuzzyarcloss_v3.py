@@ -142,6 +142,8 @@ class InferenceResult:
     ablation_results: list[Any] = field(default_factory=list)
     # Permutation importance
     permutation_results: list[Any] = field(default_factory=list)
+    # Image quality warnings
+    quality_warnings: list[str] = field(default_factory=list)
     # Metrics
     metrics: dict[str, Any] = field(default_factory=dict)
 
@@ -409,6 +411,7 @@ def _generate_shap_real(profile: dict[str, float], gene: str, model_dir: str) ->
 # ═══════════════════════════════════════════════════════════════════════
 
 _WSI_SLIDE_HANDLE = None  # holds OpenSlide handle for full-resolution tiling
+_IMAGE_QUALITY_WARNINGS: list[str] = []  # populated by _decode_image
 
 
 def _convert_to_pyramidal_tiff(input_path: str, source_format: str = "tif") -> str:
@@ -455,12 +458,90 @@ def _convert_to_pyramidal_tiff(input_path: str, source_format: str = "tif") -> s
     return out_path
 
 
+MIN_WSI_PIXELS = 20000
+"""Minimum dimension (width or height) in pixels for WSI images.
+Below this, the slide is too low-resolution for reliable pattern classification.
+Reference: TCGA SVS at 20x ≈ 40,000+ px on longest side.
+Slides under 20,000 px likely scanned at <10x or are thumbnails."""
+
+MAX_MPP_THRESHOLD = 1.0
+"""Maximum microns-per-pixel (MPP) accepted. 20x = ~0.5 MPP, 10x = ~1.0 MPP.
+Slides above 1.0 MPP are too low-resolution for CTransPath (trained at 20x)."""
+
+
+def _validate_wsi_quality(slide, image_format: str) -> list[str]:
+    """Validate WSI quality. Returns list of warnings (empty = OK)."""
+    warnings = []
+    w, h = slide.dimensions
+
+    if max(w, h) < MIN_WSI_PIXELS:
+        warnings.append(
+            f"LOW RESOLUTION: Image is only {w}x{h} pixels. "
+            f"Minimum recommended: {MIN_WSI_PIXELS}px on longest side. "
+            f"Pattern classification may be unreliable."
+        )
+
+    # Check MPP from OpenSlide properties
+    mpp_x = slide.properties.get('openslide.mpp-x')
+    mpp_y = slide.properties.get('openslide.mpp-y')
+    if mpp_x:
+        mpp = float(mpp_x)
+        mag = 10.0 / mpp if mpp > 0 else 0
+        logger.info("WSI resolution: %.3f MPP (≈%.0fx magnification)", mpp, mag)
+        if mpp > MAX_MPP_THRESHOLD:
+            warnings.append(
+                f"LOW MAGNIFICATION: Slide scanned at {mpp:.2f} MPP (≈{mag:.0f}x). "
+                f"CTransPath requires 20x (0.5 MPP) or higher. Results may be unreliable."
+            )
+    else:
+        logger.info("WSI resolution: MPP not available in metadata")
+
+    # Check for non-H&E staining by analyzing color distribution of thumbnail
+    thumb = slide.get_thumbnail((512, 512))
+    import numpy as np
+    arr = np.array(thumb.convert("RGB"))
+    r, g, b = arr[:,:,0].mean(), arr[:,:,1].mean(), arr[:,:,2].mean()
+
+    # H&E tissue is predominantly pink (R>G, R>B) or purple (R~B>G)
+    # IHC/special stains: brown (DAB), blue-only (alcian blue), red-only (PAS)
+    # Very blue with no pink = likely non-H&E
+    if b > r + 20 and b > g + 20 and r < 150:
+        warnings.append(
+            "NON-H&E STAIN DETECTED: Image color profile suggests a special stain "
+            "(IHC, immunofluorescence, or other). LCHAI was trained exclusively on H&E slides. "
+            "Results will be unreliable."
+        )
+    # Very brown = DAB (IHC)
+    if r > 150 and g > 100 and b < 80 and (r - b) > 70:
+        warnings.append(
+            "IHC STAIN DETECTED: Brown chromogen (DAB) detected. "
+            "LCHAI was trained on H&E stains only. Upload an H&E slide instead."
+        )
+
+    # Tissue folds: check for very dark regions in the thumbnail
+    gray = arr.mean(axis=2)
+    very_dark_pct = (gray < 60).mean()
+    if very_dark_pct > 0.15:
+        warnings.append(
+            f"TISSUE FOLDS: {very_dark_pct*100:.0f}% of the slide contains very dark regions, "
+            f"likely tissue folds or thick areas. These artifacts may affect pattern classification."
+        )
+
+    global _IMAGE_QUALITY_WARNINGS
+    _IMAGE_QUALITY_WARNINGS = warnings
+    for w_msg in warnings:
+        logger.warning("Image quality: %s", w_msg)
+
+    return warnings
+
+
 def _decode_image(image_bytes: bytes, image_format: str | None) -> Image.Image:
     """Decode image bytes to PIL RGB. Supports PNG, JPEG, TIFF (PIL) and SVS (OpenSlide).
 
     For WSI formats (svs, tif, tiff), returns a *thumbnail* for overlay rendering
     but stores the OpenSlide handle in _WSI_SLIDE_HANDLE for full-resolution tiling.
     Flat TIFFs are automatically converted to pyramidal format via pyvips.
+    Validates image quality (resolution, stain type, artifacts).
     """
     global _WSI_SLIDE_HANDLE
     _WSI_SLIDE_HANDLE = None
@@ -481,10 +562,11 @@ def _decode_image(image_bytes: bytes, image_format: str | None) -> Image.Image:
             try:
                 slide = openslide.OpenSlide(path)
                 _WSI_SLIDE_HANDLE = (slide, path)
+                quality_warnings = _validate_wsi_quality(slide, fmt)
                 thumb = slide.get_thumbnail((4096, 4096))
                 logger.info(
-                    "OpenSlide WSI opened: dims=%s, thumbnail=%s",
-                    slide.dimensions, thumb.size,
+                    "OpenSlide WSI opened: dims=%s, thumbnail=%s, warnings=%d",
+                    slide.dimensions, thumb.size, len(quality_warnings),
                 )
                 return thumb.convert("RGB")
             except Exception as openslide_err:
@@ -508,10 +590,11 @@ def _decode_image(image_bytes: bytes, image_format: str | None) -> Image.Image:
 
                         slide = openslide.OpenSlide(pyramidal_path)
                         _WSI_SLIDE_HANDLE = (slide, pyramidal_path)
+                        quality_warnings = _validate_wsi_quality(slide, fmt)
                         thumb = slide.get_thumbnail((4096, 4096))
                         logger.info(
-                            "OpenSlide WSI opened (converted from %s): dims=%s, thumbnail=%s",
-                            fmt.upper(), slide.dimensions, thumb.size,
+                            "OpenSlide WSI opened (converted from %s): dims=%s, thumbnail=%s, warnings=%d",
+                            fmt.upper(), slide.dimensions, thumb.size, len(quality_warnings),
                         )
                         return thumb.convert("RGB")
                     except Exception as conv_err:
@@ -642,6 +725,13 @@ def _tile_wsi_full_resolution(
                 rejected_artifact += 1
                 continue
 
+            # --- FILTER 2b: Tissue folds (dark thick areas, both TCGA and hospital) ---
+            # Folds appear as unnaturally dark bands with high local intensity variance
+            dark_moderate = (gray < 100).mean()
+            if dark_moderate > 0.5:
+                rejected_artifact += 1
+                continue
+
             # --- FILTER 3: Low saturation (both, but lenient for TCGA) ---
             r, g, b = arr[:,:,0].astype(float), arr[:,:,1].astype(float), arr[:,:,2].astype(float)
             max_rgb = np.maximum(np.maximum(r, g), b)
@@ -734,6 +824,8 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
     """
     t0 = time.time()
     result = InferenceResult()
+    global _IMAGE_QUALITY_WARNINGS
+    _IMAGE_QUALITY_WARNINGS = []
 
     old_max = getattr(Image, "MAX_IMAGE_PIXELS", None)
     Image.MAX_IMAGE_PIXELS = None
@@ -1019,6 +1111,8 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
         percentages.get(result.predominant_pattern, 0),
         len(result.mutation_report), elapsed,
     )
+
+    result.quality_warnings = _IMAGE_QUALITY_WARNINGS.copy()
 
     _cleanup_wsi()
     return result
