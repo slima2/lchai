@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: s3-test
+spec:
+  nodeSelector:
+    workload: gpu
+  tolerations:
+    - key: "nvidia.com/gpu"
+      operator: "Exists"
+      effect: "NoSchedule"
+  restartPolicy: Never
+  containers:
+    - name: test
+      image: 632100838024.dkr.ecr.us-east-1.amazonaws.com/lchai-prod/inference-service:latest
+      command: ["python3", "-c", "import boto3; s3=boto3.client('s3',region_name='us-east-1'); r=s3.list_objects_v2(Bucket='lchai-prod-models',Prefix='backbones/',MaxKeys=3); print(len(r.get('Contents',[])),'files'); [print(o['Key'],o['Size']//1024//1024,'MB') for o in r.get('Contents',[])]"]
