@@ -24,14 +24,17 @@ class StorageClient:
         region: str = "us-east-1",
     ):
         self.bucket = bucket
-        self._client = boto3.client(
-            "s3",
-            endpoint_url=endpoint,
-            aws_access_key_id=access_key,
-            aws_secret_access_key=secret_key,
-            region_name=region,
-            config=Config(signature_version="s3v4"),
-        )
+        kwargs: dict = {
+            "region_name": region,
+            "config": Config(signature_version="s3v4"),
+        }
+        # Use explicit credentials for MinIO (local), IAM role for AWS S3 (EKS)
+        if access_key and secret_key:
+            kwargs["aws_access_key_id"] = access_key
+            kwargs["aws_secret_access_key"] = secret_key
+        if endpoint and "amazonaws.com" not in endpoint:
+            kwargs["endpoint_url"] = endpoint
+        self._client = boto3.client("s3", **kwargs)
 
     # ── upload ──────────────────────────────────────────────────────────
     def upload_bytes(self, key: str, data: bytes, content_type: str = "application/octet-stream") -> str:
