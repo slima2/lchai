@@ -30,6 +30,7 @@ def _persist_event(envelope: EventEnvelope) -> None:
             event_type=envelope.event_type,
             timestamp=envelope.timestamp,
             correlation_id=envelope.correlation_id,
+            user_id=envelope.payload.get("user_id"),
             case_id=envelope.case_id,
             entity_type=envelope.payload.get("entity_type", "unknown"),
             entity_id=envelope.payload.get("entity_id", "unknown"),

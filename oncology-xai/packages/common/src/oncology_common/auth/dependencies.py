@@ -30,6 +30,7 @@ async def get_current_user(
     """Extract and validate JWT, return token payload."""
     # Development bypass — no JWT required
     if _DEV_MODE:
+        request.state.user = _DEV_USER
         return _DEV_USER
 
     if not credentials:
@@ -56,6 +57,7 @@ async def get_current_user(
                 detail="Token expired",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        request.state.user = payload
         return payload
     except ValueError as e:
         raise HTTPException(

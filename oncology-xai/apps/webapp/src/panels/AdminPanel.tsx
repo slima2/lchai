@@ -245,11 +245,13 @@ export default function AdminPanel() {
   const deepSearch = useMutation({
     mutationFn: (text: string) => runDeepSearch({ text, source_type: 'text' }).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['deep-search-jobs'] }),
+    onError: (err: any) => alert(`DeepSearch failed: ${err?.response?.data?.detail || err?.message || 'Unknown error'}`),
   });
 
   const batchSearch = useMutation({
     mutationFn: () => runBatchDeepSearch().then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['deep-search-jobs'] }),
+    onError: (err: any) => alert(`Batch search failed: ${err?.response?.data?.detail || err?.message || 'Unknown error'}`),
   });
 
   const discovered = useQuery({
@@ -730,7 +732,8 @@ Linear(256→1) → sigmoid → P(mut)`}</pre>
             <table className="w-full text-xs">
               <thead><tr className="bg-gray-100">
                 <th className="px-2 py-1">Event ID</th><th className="px-2 py-1">Type</th>
-                <th className="px-2 py-1">Action</th><th className="px-2 py-1">Case</th>
+                <th className="px-2 py-1">User</th><th className="px-2 py-1">Action</th>
+                <th className="px-2 py-1">Case</th><th className="px-2 py-1">Details</th>
                 <th className="px-2 py-1">Timestamp</th>
               </tr></thead>
               <tbody>
@@ -738,8 +741,10 @@ Linear(256→1) → sigmoid → P(mut)`}</pre>
                   <tr key={e.event_id} className="hover:bg-gray-50">
                     <td className="px-2 py-1 font-mono">{e.event_id?.slice(0, 12)}</td>
                     <td className="px-2 py-1">{e.event_type}</td>
-                    <td className="px-2 py-1">{e.action}</td>
+                    <td className="px-2 py-1 font-semibold text-blue-700">{e.user_id || e.details?.user_id || '-'}</td>
+                    <td className="px-2 py-1">{e.action || e.details?.action || '-'}</td>
                     <td className="px-2 py-1 font-mono">{e.case_id?.slice(0, 8) || '-'}</td>
+                    <td className="px-2 py-1 text-gray-500 text-[10px] max-w-[200px] truncate">{e.details?.filename || e.details?.image_id?.slice(0,8) || '-'}</td>
                     <td className="px-2 py-1 text-gray-500">{e.timestamp}</td>
                   </tr>
                 ))}

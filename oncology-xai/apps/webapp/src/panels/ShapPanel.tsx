@@ -151,7 +151,7 @@ function ArtifactImage({ uri, alt, className }: { uri: string; alt: string; clas
 
 export default function ShapPanel({ resultBundleId }: Props) {
   const { preferredLanguage } = useAuth();
-  const [selGene, setSelGene] = useState('TP53');
+  const [selGene, setSelGene] = useState('');
 
   const bundle = useQuery({
     queryKey: ['bundle', resultBundleId],
@@ -180,6 +180,13 @@ export default function ShapPanel({ resultBundleId }: Props) {
   const mp = bundle.data?.morphologic_profile;
   const isV2 = bundle.data?.pipeline_version?.startsWith('2');
 
+  React.useEffect(() => {
+    if (genetics.length > 0 && !selGene) {
+      const top = [...genetics].sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0))[0];
+      if (top) setSelGene(top.mutation);
+    }
+  }, [genetics, selGene]);
+
   const geneResult = genetics.find((g: any) => g.mutation === selGene);
   const shapDecomp = geneResult?.shap_decomposition;
   const choquetData = geneResult?.choquet_shapley;
@@ -197,7 +204,11 @@ export default function ShapPanel({ resultBundleId }: Props) {
       <div className="flex gap-3 mb-4 items-center">
         <h2 className="text-lg font-semibold">SHAP / Explainability {isV2 && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded ml-2">v2.0</span>}</h2>
         <div className="flex gap-1 ml-4 flex-wrap">
-          {GENES_V2.map(g => {
+          {[...GENES_V2].sort((a, b) => {
+            const sa = genetics.find((x: any) => x.mutation === a)?.score ?? 0;
+            const sb = genetics.find((x: any) => x.mutation === b)?.score ?? 0;
+            return sb - sa;
+          }).map(g => {
             const gr = genetics.find((x: any) => x.mutation === g);
             return (
               <button
@@ -366,6 +377,17 @@ export default function ShapPanel({ resultBundleId }: Props) {
             <h3 className="font-bold text-amber-900">Choquet Shapley Values — {selGene} (Fuzzy Choquet MIL)</h3>
           </div>
           <div className="p-4">
+            <div className="bg-amber-50 border border-amber-200 rounded p-3 mb-4 text-xs text-amber-900 leading-relaxed">
+              <strong>What does this show?</strong> The Fuzzy Choquet integral evaluates how each histological growth pattern
+              (acinar, lepidic, solid, etc.) contributes to the mutation prediction for <strong>{selGene}</strong>.
+              <br/><br/>
+              <strong>Left — Shapley Values:</strong> Each bar shows how much a single pattern contributes to the prediction.
+              Higher values = more influential. The ± number shows whether it pushes the prediction up (+) or down (−).
+              <br/>
+              <strong>Right — Interaction Indices:</strong> Shows whether pairs of patterns work together (<span className="text-green-700 font-semibold">Synergy ↑</span>)
+              or provide redundant information (<span className="text-red-600 font-semibold">Redundancy ↓</span>).
+              Synergy means the pair combined is more predictive than each alone; redundancy means they overlap.
+            </div>
             <div className="grid grid-cols-2 gap-6">
               {/* Shapley values */}
               <div>

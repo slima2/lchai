@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 import httpx
@@ -10,6 +11,8 @@ from fastapi import APIRouter, Depends, Request, Response
 
 from oncology_common.auth.dependencies import get_current_user, require_roles
 from oncology_common.auth.jwt import TokenPayload
+
+_DEV_MODE = os.getenv("ENVIRONMENT", "").lower() == "development"
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +58,12 @@ def create_proxy_router(settings) -> APIRouter:  # type: ignore[no-untyped-def]
         cid = getattr(request.state, "correlation_id", None)
         if cid:
             headers["X-Correlation-Id"] = cid
+
+        user: TokenPayload | None = getattr(request.state, "user", None)
+        if user:
+            headers["X-User-Id"] = user.preferred_username or user.user_id
+        elif _DEV_MODE:
+            headers["X-User-Id"] = "dev-user"
 
         body = await request.body()
         async with httpx.AsyncClient(timeout=120.0) as client:

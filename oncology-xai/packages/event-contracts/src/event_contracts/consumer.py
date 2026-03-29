@@ -40,7 +40,7 @@ class BaseConsumer:
         def _callback(ch, method, properties, body):  # type: ignore[no-untyped-def]
             try:
                 envelope = EventEnvelope.model_validate_json(body)
-                handler = self._handlers.get(envelope.event_type)
+                handler = self._handlers.get(envelope.event_type) or self._handlers.get("#")
                 if handler:
                     handler(envelope)
                 else:

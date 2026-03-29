@@ -23,11 +23,12 @@ data:
   MODEL_BACKEND: {{ .Values.inferenceWorker.modelBackend | quote }}
   V2_MAX_TILES_WSI: {{ .Values.inferenceWorker.maxTilesWsi | quote }}
   LOG_LEVEL: "INFO"
+  LLM_PROVIDER: "openai"
   # Service URLs (ClusterIP)
   CASE_SERVICE_URL: "http://case-service:8001"
   IMAGE_SERVICE_URL: "http://image-service:8002"
   INFERENCE_SERVICE_URL: "http://inference-service:8003"
   EHR_SERVICE_URL: "http://ehr-service:8004"
   GRAPH_SERVICE_URL: "http://graph-service:8005"
-  ONTOLOGY_ADMIN_SERVICE_URL: "http://ontology-admin:8006"
+  ONTOLOGY_ADMIN_SERVICE_URL: "http://ontology-admin-service:8006"
   AUDIT_SERVICE_URL: "http://audit-service:8007"

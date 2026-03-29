@@ -14,12 +14,29 @@ from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from fastapi import Request
 from oncology_common.storage import StorageClient
+from event_contracts.envelope import EventEnvelope
+from event_contracts.publisher import EventPublisher
 from app.config import settings
 from app.database import get_db
 from app.models import ImageDB
 
 logger = logging.getLogger(__name__)
+
+
+def _publish_audit(event_type: str, case_id: str, image_id: str, user: str, details: dict | None = None) -> None:
+    """Fire-and-forget audit event to RabbitMQ."""
+    try:
+        pub = EventPublisher(settings.rabbitmq_url)
+        pub.publish(EventEnvelope(
+            event_type=event_type,
+            producer="image-service",
+            case_id=case_id,
+            payload={"image_id": image_id, "user_id": user, "action": "UPLOAD", "entity_type": "image", "entity_id": image_id, **(details or {})},
+        ))
+    except Exception:
+        logger.warning("Failed to publish audit event %s", event_type, exc_info=True)
 
 
 def _validate_he_stain(data: bytes, ext: str) -> None:
@@ -107,10 +124,12 @@ def _storage() -> StorageClient:
 @router.post("/cases/{case_id}/images:upload", status_code=status.HTTP_201_CREATED)
 async def upload_image(
     case_id: str,
+    request: Request,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
 ):
     """Upload histopathological image. Supported: png, jpg, jpeg, tif, tiff, svs, bif, biff."""
+    uploaded_by = request.headers.get("x-user-id", "unknown")
     data = await file.read()
     ext = (file.filename or "image.png").rsplit(".", 1)[-1].lower()
     allowed = ("png", "jpg", "jpeg", "tif", "tiff", "svs", "bif", "biff")
@@ -134,10 +153,158 @@ async def upload_image(
         storage_uri=uri,
         checksum=checksum,
         size_bytes=len(data),
+        uploaded_by=uploaded_by,
     )
     db.add(img)
     await db.commit()
     await db.refresh(img)
+    _publish_audit("image.uploaded", case_id, image_id, uploaded_by, {"filename": file.filename, "size_bytes": len(data)})
+    return _img_dict(img)
+
+
+ALLOWED_EXTENSIONS = ("png", "jpg", "jpeg", "tif", "tiff", "svs", "bif", "biff")
+
+CT_MAP = {
+    "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
+    "tif": "image/tiff", "tiff": "image/tiff", "svs": "application/octet-stream",
+    "bif": "application/octet-stream", "biff": "application/octet-stream",
+}
+
+
+MULTIPART_THRESHOLD = 4_500_000_000  # 4.5 GB — use multipart for files above this
+PART_SIZE = 100_000_000  # 100 MB per part
+
+
+@router.post("/cases/{case_id}/images:request-upload", status_code=status.HTTP_200_OK)
+async def request_upload(case_id: str, body: dict, request: Request, db: AsyncSession = Depends(get_db)):
+    """Return presigned URL(s) for direct S3 upload.
+
+    For files < 4.5 GB: returns a single presigned PUT URL.
+    For files >= 4.5 GB: returns multipart upload URLs (one per 100 MB part).
+
+    Body: { "filename": "slide.svs", "size_bytes": 10000000000 }
+    """
+    filename = body.get("filename", "image.png")
+    size_bytes = body.get("size_bytes", 0)
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "png"
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported format: {ext}. Supported: {', '.join(ALLOWED_EXTENSIONS)}",
+        )
+
+    image_id = str(uuid4())
+    key = f"images/{case_id}/{image_id}.{ext}"
+    content_type = CT_MAP.get(ext, "application/octet-stream")
+    storage = _storage()
+    uploaded_by = request.headers.get("x-user-id", "unknown")
+
+    response: dict = {
+        "image_id": image_id,
+        "s3_key": key,
+        "content_type": content_type,
+    }
+
+    if size_bytes >= MULTIPART_THRESHOLD:
+        upload_id = storage.create_multipart_upload(key, content_type=content_type)
+        num_parts = max(1, -(-size_bytes // PART_SIZE))  # ceil division
+        part_urls = []
+        for i in range(1, num_parts + 1):
+            url = storage.presigned_upload_part(key, upload_id, i, expires_in=7200)
+            part_urls.append({"part_number": i, "presigned_url": url})
+        response["multipart"] = True
+        response["upload_id"] = upload_id
+        response["part_size"] = PART_SIZE
+        response["part_urls"] = part_urls
+    else:
+        presigned_url = storage.presigned_put_url(key, content_type=content_type, expires_in=7200)
+        response["multipart"] = False
+        response["presigned_url"] = presigned_url
+
+    img = ImageDB(
+        id=image_id,
+        case_id=case_id,
+        format=ext,
+        storage_uri=f"s3://{settings.s3_bucket}/{key}",
+        checksum="pending-upload",
+        size_bytes=size_bytes,
+        uploaded_by=uploaded_by,
+    )
+    db.add(img)
+    await db.commit()
+    await db.refresh(img)
+
+    return response
+
+
+@router.post("/cases/{case_id}/images:complete-multipart", status_code=status.HTTP_200_OK)
+async def complete_multipart(case_id: str, body: dict, db: AsyncSession = Depends(get_db)):
+    """Complete a multipart upload after all parts have been uploaded.
+
+    Body: { "image_id": "uuid", "upload_id": "...", "parts": [{"ETag": "...", "PartNumber": 1}, ...] }
+    """
+    image_id = body.get("image_id")
+    upload_id = body.get("upload_id")
+    parts = body.get("parts", [])
+
+    if not image_id or not upload_id or not parts:
+        raise HTTPException(status_code=400, detail="image_id, upload_id, and parts are required")
+
+    img = await db.get(ImageDB, image_id)
+    if not img or img.case_id != case_id:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    storage = _storage()
+    key = img.storage_uri.replace(f"s3://{settings.s3_bucket}/", "")
+
+    try:
+        storage.complete_multipart_upload(key, upload_id, parts)
+    except Exception as exc:
+        logger.error("Failed to complete multipart upload for %s: %s", key, exc)
+        raise HTTPException(status_code=400, detail=f"Failed to complete multipart upload: {exc}")
+
+    try:
+        head = storage.head_object(key)
+        img.size_bytes = head.get("ContentLength", 0)
+        img.checksum = (head.get("ETag") or "").strip('"')
+    except Exception as exc:
+        logger.error("S3 head_object failed for %s: %s", key, exc)
+
+    await db.commit()
+    await db.refresh(img)
+    _publish_audit("image.uploaded", case_id, image_id, img.uploaded_by or "unknown", {"size_bytes": img.size_bytes})
+    return _img_dict(img)
+
+
+@router.post("/cases/{case_id}/images:confirm-upload", status_code=status.HTTP_200_OK)
+async def confirm_upload(case_id: str, body: dict, db: AsyncSession = Depends(get_db)):
+    """Confirm that a presigned upload completed. Verifies the object exists in S3.
+
+    Body: { "image_id": "uuid" }
+    """
+    image_id = body.get("image_id")
+    if not image_id:
+        raise HTTPException(status_code=400, detail="image_id is required")
+
+    img = await db.get(ImageDB, image_id)
+    if not img or img.case_id != case_id:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    storage = _storage()
+    key = img.storage_uri.replace(f"s3://{settings.s3_bucket}/", "")
+
+    try:
+        head = storage.head_object(key)
+        actual_size = head.get("ContentLength", 0)
+        img.size_bytes = actual_size
+        img.checksum = (head.get("ETag") or "").strip('"')
+    except Exception as exc:
+        logger.error("S3 head_object failed for %s: %s", key, exc)
+        raise HTTPException(status_code=400, detail="Upload not found in storage. Did the upload complete?")
+
+    await db.commit()
+    await db.refresh(img)
+    _publish_audit("image.uploaded", case_id, image_id, img.uploaded_by or "unknown", {"size_bytes": actual_size})
     return _img_dict(img)
 
 

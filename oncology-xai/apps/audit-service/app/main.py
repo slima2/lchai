@@ -17,9 +17,16 @@ from app.routes import router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import threading, logging as _log
     configure_logging(settings.service_name, settings.log_level)
     if settings.otel_exporter_otlp_endpoint:
         setup_tracing(settings.service_name, settings.otel_exporter_otlp_endpoint)
+
+    from app.consumer import start_consumer
+    t = threading.Thread(target=start_consumer, daemon=True, name="audit-consumer")
+    t.start()
+    _log.getLogger(__name__).info("Audit RabbitMQ consumer started in background thread")
+
     yield
 
 

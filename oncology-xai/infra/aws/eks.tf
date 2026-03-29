@@ -26,6 +26,10 @@ module "eks" {
       max_size       = var.eks_cpu_max
       desired_size   = var.eks_cpu_min
 
+      iam_role_additional_policies = {
+        s3_full = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+      }
+
       labels = {
         workload = "general"
       }
@@ -42,6 +46,10 @@ module "eks" {
       disk_size = 50
 
       capacity_type = "SPOT"
+
+      iam_role_additional_policies = {
+        s3_full = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+      }
 
       labels = {
         workload    = "gpu"

@@ -664,6 +664,70 @@ def _is_tcga_slide() -> bool:
     return "TCGA" in (path or "").upper()
 
 
+def _build_tissue_mask(slide, level: int, tile_size: int, ds: int = 32) -> np.ndarray | None:
+    """Build a binary tissue mask using Otsu thresholding on a thumbnail.
+
+    Returns a boolean array at tile-grid resolution where True = tissue.
+    The mask is computed once and reused for every tile candidate.
+
+    ``ds`` controls the downsample factor for the thumbnail.  A value of 32
+    means the thumbnail is 1/32 of the full-resolution dimensions, which is
+    fast even for very large WSIs.
+    """
+    try:
+        w, h = slide.level_dimensions[level]
+        thumb_w, thumb_h = max(w // ds, 1), max(h // ds, 1)
+        thumb = slide.get_thumbnail((thumb_w, thumb_h)).convert("RGB")
+        arr = np.array(thumb)
+        gray = np.mean(arr, axis=2)
+
+        # Otsu threshold: separate tissue (dark/colored) from glass (white)
+        from PIL import ImageFilter as _IF  # noqa: local import OK
+        sorted_px = np.sort(gray.ravel())
+        n = len(sorted_px)
+        best_t, best_var = 0, 0
+        for t_idx in range(1, min(256, n)):
+            t = sorted_px[int(n * t_idx / 256)]
+            bg = gray[gray >= t]
+            fg = gray[gray < t]
+            if len(bg) == 0 or len(fg) == 0:
+                continue
+            w0, w1 = len(fg) / n, len(bg) / n
+            var = w0 * w1 * (fg.mean() - bg.mean()) ** 2
+            if var > best_var:
+                best_var = var
+                best_t = t
+
+        tissue_thumb = gray < best_t
+
+        # Also exclude very dark pixels (pen ink on glass reads as "tissue")
+        too_dark = gray < 80
+        # HSV-based H&E hue detection on thumbnail: keep only pink/purple pixels
+        r_f = arr[:, :, 0].astype(float)
+        g_f = arr[:, :, 1].astype(float)
+        b_f = arr[:, :, 2].astype(float)
+        max_c = np.maximum(np.maximum(r_f, g_f), b_f)
+        min_c = np.minimum(np.minimum(r_f, g_f), b_f)
+        sat = np.where(max_c > 0, (max_c - min_c) / max_c, 0)
+        # H&E tissue: pink (R>G, R>B) or purple (R~B, both > G)
+        he_hue = ((r_f > g_f - 10) & (sat > 0.04)) | (gray < 180)
+        tissue_thumb = tissue_thumb & he_hue & ~too_dark
+
+        # Upscale mask to tile-grid resolution
+        n_x = (w - tile_size) // tile_size + 1
+        n_y = (h - tile_size) // tile_size + 1
+        from PIL import Image as _PIm
+        mask_pil = _PIm.fromarray(tissue_thumb.astype(np.uint8) * 255)
+        mask_grid = mask_pil.resize((n_x, n_y), _PIm.NEAREST)
+        mask_arr = np.array(mask_grid) > 127
+        logger.info("Tissue mask: %d/%d grid cells marked as tissue (Otsu t=%.0f)",
+                     mask_arr.sum(), mask_arr.size, best_t)
+        return mask_arr
+    except Exception as e:
+        logger.warning("Tissue mask construction failed: %s — proceeding without mask", e)
+        return None
+
+
 def _tile_wsi_full_resolution(
     tile_size: int = 224,
     level: int = 0,
@@ -673,9 +737,10 @@ def _tile_wsi_full_resolution(
 ) -> list[tuple[int, int, Image.Image]] | None:
     """Tile a WSI at full resolution using OpenSlide read_region.
 
-    Applies two filtering levels:
-    - TCGA slides (curated): minimal filters (background + very dark only)
-    - Hospital/real slides: full artifact rejection (pen markers, saturation, etc.)
+    Three-stage filtering:
+      Stage 0 — Global Otsu tissue mask (rejects background, ink-on-glass).
+      Stage 1 — Per-tile brightness/saturation checks (both TCGA and hospital).
+      Stage 2 — Pen marker and non-H&E colour filters (hospital slides only).
     """
     if _WSI_SLIDE_HANDLE is None:
         return None
@@ -686,6 +751,9 @@ def _tile_wsi_full_resolution(
     filter_mode = "TCGA-minimal" if is_tcga else "hospital-full"
     logger.info("WSI full-resolution tiling: level=%d, dims=(%d, %d), tile=%d, filters=%s",
                 level, w, h, tile_size, filter_mode)
+
+    # ── Stage 0: global tissue mask ──
+    tissue_mask = _build_tissue_mask(slide, level, tile_size)
 
     tiles = []
     step = tile_size
@@ -701,12 +769,22 @@ def _tile_wsi_full_resolution(
 
     count = 0
     rejected_bg = 0
+    rejected_mask = 0
     rejected_artifact = 0
 
     for yi in range(0, n_y, stride):
         for xi in range(0, n_x, stride):
             if count >= max_tiles:
                 break
+
+            # ── Stage 0: tissue mask pre-check (fast, no I/O) ──
+            if tissue_mask is not None:
+                gx = min(xi, tissue_mask.shape[1] - 1)
+                gy = min(yi, tissue_mask.shape[0] - 1)
+                if not tissue_mask[gy, gx]:
+                    rejected_mask += 1
+                    continue
+
             x = xi * step
             y = yi * step
             region = slide.read_region((x, y), level, (tile_size, tile_size))
@@ -715,41 +793,36 @@ def _tile_wsi_full_resolution(
             arr = np.array(tile_rgb)
             gray = arr.mean(axis=2)
 
-            # --- FILTER 1: Background (both TCGA and hospital) ---
+            # ── Stage 1: Background (both TCGA and hospital) ──
             tissue_frac = (gray < 220).mean()
             if tissue_frac < tissue_threshold:
                 rejected_bg += 1
                 continue
 
-            # --- FILTER 2: Very dark tiles (both TCGA and hospital) ---
+            # Very dark tiles
             very_dark = (gray < 50).mean()
             if very_dark > 0.3:
                 rejected_artifact += 1
                 continue
 
-            # --- FILTER 2b: Tissue folds (dark thick areas, both TCGA and hospital) ---
-            # Folds appear as unnaturally dark regions where tissue is folded/overlapping.
-            # Double-layered H&E staining makes them darker and more intensely colored.
+            # Tissue folds (dark thick areas)
             dark_moderate = (gray < 100).mean()
             if dark_moderate > 0.4:
                 rejected_artifact += 1
                 continue
 
-            # Folds also have very low mean brightness compared to normal H&E tissue
             mean_gray = gray.mean()
             if mean_gray < 120 and dark_moderate > 0.25:
                 rejected_artifact += 1
                 continue
 
-            # --- FILTER 2c: Low texture (holes, glass, mounting medium) ---
-            # Real tissue has high intensity variance (nuclei, stroma, glands)
-            # Empty areas (lumen, holes, glass) have very uniform appearance
+            # Low texture (holes, glass, mounting medium)
             gray_std = gray.std()
             if gray_std < 12:
                 rejected_artifact += 1
                 continue
 
-            # --- FILTER 3: Low saturation (both, but lenient for TCGA) ---
+            # Low saturation
             r, g, b = arr[:,:,0].astype(float), arr[:,:,1].astype(float), arr[:,:,2].astype(float)
             max_rgb = np.maximum(np.maximum(r, g), b)
             min_rgb = np.minimum(np.minimum(r, g), b)
@@ -759,7 +832,20 @@ def _tile_wsi_full_resolution(
                 rejected_artifact += 1
                 continue
 
-            # --- TCGA: skip all marker filters (curated images) ---
+            # ── Stage 1b: HSV H&E hue filter (both TCGA and hospital) ──
+            # H&E tissue is pink (eosin) or purple (haematoxylin):
+            #   pink  → R > G, R > B, moderate saturation
+            #   purple → R ~ B, both > G
+            # Non-H&E: pure blue ink, pure red ink, green pen, brown labels
+            he_pink = (r > g) & (r > b - 20) & (saturation > 0.05)
+            he_purple = (b > g) & (r > g - 10) & (saturation > 0.05)
+            he_white_bg = gray > 210  # white glass is OK (already counted by tissue_frac)
+            he_compatible = (he_pink | he_purple | he_white_bg).mean()
+            if he_compatible < 0.50:
+                rejected_artifact += 1
+                continue
+
+            # ── Stage 2: Pen marker filters (hospital only) ──
             if not is_tcga:
                 # Straight edges (barcodes, text, labels)
                 gray_uint8 = gray.astype(np.uint8)
@@ -770,33 +856,57 @@ def _tile_wsi_full_resolution(
                     rejected_artifact += 1
                     continue
 
-                # Green marker pen
+                # Green marker pen (lowered threshold)
                 green_dominant = ((g > r + 20) & (g > b + 20)).mean()
-                if green_dominant > 0.4:
+                if green_dominant > 0.10:
                     rejected_artifact += 1
                     continue
 
-                # Red marker pen
+                # Red marker pen (lowered: catches thin pen strokes)
                 red_marker = ((r > 150) & (r > g + 40) & (r > b + 40)).mean()
-                if red_marker > 0.3:
+                if red_marker > 0.08:
                     rejected_artifact += 1
                     continue
 
-                # Olive/yellow marker
+                # Olive/yellow marker (lowered)
                 olive_marker = ((r > 140) & (g > 120) & (b < 100) & ((r + g) > 2.5 * b)).mean()
-                if olive_marker > 0.3:
+                if olive_marker > 0.10:
                     rejected_artifact += 1
                     continue
 
-                # Blue/teal marker pen
+                # Blue/teal marker pen (lowered: catches thin blue pen)
                 blue_marker = ((b > r + 30) & (b > g + 20) & (b > 100)).mean()
-                if blue_marker > 0.25:
+                if blue_marker > 0.05:
+                    rejected_artifact += 1
+                    continue
+
+                # Light blue marker / dye
+                light_blue = ((b > r + 15) & (b > g) & (b > 130) & (saturation > 0.15)).mean()
+                if light_blue > 0.15:
+                    rejected_artifact += 1
+                    continue
+
+                # Pale blue/cyan background (mounting medium, methylene blue)
+                pale_blue = ((b > r) & (b > g) & (b > 150) & (r > 120)).mean()
+                if pale_blue > 0.4:
                     rejected_artifact += 1
                     continue
 
                 # Teal/cyan marker
                 teal_marker = ((g > r + 20) & (b > r + 20) & (r < 100)).mean()
-                if teal_marker > 0.30:
+                if teal_marker > 0.10:
+                    rejected_artifact += 1
+                    continue
+
+                # India ink / tissue orientation marks
+                ink_mark = ((gray < 80) & (b > r * 0.8)).mean()
+                if ink_mark > 0.08:
+                    rejected_artifact += 1
+                    continue
+
+                # Non-H&E color cast
+                hue_he = ((r > b - 30) | (r > 160)).mean()
+                if hue_he < 0.3:
                     rejected_artifact += 1
                     continue
 
@@ -812,8 +922,8 @@ def _tile_wsi_full_resolution(
             break
 
     logger.info("WSI tiling complete: %d tissue tiles from %d candidates "
-                "(rejected: %d background, %d artifacts, filters=%s)",
-                len(tiles), total_candidates, rejected_bg, rejected_artifact, filter_mode)
+                "(rejected: %d mask, %d background, %d artifacts, filters=%s)",
+                len(tiles), total_candidates, rejected_mask, rejected_bg, rejected_artifact, filter_mode)
     return tiles if tiles else None
 
 

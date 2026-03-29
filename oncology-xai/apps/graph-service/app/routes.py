@@ -66,7 +66,8 @@ async def _fetch_discovered_relations(db: AsyncSession) -> list[dict]:
     try:
         rows = (await db.execute(stmt)).fetchall()
     except Exception:
-        return []  # table might not exist yet
+        await db.rollback()
+        return []
     return [
         {
             "subject": r[0], "predicate": r[1], "object": r[2],
