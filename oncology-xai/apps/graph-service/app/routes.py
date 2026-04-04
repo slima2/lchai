@@ -209,6 +209,7 @@ async def explain_graph(
     if not include_inferred:
         edges = [e for e in edges if e.get("type") != "inferred"]
 
+    extra_context = (body or {}).get("extra_context", "")
     explanation = await generate_explanation(
         case_id,
         nodes,
@@ -217,6 +218,7 @@ async def explain_graph(
         anthropic_api_key=settings.anthropic_api_key,
         llm_provider=settings.llm_provider,
         language=language,
+        extra_context=extra_context,
     )
     return {"case_id": case_id, "explanation": explanation}
 

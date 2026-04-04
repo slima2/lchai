@@ -149,9 +149,73 @@ function ArtifactImage({ uri, alt, className }: { uri: string; alt: string; clas
   return <img src={imgUrl} alt={alt} className={className} onError={() => setError(true)} />;
 }
 
+const CLINICAL_ASSOC: Record<string, { patterns: string; treatment: string }> = {
+  TP53:  { patterns: 'Solid, micropapillary', treatment: 'No targeted therapy; immunotherapy may benefit' },
+  EGFR:  { patterns: 'Lepidic, papillary', treatment: 'Osimertinib (3rd gen TKI), erlotinib, gefitinib' },
+  KRAS:  { patterns: 'Mucinous, solid', treatment: 'Sotorasib (G12C-specific), adagrasib' },
+  STK11: { patterns: 'Various (no dominant pattern)', treatment: 'May predict immunotherapy resistance' },
+  KEAP1: { patterns: 'Various (diffuse)', treatment: 'Oxidative stress pathway alterations' },
+  RBM10: { patterns: 'Various (no morphological signature)', treatment: 'RNA splicing factor; research-stage' },
+};
+
+function ChoquetExplainBlock({ selGene, caseId, geneResult, choquetData, choquetExpl, setChoquetExpl, choquetLoading, setChoquetLoading }: any) {
+  const assoc = CLINICAL_ASSOC[selGene] || { patterns: 'Unknown', treatment: 'Unknown' };
+  const cacheKey = `choquet_${selGene}_${caseId}`;
+
+  const handleExplain = async () => {
+    if (_explanationCache[cacheKey]) { setChoquetExpl(_explanationCache[cacheKey]); return; }
+    setChoquetLoading(true);
+    try {
+      const svText = Object.entries(choquetData.shapley_values as Record<string, number>)
+        .sort(([,a],[,b]) => (b as number) - (a as number))
+        .map(([p, v]) => `  ${p}: ${(v as number).toFixed(4)}`).join('\n');
+      const ixText = choquetData.interaction_indices
+        ? Object.entries(choquetData.interaction_indices as Record<string, number>)
+            .sort(([,a],[,b]) => Math.abs(b as number) - Math.abs(a as number))
+            .slice(0, 5)
+            .map(([p, v]) => `  ${p.replace('_', ' x ')}: ${(v as number) > 0 ? '+' : ''}${(v as number).toFixed(4)} (${(v as number) > 0 ? 'synergy' : 'redundancy'})`)
+            .join('\n')
+        : 'None';
+      const prompt = `You are a clinical decision support system for lung adenocarcinoma. Explain the following Choquet Shapley analysis results for a pathologist who is NOT a data scientist. Be concise (max 200 words), clinically grounded, and honest about limitations.\n\nGene: ${selGene}\nMutation probability: ${((geneResult.score || geneResult.probability || 0) * 100).toFixed(1)}%\nKnown clinical association: ${selGene} mutations are associated with ${assoc.patterns} patterns. Treatment: ${assoc.treatment}.\n\nLearned Shapley values (pattern importance from the AI model):\n${svText}\n\nTop interaction indices (pattern pair synergies/redundancies):\n${ixText}\n\nExplain: 1) What the Shapley values tell us clinically, 2) Whether they align with known literature, 3) What the interaction indices mean for this patient, 4) Any limitations. Use language a pathologist would understand. Do NOT use the word "diagnose" or "confirmed".`;
+
+      const resp = await api.post(`/cases/${caseId}/graph/explain`, { language: 'en', extra_context: prompt });
+      const text = resp.data?.explanation || 'Explanation not available.';
+      _explanationCache[cacheKey] = text;
+      setChoquetExpl(text);
+    } catch (e: any) {
+      setChoquetExpl(`Could not generate explanation: ${e?.message || 'Unknown error'}`);
+    } finally {
+      setChoquetLoading(false);
+    }
+  };
+
+  return (
+    <div className="mb-4 mt-2">
+      <button
+        className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
+        onClick={handleExplain}
+        disabled={choquetLoading}
+      >
+        {choquetLoading ? 'Generating clinical interpretation...' : 'Explain Choquet values with AI'}
+      </button>
+      {choquetExpl && (
+        <div className="mt-3 bg-green-50 border border-green-200 rounded p-4 text-sm leading-relaxed text-green-900 whitespace-pre-wrap">
+          <strong>Clinical Interpretation — {selGene}</strong>
+          <div className="mt-2">{choquetExpl}</div>
+          <div className="mt-2 text-xs text-gray-500 italic">
+            Known association: {assoc.patterns} | Treatment: {assoc.treatment}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ShapPanel({ resultBundleId }: Props) {
   const { preferredLanguage } = useAuth();
   const [selGene, setSelGene] = useState('');
+  const [choquetExpl, setChoquetExpl] = useState<string | null>(null);
+  const [choquetLoading, setChoquetLoading] = useState(false);
 
   const bundle = useQuery({
     queryKey: ['bundle', resultBundleId],
@@ -179,6 +243,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
   const patterns = bundle.data?.pattern_results || [];
   const mp = bundle.data?.morphologic_profile;
   const isV2 = bundle.data?.pipeline_version?.startsWith('2');
+  const caseId = bundle.data?.case_id || '';
 
   React.useEffect(() => {
     if (genetics.length > 0 && !selGene) {
@@ -373,21 +438,10 @@ export default function ShapPanel({ resultBundleId }: Props) {
       {/* ── OUTPUT 4: Choquet Shapley Values (only for Choquet genes: KRAS, RBM10) ── */}
       {choquetData && geneResult?.prediction_method?.includes('Choquet') && (
         <div className="mb-6 border rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
+          <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between">
             <h3 className="font-bold text-amber-900">Choquet Shapley Values — {selGene} (Fuzzy Choquet MIL)</h3>
           </div>
           <div className="p-4">
-            <div className="bg-amber-50 border border-amber-200 rounded p-3 mb-4 text-xs text-amber-900 leading-relaxed">
-              <strong>What does this show?</strong> The Fuzzy Choquet integral evaluates how each histological growth pattern
-              (acinar, lepidic, solid, etc.) contributes to the mutation prediction for <strong>{selGene}</strong>.
-              <br/><br/>
-              <strong>Left — Shapley Values:</strong> Each bar shows how much a single pattern contributes to the prediction.
-              Higher values = more influential. The ± number shows whether it pushes the prediction up (+) or down (−).
-              <br/>
-              <strong>Right — Interaction Indices:</strong> Shows whether pairs of patterns work together (<span className="text-green-700 font-semibold">Synergy ↑</span>)
-              or provide redundant information (<span className="text-red-600 font-semibold">Redundancy ↓</span>).
-              Synergy means the pair combined is more predictive than each alone; redundancy means they overlap.
-            </div>
             <div className="grid grid-cols-2 gap-6">
               {/* Shapley values */}
               <div>
@@ -473,6 +527,20 @@ export default function ShapPanel({ resultBundleId }: Props) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Unified Choquet Clinical Interpretation (LLM-powered) ── */}
+      {choquetData && geneResult?.prediction_method?.includes('Choquet') && (
+        <ChoquetExplainBlock
+          selGene={selGene}
+          caseId={caseId}
+          geneResult={geneResult}
+          choquetData={choquetData}
+          choquetExpl={choquetExpl}
+          setChoquetExpl={setChoquetExpl}
+          choquetLoading={choquetLoading}
+          setChoquetLoading={setChoquetLoading}
+        />
       )}
 
       {/* Morphologic profile */}

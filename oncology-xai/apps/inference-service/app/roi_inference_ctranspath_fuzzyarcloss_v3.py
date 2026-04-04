@@ -298,9 +298,25 @@ def _build_overlay(img: Image.Image, tile_coords: list[tuple[int, int]],
 
     overlay = Image.merge("RGBA", (r_img, g_img, b_img, a_img))
 
-    # Apply Gaussian blur to soften further (radius proportional to tile size)
+    # Apply Gaussian blur to soften tile boundaries
     blur_radius = max(tile_size // 6, 4)
     overlay = overlay.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+
+    # Clip overlay to tissue regions only: prevent blur from bleeding
+    # onto white background. Build a tissue mask from the original image.
+    img_arr = np.array(img.convert("RGB"))
+    img_gray = img_arr.mean(axis=2)
+    tissue_binary = (img_gray < 220).astype(np.uint8) * 255
+    tissue_mask_img = Image.fromarray(tissue_binary, "L")
+    tissue_mask_img = tissue_mask_img.filter(ImageFilter.MaxFilter(size=5))
+
+    # Zero out overlay alpha where there is no tissue
+    ov_r, ov_g, ov_b, ov_a = overlay.split()
+    ov_a_arr = np.array(ov_a)
+    tissue_arr = np.array(tissue_mask_img)
+    ov_a_arr[tissue_arr == 0] = 0
+    ov_a = Image.fromarray(ov_a_arr, "L")
+    overlay = Image.merge("RGBA", (ov_r, ov_g, ov_b, ov_a))
 
     base = img.convert("RGBA")
     combined = Image.alpha_composite(base, overlay)
@@ -837,11 +853,12 @@ def _tile_wsi_full_resolution(
             #   pink  → R > G, R > B, moderate saturation
             #   purple → R ~ B, both > G
             # Non-H&E: pure blue ink, pure red ink, green pen, brown labels
-            he_pink = (r > g) & (r > b - 20) & (saturation > 0.05)
-            he_purple = (b > g) & (r > g - 10) & (saturation > 0.05)
-            he_white_bg = gray > 210  # white glass is OK (already counted by tissue_frac)
-            he_compatible = (he_pink | he_purple | he_white_bg).mean()
-            if he_compatible < 0.50:
+            he_pink = (r > g) & (r > b - 30) & (saturation > 0.03)
+            he_purple = (b > g) & (r > g - 15) & (saturation > 0.03)
+            he_pale = (gray > 180) & (saturation < 0.15)  # pale staining is still tissue
+            he_white_bg = gray > 220
+            he_compatible = (he_pink | he_purple | he_pale | he_white_bg).mean()
+            if he_compatible < 0.30:
                 rejected_artifact += 1
                 continue
 
@@ -856,51 +873,51 @@ def _tile_wsi_full_resolution(
                     rejected_artifact += 1
                     continue
 
-                # Green marker pen (lowered threshold)
-                green_dominant = ((g > r + 20) & (g > b + 20)).mean()
-                if green_dominant > 0.10:
+                # Green marker pen
+                green_dominant = ((g > r + 30) & (g > b + 30)).mean()
+                if green_dominant > 0.25:
                     rejected_artifact += 1
                     continue
 
-                # Red marker pen (lowered: catches thin pen strokes)
-                red_marker = ((r > 150) & (r > g + 40) & (r > b + 40)).mean()
-                if red_marker > 0.08:
+                # Red marker pen
+                red_marker = ((r > 180) & (r > g + 50) & (r > b + 50)).mean()
+                if red_marker > 0.15:
                     rejected_artifact += 1
                     continue
 
-                # Olive/yellow marker (lowered)
-                olive_marker = ((r > 140) & (g > 120) & (b < 100) & ((r + g) > 2.5 * b)).mean()
-                if olive_marker > 0.10:
+                # Olive/yellow marker
+                olive_marker = ((r > 160) & (g > 140) & (b < 80) & ((r + g) > 3.0 * b)).mean()
+                if olive_marker > 0.20:
                     rejected_artifact += 1
                     continue
 
-                # Blue/teal marker pen (lowered: catches thin blue pen)
-                blue_marker = ((b > r + 30) & (b > g + 20) & (b > 100)).mean()
-                if blue_marker > 0.05:
+                # Blue/teal marker pen (strong blue only)
+                blue_marker = ((b > r + 40) & (b > g + 30) & (b > 120)).mean()
+                if blue_marker > 0.10:
                     rejected_artifact += 1
                     continue
 
                 # Light blue marker / dye
-                light_blue = ((b > r + 15) & (b > g) & (b > 130) & (saturation > 0.15)).mean()
-                if light_blue > 0.15:
+                light_blue = ((b > r + 20) & (b > g + 10) & (b > 150) & (saturation > 0.20)).mean()
+                if light_blue > 0.25:
                     rejected_artifact += 1
                     continue
 
-                # Pale blue/cyan background (mounting medium, methylene blue)
-                pale_blue = ((b > r) & (b > g) & (b > 150) & (r > 120)).mean()
-                if pale_blue > 0.4:
+                # Pale blue/cyan background (mounting medium)
+                pale_blue = ((b > r + 10) & (b > g + 10) & (b > 160) & (r > 130)).mean()
+                if pale_blue > 0.50:
                     rejected_artifact += 1
                     continue
 
                 # Teal/cyan marker
-                teal_marker = ((g > r + 20) & (b > r + 20) & (r < 100)).mean()
-                if teal_marker > 0.10:
+                teal_marker = ((g > r + 30) & (b > r + 30) & (r < 80)).mean()
+                if teal_marker > 0.20:
                     rejected_artifact += 1
                     continue
 
                 # India ink / tissue orientation marks
-                ink_mark = ((gray < 80) & (b > r * 0.8)).mean()
-                if ink_mark > 0.08:
+                ink_mark = ((gray < 60) & (b > r * 0.8)).mean()
+                if ink_mark > 0.12:
                     rejected_artifact += 1
                     continue
 

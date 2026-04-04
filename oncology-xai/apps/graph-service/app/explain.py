@@ -130,18 +130,22 @@ async def generate_explanation(
     anthropic_api_key: str = "",
     llm_provider: str = "openai",
     language: str = "English",
+    extra_context: str = "",
 ) -> str:
     """Generate natural language explanation of the graph via LLM or mock."""
     LANG_MAP = {"en": "English", "es": "Spanish", "de": "German", "fr": "French", "pt": "Portuguese"}
     lang_name = LANG_MAP.get(language, language) if len(language) <= 3 else language
     system_prompt = SYSTEM_PROMPT_TEMPLATE.format(language=lang_name)
 
-    nodes_text, edges_text = _format_graph_for_prompt(nodes, edges)
-    user_prompt = USER_PROMPT_TEMPLATE.format(
-        case_id=case_id,
-        nodes_text=nodes_text,
-        edges_text=edges_text,
-    )
+    if extra_context:
+        user_prompt = extra_context
+    else:
+        nodes_text, edges_text = _format_graph_for_prompt(nodes, edges)
+        user_prompt = USER_PROMPT_TEMPLATE.format(
+            case_id=case_id,
+            nodes_text=nodes_text,
+            edges_text=edges_text,
+        )
 
     if llm_provider == "mock":
         return _mock_explanation(nodes, edges, case_id)
