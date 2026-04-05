@@ -108,7 +108,7 @@ async def detect_conflicts(state: GraphState) -> GraphState:
     mutations = evidence.get("mutations", [])
 
     # Check for contradictions between mutation predictions and patterns
-    # EGFR is associated with lepidic/papillary, KRAS with solid/cribriform
+    # EGFR is associated with lepidic/papillary, KRAS with solid/mucinous (IMA)
     egfr = next((m for m in mutations if m.get("mutation") == "EGFR"), None)
     kras = next((m for m in mutations if m.get("mutation") == "KRAS"), None)
 

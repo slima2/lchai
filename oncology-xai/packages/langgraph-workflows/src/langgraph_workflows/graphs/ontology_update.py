@@ -197,11 +197,11 @@ async def extract_relations(state: GraphState) -> GraphState:
         {"subject": "EGFR", "predicate": "associatedWith", "object": "lepidic"},
         {"subject": "EGFR", "predicate": "associatedWith", "object": "papillary"},
         {"subject": "KRAS", "predicate": "associatedWith", "object": "solid"},
-        {"subject": "KRAS", "predicate": "associatedWith", "object": "cribriform"},
+        {"subject": "KRAS", "predicate": "associatedWith", "object": "mucinous_invasive"},
         {"subject": "TP53", "predicate": "associatedWith", "object": "solid"},
         {"subject": "TP53", "predicate": "associatedWith", "object": "micropapillary"},
         {"subject": "ALK", "predicate": "associatedWith", "object": "solid"},
-        {"subject": "ALK", "predicate": "associatedWith", "object": "cribriform"},
+        {"subject": "ALK", "predicate": "associatedWith", "object": "mucinous_invasive"},
     ]
 
     inter["extracted_relations"] = domain_relations

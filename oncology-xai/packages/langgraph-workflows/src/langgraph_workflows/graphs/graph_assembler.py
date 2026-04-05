@@ -191,7 +191,7 @@ async def fuse_annotate_provenance(state: GraphState) -> GraphState:
     # Known gene-pattern associations from oncology literature
     associations = {
         "EGFR": ["lepidic", "papillary", "micropapillary"],
-        "KRAS": ["solid", "cribriform"],
+        "KRAS": ["solid", "mucinous_invasive"],
         "TP53": ["solid", "micropapillary"],
     }
 

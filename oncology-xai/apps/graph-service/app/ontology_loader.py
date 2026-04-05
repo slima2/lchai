@@ -136,8 +136,7 @@ CURATED_EDGES: list[dict] = [
     # Solid: associated with KRAS, TP53, poor prognosis
     {"s": _ncit("C128851"), "t": _ncit("C17383"), "label": "associatedWithMutation", "prov": "TCGA/CIViC",  "type": "inferred"},
     {"s": _ncit("C128851"), "t": _ncit("C17387"), "label": "associatedWithMutation", "prov": "TCGA/CIViC",  "type": "inferred"},
-    # Cribriform: poor-prognosis architecture; overlap with KRAS/TP53 in literature
-    {"s": _ncit("C35920"), "t": _ncit("C17383"), "label": "associatedWithMutation", "prov": "literature", "type": "inferred"},
+    # Cribriform: poor-prognosis acinar variant; associated with TP53 in literature
     {"s": _ncit("C35920"), "t": _ncit("C17387"), "label": "associatedWithMutation", "prov": "literature", "type": "inferred"},
 
     # ── Genes → Treatments (OncoKB / NCCN Guidelines, FDA-approved) ──
