@@ -121,23 +121,30 @@ CURATED_EDGES: list[dict] = [
     {"s": _ncit("C128851"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
     {"s": _ncit("C35920"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
 
-    # ── Patterns → Genes (morphology-molecular correlation, TCGA/literature) ──
-    # Lepidic: strongly associated with EGFR (TCGA 2014, Kadota et al.)
-    {"s": _ncit("C128847"), "t": _ncit("C17757"), "label": "associatedWithMutation", "prov": "TCGA/OncoKB", "type": "inferred"},
-    # Acinar: associated with EGFR and KRAS
-    {"s": _ncit("C128848"), "t": _ncit("C17757"), "label": "associatedWithMutation", "prov": "TCGA/CIViC",  "type": "inferred"},
-    {"s": _ncit("C128848"), "t": _ncit("C17383"), "label": "associatedWithMutation", "prov": "TCGA/CIViC",  "type": "inferred"},
-    # Papillary: associated with EGFR, BRAF
-    {"s": _ncit("C128849"), "t": _ncit("C17757"), "label": "associatedWithMutation", "prov": "TCGA/OncoKB", "type": "inferred"},
-    {"s": _ncit("C128849"), "t": _ncit("C51549"), "label": "associatedWithMutation", "prov": "TCGA/CIViC",  "type": "inferred"},
-    # Micropapillary: associated with EGFR, ALK, poor prognosis
-    {"s": _ncit("C128850"), "t": _ncit("C17757"), "label": "associatedWithMutation", "prov": "TCGA/CIViC",  "type": "inferred"},
-    {"s": _ncit("C128850"), "t": _ncit("C20316"), "label": "associatedWithMutation", "prov": "TCGA/CIViC",  "type": "inferred"},
-    # Solid: associated with KRAS, TP53, poor prognosis
-    {"s": _ncit("C128851"), "t": _ncit("C17383"), "label": "associatedWithMutation", "prov": "TCGA/CIViC",  "type": "inferred"},
-    {"s": _ncit("C128851"), "t": _ncit("C17387"), "label": "associatedWithMutation", "prov": "TCGA/CIViC",  "type": "inferred"},
-    # Cribriform: poor-prognosis acinar variant; associated with TP53 in literature
-    {"s": _ncit("C35920"), "t": _ncit("C17387"), "label": "associatedWithMutation", "prov": "literature", "type": "inferred"},
+    # ── Patterns → Genes (morphology-molecular correlation) ──
+    # Each edge has a specific PMID or DOI as provenance.
+    # Thesis reference: Table gene_unified (Ch. 3).
+    #
+    # Lepidic → EGFR: PMID:27738759 (90.5% EGFR in lepidic; J Cancer Res Clin Oncol 2017)
+    #                  + PMID:21252858 (Yoshizawa et al. 2011; lepidic = low-grade, EGFR-enriched)
+    {"s": _ncit("C128847"), "t": _ncit("C17757"), "label": "associatedWithMutation", "prov": "PMID:27738759", "type": "inferred"},
+    # Papillary → EGFR: PMID:21252858 (Yoshizawa et al.; papillary = intermediate, EGFR-enriched)
+    {"s": _ncit("C128849"), "t": _ncit("C17757"), "label": "associatedWithMutation", "prov": "PMID:21252858", "type": "inferred"},
+    # Micropapillary → TP53: PMID:35977379 (TP53 + ALK enriched in micropapillary; Front Oncol 2022)
+    #                         + thesis gene_unified: TP53 = solid + micropapillary
+    {"s": _ncit("C128850"), "t": _ncit("C17387"), "label": "associatedWithMutation", "prov": "PMID:35977379", "type": "inferred"},
+    # Micropapillary → ALK: PMID:22722855 (ALK+ enriched in micropapillary; Mod Pathol 2012)
+    #                        + PMID:35977379 (ALK fusions more frequent in micropapillary; Front Oncol 2022)
+    {"s": _ncit("C128850"), "t": _ncit("C20316"), "label": "associatedWithMutation", "prov": "PMID:22722855", "type": "inferred"},
+    # Solid → KRAS: PMID:23619604 (solid 27% in KRAS+ vs 3% in EGFR+, p<0.001; Mod Pathol 2013)
+    {"s": _ncit("C128851"), "t": _ncit("C17383"), "label": "associatedWithMutation", "prov": "PMID:23619604", "type": "inferred"},
+    # Solid → TP53: PMID:25079552 (TCGA 2014 Nature; TP53 most mutated gene, associated with high-grade)
+    #               + thesis gene_unified: TP53 = solid + micropapillary
+    {"s": _ncit("C128851"), "t": _ncit("C17387"), "label": "associatedWithMutation", "prov": "PMID:25079552", "type": "inferred"},
+    # Acinar: no specific gene enrichment (EJSO 2019 pooled: OR 0.65 for KRAS, EGFR not enriched)
+    # Cribriform: no established gene association (rare; PMID:24061507 Kamata et al. 2013)
+    # Papillary → BRAF: not included — PMID:21483012 shows BRAF in LUAD but no specific
+    #   papillary enrichment in the primary data; weaker evidence than other edges.
 
     # ── Genes → Treatments (OncoKB / NCCN Guidelines, FDA-approved) ──
     # EGFR → TKIs

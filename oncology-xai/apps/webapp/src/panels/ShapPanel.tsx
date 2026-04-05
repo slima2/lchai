@@ -148,7 +148,7 @@ function ArtifactImage({ uri, alt, className }: { uri: string; alt: string; clas
   return <img src={imgUrl} alt={alt} className={className} onError={() => setError(true)} />;
 }
 
-const CHOQUET_STYLE_GENES = ['TP53', 'EGFR'] as const;
+const CHOQUET_STYLE_GENES: readonly string[] = [] as const;
 
 /** Slide-level pattern synergy narrative for B2 genes: complements true Choquet Shapley (KRAS, RBM10). */
 function PatternSynergyExplainBlock({
@@ -536,11 +536,16 @@ export default function ShapPanel({ resultBundleId }: Props) {
         </div>
       )}
 
-      {/* ── OUTPUT 4: Choquet Shapley Values (only for Choquet genes: KRAS, RBM10) ── */}
-      {choquetData && geneResult?.prediction_method?.includes('Choquet') && (
+      {/* ── OUTPUT 4: Choquet Shapley Values (for all genes with Choquet data) ── */}
+      {choquetData && choquetData.shapley_values && (
         <div className="mb-6 border rounded-lg shadow-sm overflow-hidden">
           <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between">
-            <h3 className="font-bold text-amber-900">Choquet Shapley Values — {selGene} (Fuzzy Choquet MIL)</h3>
+            <h3 className="font-bold text-amber-900">
+              Choquet Shapley Values — {selGene}
+              {geneResult?.prediction_method?.includes('Choquet')
+                ? ' (Fuzzy Choquet MIL — primary method)'
+                : ' (Fuzzy Choquet MIL — complementary analysis)'}
+            </h3>
           </div>
           <div className="p-4">
             <div className="grid grid-cols-2 gap-6">
@@ -636,7 +641,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
       )}
 
       {/* ── Unified Choquet Clinical Interpretation (LLM-powered) ── */}
-      {choquetData && geneResult?.prediction_method?.includes('Choquet') && (
+      {choquetData && choquetData.shapley_values && (
         <ChoquetExplainBlock
           selGene={selGene}
           caseId={caseId}

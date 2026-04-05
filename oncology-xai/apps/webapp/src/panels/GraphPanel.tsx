@@ -254,20 +254,20 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
       })
       .map((e: any) => ({ ...e }));
 
-    // Hierarchical layer assignment: Case → Patterns → Diagnosis → Genes → Ontology → Treatments
+    // Hierarchical layers: Case(0) → Diagnosis(1) → Patterns(2) → Genes(3) → Treatments(4)
     const LAYER_ORDER: Record<string, number> = {
       Case: 0, case: 0,
-      Pattern: 1, pattern: 1,
-      Diagnosis: 2, diagnosis: 2,
+      Diagnosis: 1, diagnosis: 1,
+      Pattern: 2, pattern: 2,
       Gene: 3, gene: 3, Mutation: 3,
       Stage: 3, stage: 3,
-      Ontology: 4, curated: 4,
-      Treatment: 5, treatment: 5,
+      Ontology: 3, curated: 3,
+      Treatment: 4, treatment: 4,
     };
-    const layerCount = 6;
+    const layerCount = 5;
     const layerSpacing = height / (layerCount + 1);
 
-    // Group nodes by layer for horizontal distribution
+    // Group nodes by layer
     const layerBuckets: Map<number, GraphNode[]> = new Map();
     for (const n of nodes) {
       const layer = LAYER_ORDER[n.type] ?? 3;
@@ -275,26 +275,62 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
       layerBuckets.get(layer)!.push(n);
     }
 
-    // Estimate label width for spacing (approx 6px per char at 10px font)
     const labelWidth = (n: GraphNode) => {
       const text = n.label || n.id;
       return Math.max((text.length > 30 ? 30 : text.length) * 6 + 20, 60);
     };
 
-    // Assign initial x,y positions in a grid per layer with label-aware spacing
+    // Build adjacency for barycenter ordering (reduces edge crossings)
+    const nodeIdToIdx = new Map(nodes.map((n, i) => [n.id, i]));
+    const adjDown = new Map<string, string[]>();
+    const adjUp = new Map<string, string[]>();
+    for (const e of edges) {
+      const sid = typeof e.source === 'string' ? e.source : (e.source as any)?.id;
+      const tid = typeof e.target === 'string' ? e.target : (e.target as any)?.id;
+      if (!adjDown.has(sid)) adjDown.set(sid, []);
+      adjDown.get(sid)!.push(tid);
+      if (!adjUp.has(tid)) adjUp.set(tid, []);
+      adjUp.get(tid)!.push(sid);
+    }
+
+    // Sort patterns by score descending; genes alphabetically
     for (const [layer, bucket] of layerBuckets) {
+      if (layer === 2) {
+        bucket.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      } else if (layer === 3) {
+        bucket.sort((a, b) => (a.label || '').localeCompare(b.label || ''));
+      }
+    }
+
+    // Place each layer; use barycenter of connected nodes in previous layer to reduce crossings
+    const nodeXPos = new Map<string, number>();
+
+    for (let layer = 0; layer < layerCount; layer++) {
+      const bucket = layerBuckets.get(layer) || [];
       const yTarget = layerSpacing * (layer + 1);
-      const totalWidth = bucket.reduce((sum, n) => sum + labelWidth(n), 0);
-      const margin = 60;
+
+      if (layer > 0 && bucket.length > 1) {
+        bucket.sort((a, b) => {
+          const aParents = (adjUp.get(a.id) || []).map(pid => nodeXPos.get(pid) ?? width / 2);
+          const bParents = (adjUp.get(b.id) || []).map(pid => nodeXPos.get(pid) ?? width / 2);
+          const aCenter = aParents.length ? aParents.reduce((s, x) => s + x, 0) / aParents.length : width / 2;
+          const bCenter = bParents.length ? bParents.reduce((s, x) => s + x, 0) / bParents.length : width / 2;
+          return aCenter - bCenter;
+        });
+      }
+
+      const totalWidth = bucket.reduce((sum, n) => sum + labelWidth(n) + 15, 0);
+      const margin = 40;
       const availableWidth = width - margin * 2;
       const scale = totalWidth > availableWidth ? availableWidth / totalWidth : 1;
       let xCursor = (width - totalWidth * scale) / 2;
-      bucket.forEach((n) => {
-        const w = labelWidth(n) * scale;
+      for (const n of bucket) {
+        const w = (labelWidth(n) + 15) * scale;
         n.x = xCursor + w / 2;
         n.y = yTarget;
+        nodeXPos.set(n.id, n.x);
         xCursor += w;
-      });
+      }
     }
 
     // Definitions (arrow markers)
@@ -335,29 +371,38 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
       });
     svg.call(zoom);
 
-    // Simulation with layered Y constraint and label-aware collision
+    // Deterministic hierarchical layout — only use collision to avoid overlap, pin Y strictly
     const simulation = d3.forceSimulation<GraphNode>(nodes)
-      .force('link', d3.forceLink<GraphNode, GraphEdge>(edges).id(d => d.id).distance(100).strength(0.2))
-      .force('charge', d3.forceManyBody().strength(-200))
-      .force('collision', d3.forceCollide<GraphNode>().radius(d => labelWidth(d) / 2).strength(0.9))
-      .force('x', d3.forceX(width / 2).strength(0.02))
+      .force('link', d3.forceLink<GraphNode, GraphEdge>(edges).id(d => d.id).distance(100).strength(0.05))
+      .force('collision', d3.forceCollide<GraphNode>().radius(d => labelWidth(d) / 2 + 8).strength(1.0))
+      .force('x', d3.forceX<GraphNode>((d) => nodeXPos.get(d.id) ?? width / 2).strength(0.8))
       .force('y', d3.forceY<GraphNode>((d) => {
         const layer = LAYER_ORDER[d.type] ?? 3;
         return layerSpacing * (layer + 1);
-      }).strength(0.85));
+      }).strength(2.0));
 
-    // Draw edges
+    // Draw edges as curved paths with provenance tooltip on hover
     const isInferred = (d: any) => d.asserted === false || d.type === 'inferred';
     const link = g.append('g')
-      .selectAll('line')
+      .selectAll('path')
       .data(edges)
-      .join('line')
+      .join('path')
+      .attr('fill', 'none')
       .attr('stroke', (d: any) => isInferred(d) ? '#F59E0B' : '#9CA3AF')
       .attr('stroke-width', (d: any) => isInferred(d) ? 1.5 : 2)
       .attr('stroke-dasharray', (d: any) => isInferred(d) ? '6,3' : 'none')
-      .attr('marker-end', (d: any) => isInferred(d) ? 'url(#arrow-inferred)' : 'url(#arrow-asserted)');
+      .attr('marker-end', (d: any) => isInferred(d) ? 'url(#arrow-inferred)' : 'url(#arrow-asserted)')
+      .attr('cursor', 'help');
 
-    // Edge labels
+    link.append('title')
+      .text((d: any) => {
+        const prov = d.provenance || '';
+        const pmid = prov.match(/PMID:\d+/)?.[0];
+        if (pmid) return `${d.label} — ${pmid} (pubmed.ncbi.nlm.nih.gov/${pmid.replace('PMID:', '')}/)`;
+        return `${d.label} — ${prov || 'curated'}`;
+      });
+
+    // Edge labels with provenance tooltip
     const edgeLabels = g.append('g')
       .selectAll('text')
       .data(edges)
@@ -366,7 +411,16 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
       .attr('font-size', '9px')
       .attr('fill', '#6B7280')
       .attr('dy', -6)
+      .attr('cursor', 'help')
       .text((d: any) => d.label || d.type || '');
+
+    edgeLabels.append('title')
+      .text((d: any) => {
+        const prov = d.provenance || '';
+        const pmid = prov.match(/PMID:\d+/)?.[0];
+        if (pmid) return `${d.label || d.type} — Source: ${pmid} (https://pubmed.ncbi.nlm.nih.gov/${pmid.replace('PMID:', '')}/)`;
+        return `${d.label || d.type} — Source: ${prov || 'curated'}`;
+      });
 
     // Draw nodes
     const node = g.append('g')
@@ -435,11 +489,13 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
 
     // Tick
     simulation.on('tick', () => {
-      link
-        .attr('x1', (d: any) => d.source.x)
-        .attr('y1', (d: any) => d.source.y)
-        .attr('x2', (d: any) => d.target.x)
-        .attr('y2', (d: any) => d.target.y);
+      link.attr('d', (d: any) => {
+        const sx = d.source.x, sy = d.source.y;
+        const tx = d.target.x, ty = d.target.y;
+        const dy = ty - sy;
+        const midY = sy + dy * 0.5;
+        return `M${sx},${sy} C${sx},${midY} ${tx},${midY} ${tx},${ty}`;
+      });
 
       edgeLabels
         .attr('x', (d: any) => (d.source.x + d.target.x) / 2)
