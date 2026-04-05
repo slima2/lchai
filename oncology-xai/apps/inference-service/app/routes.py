@@ -235,8 +235,63 @@ async def update_parameters(body: dict[str, Any]):
     return {"status": "updated", "changes": updated}
 
 
+_DISALLOWED_PATTERN_NAMES = frozenset({"mucinous"})
+
+
+def _pattern_results_public(prs: list | None) -> list[dict]:
+    """Drop legacy disallowed pattern rows from API payloads."""
+    if not prs:
+        return []
+    out: list[dict] = []
+    for pr in prs:
+        name = (getattr(pr, "pattern", None) or "").lower()
+        if name in _DISALLOWED_PATTERN_NAMES:
+            continue
+        out.append(
+            {
+                "pattern": pr.pattern,
+                "score": pr.score,
+                "percentage": pr.percentage,
+                "is_conclusive": pr.is_conclusive,
+                "overlay_uri": pr.overlay_uri,
+            }
+        )
+    return out
+
+
+def _predominant_public(raw: str | None, prs: list | None) -> str | None:
+    if raw and raw.lower() not in _DISALLOWED_PATTERN_NAMES:
+        return raw
+    filtered = [pr for pr in (prs or []) if (getattr(pr, "pattern", None) or "").lower() not in _DISALLOWED_PATTERN_NAMES]
+    if not filtered:
+        return None
+    top = max(filtered, key=lambda x: getattr(x, "percentage", 0.0) or 0.0)
+    return getattr(top, "pattern", None)
+
+
+def _sanitize_choquet_payload(payload: dict | None) -> dict | None:
+    if not payload:
+        return payload
+    out = dict(payload)
+    sv = out.get("shapley_values")
+    if isinstance(sv, dict):
+        out["shapley_values"] = {k: v for k, v in sv.items() if k.lower() not in _DISALLOWED_PATTERN_NAMES}
+    ix = out.get("interaction_indices")
+    if isinstance(ix, dict):
+        cleaned: dict[str, float] = {}
+        for pair, val in ix.items():
+            parts = pair.split("_", 1)
+            if len(parts) == 2 and all(p.lower() not in _DISALLOWED_PATTERN_NAMES for p in parts):
+                cleaned[pair] = val
+        out["interaction_indices"] = cleaned
+    return out
+
+
 def _bundle_dict(b: ResultBundleDB) -> dict:
     mp = b.morphologic_profile
+    prs = b.pattern_results or []
+    pr_public = _pattern_results_public(prs)
+    pred_pub = _predominant_public(b.predominant_pattern, prs)
     return {
         "result_bundle_id": b.id,
         "case_id": b.case_id,
@@ -248,19 +303,10 @@ def _bundle_dict(b: ResultBundleDB) -> dict:
         "use_choquet": getattr(b, "use_choquet", None),
         "thresholds": b.thresholds,
         "pattern_composition": b.pattern_composition,
-        "predominant_pattern": b.predominant_pattern,
+        "predominant_pattern": pred_pub,
         "evidence_source": b.evidence_source,
         "intended_use": b.intended_use,
-        "pattern_results": [
-            {
-                "pattern": pr.pattern,
-                "score": pr.score,
-                "percentage": pr.percentage,
-                "is_conclusive": pr.is_conclusive,
-                "overlay_uri": pr.overlay_uri,
-            }
-            for pr in (b.pattern_results or [])
-        ],
+        "pattern_results": pr_public,
         "genetic_results": [
             {
                 "mutation": gr.mutation,
@@ -275,10 +321,14 @@ def _bundle_dict(b: ResultBundleDB) -> dict:
                     "pattern_contribution_pct": getattr(gr, "shap_pattern_pct", None),
                     "top_pattern_dims": getattr(gr, "shap_top_patterns", None),
                 } if getattr(gr, "shap_embedding_pct", None) is not None else None,
-                "choquet_shapley": {
-                    "shapley_values": getattr(gr, "choquet_shapley_values", None),
-                    "interaction_indices": getattr(gr, "choquet_interaction_indices", None),
-                } if getattr(gr, "choquet_shapley_values", None) is not None else None,
+                "choquet_shapley": _sanitize_choquet_payload(
+                    {
+                        "shapley_values": getattr(gr, "choquet_shapley_values", None),
+                        "interaction_indices": getattr(gr, "choquet_interaction_indices", None),
+                    }
+                )
+                if getattr(gr, "choquet_shapley_values", None) is not None
+                else None,
                 "ablation": getattr(gr, "ablation_data", None),
                 "permutation": getattr(gr, "permutation_data", None),
                 "evidence_source": gr.evidence_source,
@@ -293,7 +343,8 @@ def _bundle_dict(b: ResultBundleDB) -> dict:
             "pct_papillary": mp.pct_papillary,
             "pct_micropapillary": mp.pct_micropapillary,
             "pct_solid": mp.pct_solid,
-            "pct_mucinous": mp.pct_mucinous,
+            # Stored in DB column pct_mucinous (legacy name); value is cribriform % from pipeline
+            "pct_cribriform": mp.pct_mucinous,
         } if mp else None,
         "attention_overlay_uri": getattr(b, "attention_overlay_uri", None),
         "xai_artifacts": [

@@ -46,7 +46,7 @@ TILED_IMG = os.path.join(DATA_DIR, 'SLIMA TCGA-69-7979 tiled image ver 8 feb 202
 CSV_FILE = os.path.join(DATA_DIR, 'TCGA-69-7979-01Z-00-DX1.c9bc265d-4889-4333-9852-b8b535887f1e_tiles_384_predictions.csv')
 EHR_XLSX = os.path.join(DATA_DIR, 'SLIMA TCGA-69-7979 histo to mutations mapping cohort ver 8 feb 2027.xlsx')
 
-ID2LABEL = {0: "acinar", 1: "lepidic", 2: "micropapillary", 3: "mucinous", 4: "papillary", 5: "solid"}
+ID2LABEL = {0: "micropapillary", 1: "cribriform", 2: "papillary", 3: "lepidic", 4: "solid", 5: "acinar"}
 PATTERN_COLORS = {
     "acinar":         (0.0, 1.0, 0.0),    # green
     "lepidic":        (1.0, 1.0, 0.0),    # yellow

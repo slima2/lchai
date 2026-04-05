@@ -390,14 +390,16 @@ This label refers to the **reliability of the model** for that gene, NOT the pre
 
 ### Gene-Specific Clinical Associations
 
-| Gene | Pattern Association | Treatment Implications |
-|------|--------------------|-----------------------|
-| **TP53** | Solid, micropapillary | No targeted therapy; immunotherapy may benefit |
-| **EGFR** | Lepidic, papillary | Osimertinib (3rd gen TKI), erlotinib, gefitinib |
-| **KRAS** | Mucinous, solid | Sotorasib (G12C-specific), adagrasib |
-| **STK11** | Various | May predict immunotherapy resistance |
-| **KEAP1** | Various | Associated with oxidative stress pathway alterations |
-| **RBM10** | Various | RNA splicing factor; research-stage implications |
+This block is a **short summary** of the thesis integrated reference table (Chapter 3, `tab:gene_unified` in `ch03_usecase_data.tex`). The thesis table includes prevalence, mechanism, and **full bibliography** (e.g. Leighl et al. for TP53 morphology; Shim et al. for KRAS / mucinous IMA; Yoshizawa et al. for EGFR morphology; Skoulidis et al. for STK11 / immune context; TCGA for diffuse-signal genes). Treatment wording here is **not** a substitute for current NCCN / national guidelines or drug labels.
+
+| Gene | Pattern association (summary) | Treatment implications (summary) |
+|------|--------------------------------|-----------------------------------|
+| **TP53** | Solid, micropapillary | No targeted therapy; immunotherapy may benefit in selected cases; chemotherapy standard |
+| **EGFR** | Lepidic, papillary | Osimertinib (3rd-gen TKI), erlotinib, gefitinib, afatinib (per guideline) |
+| **KRAS** | Mucinous invasive (IMA), solid | Sotorasib, adagrasib (G12C-specific); no approved targeted therapy for all KRAS variants |
+| **STK11** | Variable (immune-cold microenvironment) | May predict resistance to PD-1/PD-L1 immunotherapy; no approved targeted monotherapy |
+| **KEAP1** | Diffuse (no single dominant pattern) | NRF2 pathway context; concurrent mutations affect IO response (trials) |
+| **RBM10** | Variable (no established dominant pattern) | No approved targeted therapy; research-stage / splicing biology |
 
 ---
 

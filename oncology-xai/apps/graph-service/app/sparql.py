@@ -125,6 +125,7 @@ def _mock_case_graph(case_id: str) -> tuple[dict, list]:
         "lepidic": {"id": "pattern:lepidic", "label": "Lepidic", "type": "pattern", "iri": None, "source": "image"},
         "acinar": {"id": "pattern:acinar", "label": "Acinar", "type": "pattern", "iri": None, "source": "image"},
         "papillary": {"id": "pattern:papillary", "label": "Papillary", "type": "pattern", "iri": None, "source": "image"},
+        "cribriform": {"id": "pattern:cribriform", "label": "Cribriform", "type": "pattern", "iri": None, "source": "image"},
         "nsclc": {"id": "mondo:0005233", "label": "NSCLC", "type": "diagnosis", "iri": "http://purl.obolibrary.org/obo/MONDO_0005233", "source": "ontology"},
     }
     edges = [
@@ -132,6 +133,7 @@ def _mock_case_graph(case_id: str) -> tuple[dict, list]:
         {"source": f"case:{case_id}", "target": "pattern:lepidic", "label": "hasPattern", "type": "asserted", "provenance": "image"},
         {"source": f"case:{case_id}", "target": "pattern:acinar", "label": "hasPattern", "type": "asserted", "provenance": "image"},
         {"source": f"case:{case_id}", "target": "pattern:papillary", "label": "hasPattern", "type": "asserted", "provenance": "image"},
+        {"source": f"case:{case_id}", "target": "pattern:cribriform", "label": "hasPattern", "type": "asserted", "provenance": "image"},
         {"source": "ncit:C2852", "target": "mondo:0005233", "label": "subClassOf", "type": "asserted", "provenance": "ontology"},
         {"source": "pattern:lepidic", "target": "ncit:C17387", "label": "associatedWith", "type": "inferred", "provenance": "thesis"},
         {"source": "pattern:acinar", "target": "ncit:C17757", "label": "associatedWith", "type": "inferred", "provenance": "thesis"},

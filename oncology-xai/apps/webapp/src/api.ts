@@ -5,7 +5,11 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const api = axios.create({
   baseURL: `${API_URL}/api/v1`,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+  },
 });
 
 api.interceptors.request.use(async (config) => {
@@ -29,85 +33,21 @@ export const getCases = (patientId?: string) => api.get('/cases', { params: { pa
 export const getCase = (id: string) => api.get(`/cases/${id}`);
 export const updateCase = (id: string, data: any) => api.patch(`/cases/${id}`, data);
 
-// Images — presigned S3 upload (supports files of any size via multipart)
+// Images — upload via API proxy (avoids CORS issues with direct S3 upload)
 export const uploadImage = async (caseId: string, file: File, onProgress?: (pct: number) => void) => {
-  // 1. Request presigned URL(s) from the backend
-  const { data: upload } = await api.post(`/cases/${caseId}/images:request-upload`, {
-    filename: file.name,
-    size_bytes: file.size,
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const { data: image } = await api.post(`/cases/${caseId}/images:upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 0,
+    onUploadProgress: (e) => {
+      if (onProgress && e.total) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    },
   });
-
-  if (upload.multipart) {
-    // 2a. Multipart upload for large files (>= 4.5 GB)
-    const partSize: number = upload.part_size;
-    const partUrls: { part_number: number; presigned_url: string }[] = upload.part_urls;
-    const completedParts: { ETag: string; PartNumber: number }[] = [];
-    let totalUploaded = 0;
-
-    for (const { part_number, presigned_url } of partUrls) {
-      const start = (part_number - 1) * partSize;
-      const end = Math.min(start + partSize, file.size);
-      const blob = file.slice(start, end);
-
-      const etag = await new Promise<string>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('PUT', presigned_url, true);
-
-        xhr.upload.onprogress = (e) => {
-          if (onProgress && e.lengthComputable) {
-            const partProgress = totalUploaded + e.loaded;
-            onProgress(Math.round((partProgress / file.size) * 100));
-          }
-        };
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const et = xhr.getResponseHeader('ETag') || '';
-            resolve(et);
-          } else {
-            reject(new Error(`Part ${part_number} upload failed: ${xhr.status}`));
-          }
-        };
-        xhr.onerror = () => reject(new Error(`Part ${part_number} network error`));
-        xhr.timeout = 0;
-        xhr.send(blob);
-      });
-
-      totalUploaded += (end - start);
-      completedParts.push({ ETag: etag, PartNumber: part_number });
-    }
-
-    // 3a. Complete multipart upload
-    const { data: image } = await api.post(`/cases/${caseId}/images:complete-multipart`, {
-      image_id: upload.image_id,
-      upload_id: upload.upload_id,
-      parts: completedParts,
-    });
-    return { data: image };
-
-  } else {
-    // 2b. Single PUT for smaller files (< 4.5 GB)
-    await new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('PUT', upload.presigned_url, true);
-      xhr.setRequestHeader('Content-Type', upload.content_type || 'application/octet-stream');
-
-      xhr.upload.onprogress = (e) => {
-        if (onProgress && e.lengthComputable) {
-          onProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      };
-      xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`S3 upload failed: ${xhr.status}`));
-      xhr.onerror = () => reject(new Error('Network error during S3 upload'));
-      xhr.timeout = 0;
-      xhr.send(file);
-    });
-
-    // 3b. Confirm upload
-    const { data: image } = await api.post(`/cases/${caseId}/images:confirm-upload`, {
-      image_id: upload.image_id,
-    });
-    return { data: image };
-  }
+  return { data: image };
 };
 export const getImages = (caseId: string) => api.get(`/cases/${caseId}/images`);
 export const getViewerUrl = (imageId: string) => api.get(`/images/${imageId}/viewer-url`);

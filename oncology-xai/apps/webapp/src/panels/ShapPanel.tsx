@@ -2,7 +2,15 @@ import React, { useState, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { api, getResultBundle, getArtifacts, getArtifactUrl } from '../api';
+import { clinicalAssocForGene } from '../data/geneClinicalAssociations';
 import { useAuth } from '../auth/AuthProvider';
+import {
+  PATTERN_COLORS,
+  ANORAK_PATTERN_ORDER,
+  patternColor,
+  filterAllowedPatternResults,
+  isDisallowedPatternName,
+} from '../patternConstants';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -119,15 +127,6 @@ interface Props {
 
 const GENES_V2 = ['TP53', 'EGFR', 'KRAS', 'STK11', 'KEAP1', 'RBM10'];
 
-const PATTERN_COLORS: Record<string, string> = {
-  lepidic: '#E6FF32',
-  acinar: '#00FF00',
-  papillary: '#0000FF',
-  micropapillary: '#FFD700',
-  solid: '#FF0000',
-  mucinous: '#FFA500',
-};
-
 function ArtifactImage({ uri, alt, className }: { uri: string; alt: string; className?: string }) {
   const [error, setError] = useState(false);
   const imgUrl = getArtifactUrl(uri);
@@ -149,17 +148,98 @@ function ArtifactImage({ uri, alt, className }: { uri: string; alt: string; clas
   return <img src={imgUrl} alt={alt} className={className} onError={() => setError(true)} />;
 }
 
-const CLINICAL_ASSOC: Record<string, { patterns: string; treatment: string }> = {
-  TP53:  { patterns: 'Solid, micropapillary', treatment: 'No targeted therapy; immunotherapy may benefit' },
-  EGFR:  { patterns: 'Lepidic, papillary', treatment: 'Osimertinib (3rd gen TKI), erlotinib, gefitinib' },
-  KRAS:  { patterns: 'Mucinous, solid', treatment: 'Sotorasib (G12C-specific), adagrasib' },
-  STK11: { patterns: 'Various (no dominant pattern)', treatment: 'May predict immunotherapy resistance' },
-  KEAP1: { patterns: 'Various (diffuse)', treatment: 'Oxidative stress pathway alterations' },
-  RBM10: { patterns: 'Various (no morphological signature)', treatment: 'RNA splicing factor; research-stage' },
-};
+const CHOQUET_STYLE_GENES = ['TP53', 'EGFR'] as const;
+
+/** Slide-level pattern synergy narrative for B2 genes: complements true Choquet Shapley (KRAS, RBM10). */
+function PatternSynergyExplainBlock({
+  selGene,
+  caseId,
+  geneResult,
+  morphologicProfile,
+  synergyExpl,
+  setSynergyExpl,
+  synergyLoading,
+  setSynergyLoading,
+}: any) {
+  const row = clinicalAssocForGene(selGene);
+  const litPatterns = row?.patternAssociation ?? 'Unknown';
+  const litTreatment = row?.treatmentImplications ?? 'Unknown';
+  const cacheKey = `synergy_${selGene}_${caseId}`;
+
+  const handleExplain = async () => {
+    if (_explanationCache[cacheKey]) {
+      setSynergyExpl(_explanationCache[cacheKey]);
+      return;
+    }
+    setSynergyLoading(true);
+    try {
+      const patterns = ['lepidic', 'acinar', 'papillary', 'micropapillary', 'solid', 'cribriform'] as const;
+      const parts = patterns
+        .map((p) => ({ p, v: (morphologicProfile?.[`pct_${p}`] as number) ?? 0 }))
+        .sort((a, b) => b.v - a.v);
+      const distText = parts.map(({ p, v }) => `  ${p}: ${v.toFixed(1)}%`).join('\n');
+      const top2 = parts.slice(0, 2).filter((x) => x.v > 0.5);
+      const pairHint =
+        top2.length >= 2
+          ? `Dominant admixture on this slide: ${top2[0].p} (${top2[0].v.toFixed(1)}%) with ${top2[1].p} (${top2[1].v.toFixed(1)}%).`
+          : 'Single-pattern dominance or sparse secondary components.';
+
+      const prompt = `You are a clinical decision support assistant for lung adenocarcinoma. The mutation model for ${selGene} uses embedding-first ABMIL (not the Fuzzy Choquet MIL head). There are therefore no learned Choquet Shapley values for this gene—but the six-class growth-pattern distribution on this slide still matters for interpreting architecture–genotype hypotheses.
+
+Gene: ${selGene}
+Mutation probability: ${((geneResult.score || geneResult.probability || 0) * 100).toFixed(1)}%
+Literature-typical pattern associations (approximate): ${litPatterns}
+Treatment context (summary): ${litTreatment}
+
+Tile-level pattern proportions on this slide:
+${distText}
+
+${pairHint}
+
+Task: Write a concise clinical interpretation (max 220 words) for a pathologist covering:
+(1) How the observed pattern mixture relates to what is often described for ${selGene} in the literature (without claiming this slide proves genotype).
+(2) Which pattern pairs or transitions could plausibly act together (synergy-like co-occurrence) versus which components are minor.
+(3) Why interaction-aware aggregation (Fuzzy Choquet) is informative for other genes (e.g. KRAS) but ${selGene} is evaluated with embedding-led models in this pipeline.
+Do NOT say "diagnose" or "confirmed".`;
+
+      const resp = await api.post(`/cases/${caseId}/graph/explain`, { language: 'en', extra_context: prompt });
+      const text = resp.data?.explanation || 'Explanation not available.';
+      _explanationCache[cacheKey] = text;
+      setSynergyExpl(text);
+    } catch (e: any) {
+      setSynergyExpl(`Could not generate explanation: ${e?.message || 'Unknown error'}`);
+    } finally {
+      setSynergyLoading(false);
+    }
+  };
+
+  return (
+    <div className="mb-4 mt-2 border-t border-violet-200 pt-3">
+      <p className="text-xs text-violet-800 mb-2">
+        <strong>Fuzzy Choquet–style pattern synergies ({selGene}).</strong> True Choquet Shapley values are computed for KRAS and RBM10.
+        For {selGene}, use this slide&apos;s six-pattern distribution to discuss architectural co-occurrence in the same spirit as interaction indices.
+      </p>
+      <button
+        className="px-3 py-1.5 bg-violet-600 text-white rounded text-sm hover:bg-violet-700 disabled:opacity-50"
+        onClick={handleExplain}
+        disabled={synergyLoading}
+      >
+        {synergyLoading ? 'Generating…' : 'Interpret pattern synergies (slide-level)'}
+      </button>
+      {synergyExpl && (
+        <div className="mt-3 bg-violet-50 border border-violet-200 rounded p-4 text-sm leading-relaxed text-violet-900 whitespace-pre-wrap">
+          <strong>Pattern synergy interpretation — {selGene}</strong>
+          <div className="mt-2">{synergyExpl}</div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ChoquetExplainBlock({ selGene, caseId, geneResult, choquetData, choquetExpl, setChoquetExpl, choquetLoading, setChoquetLoading }: any) {
-  const assoc = CLINICAL_ASSOC[selGene] || { patterns: 'Unknown', treatment: 'Unknown' };
+  const row = clinicalAssocForGene(selGene);
+  const litPatterns = row?.patternAssociation ?? 'Unknown';
+  const litTreatment = row?.treatmentImplications ?? 'Unknown';
   const cacheKey = `choquet_${selGene}_${caseId}`;
 
   const handleExplain = async () => {
@@ -176,7 +256,7 @@ function ChoquetExplainBlock({ selGene, caseId, geneResult, choquetData, choquet
             .map(([p, v]) => `  ${p.replace('_', ' x ')}: ${(v as number) > 0 ? '+' : ''}${(v as number).toFixed(4)} (${(v as number) > 0 ? 'synergy' : 'redundancy'})`)
             .join('\n')
         : 'None';
-      const prompt = `You are a clinical decision support system for lung adenocarcinoma. Explain the following Choquet Shapley analysis results for a pathologist who is NOT a data scientist. Be concise (max 200 words), clinically grounded, and honest about limitations.\n\nGene: ${selGene}\nMutation probability: ${((geneResult.score || geneResult.probability || 0) * 100).toFixed(1)}%\nKnown clinical association: ${selGene} mutations are associated with ${assoc.patterns} patterns. Treatment: ${assoc.treatment}.\n\nLearned Shapley values (pattern importance from the AI model):\n${svText}\n\nTop interaction indices (pattern pair synergies/redundancies):\n${ixText}\n\nExplain: 1) What the Shapley values tell us clinically, 2) Whether they align with known literature, 3) What the interaction indices mean for this patient, 4) Any limitations. Use language a pathologist would understand. Do NOT use the word "diagnose" or "confirmed".`;
+      const prompt = `You are a clinical decision support system for lung adenocarcinoma. Explain the following Choquet Shapley analysis results for a pathologist who is NOT a data scientist. Be concise (max 200 words), clinically grounded, and honest about limitations.\n\nGene: ${selGene}\nMutation probability: ${((geneResult.score || geneResult.probability || 0) * 100).toFixed(1)}%\nKnown clinical association (thesis Table gene_unified summary): ${selGene} mutations are often discussed in relation to ${litPatterns}. Treatment context: ${litTreatment}.\n\nLearned Shapley values (pattern importance from the AI model):\n${svText}\n\nTop interaction indices (pattern pair synergies/redundancies):\n${ixText}\n\nExplain: 1) What the Shapley values tell us clinically, 2) Whether they align with known literature, 3) What the interaction indices mean for this patient, 4) Any limitations. Use language a pathologist would understand. Do NOT use the word "diagnose" or "confirmed".`;
 
       const resp = await api.post(`/cases/${caseId}/graph/explain`, { language: 'en', extra_context: prompt });
       const text = resp.data?.explanation || 'Explanation not available.';
@@ -192,18 +272,18 @@ function ChoquetExplainBlock({ selGene, caseId, geneResult, choquetData, choquet
   return (
     <div className="mb-4 mt-2">
       <button
-        className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
+        className="px-3 py-1.5 bg-amber-600 text-white rounded text-sm hover:bg-amber-700 disabled:opacity-50"
         onClick={handleExplain}
         disabled={choquetLoading}
       >
         {choquetLoading ? 'Generating clinical interpretation...' : 'Explain Choquet values with AI'}
       </button>
       {choquetExpl && (
-        <div className="mt-3 bg-green-50 border border-green-200 rounded p-4 text-sm leading-relaxed text-green-900 whitespace-pre-wrap">
+        <div className="mt-3 bg-amber-50 border border-amber-200 rounded p-4 text-sm leading-relaxed text-amber-950 whitespace-pre-wrap">
           <strong>Clinical Interpretation — {selGene}</strong>
           <div className="mt-2">{choquetExpl}</div>
           <div className="mt-2 text-xs text-gray-500 italic">
-            Known association: {assoc.patterns} | Treatment: {assoc.treatment}
+            Known association: {litPatterns} | Treatment: {litTreatment}
           </div>
         </div>
       )}
@@ -216,6 +296,8 @@ export default function ShapPanel({ resultBundleId }: Props) {
   const [selGene, setSelGene] = useState('');
   const [choquetExpl, setChoquetExpl] = useState<string | null>(null);
   const [choquetLoading, setChoquetLoading] = useState(false);
+  const [synergyExpl, setSynergyExpl] = useState<string | null>(null);
+  const [synergyLoading, setSynergyLoading] = useState(false);
 
   const bundle = useQuery({
     queryKey: ['bundle', resultBundleId],
@@ -240,7 +322,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
 
   const allArts = artifacts.data || [];
   const genetics = bundle.data?.genetic_results || [];
-  const patterns = bundle.data?.pattern_results || [];
+  const patterns = filterAllowedPatternResults(bundle.data?.pattern_results || []);
   const mp = bundle.data?.morphologic_profile;
   const isV2 = bundle.data?.pipeline_version?.startsWith('2');
   const caseId = bundle.data?.case_id || '';
@@ -251,6 +333,10 @@ export default function ShapPanel({ resultBundleId }: Props) {
       if (top) setSelGene(top.mutation);
     }
   }, [genetics, selGene]);
+
+  React.useEffect(() => {
+    setSynergyExpl(null);
+  }, [selGene]);
 
   const geneResult = genetics.find((g: any) => g.mutation === selGene);
   const shapDecomp = geneResult?.shap_decomposition;
@@ -267,7 +353,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
     <div>
       {/* Header + gene selector */}
       <div className="flex gap-3 mb-4 items-center">
-        <h2 className="text-lg font-semibold">SHAP / Explainability {isV2 && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded ml-2">v2.0</span>}</h2>
+        <h2 className="text-lg font-semibold">SHAP / Explainability {isV2 && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded ml-2">v2.0</span>}</h2>
         <div className="flex gap-1 ml-4 flex-wrap">
           {[...GENES_V2].sort((a, b) => {
             const sa = genetics.find((x: any) => x.mutation === a)?.score ?? 0;
@@ -286,7 +372,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
                 {g}
                 {gr && (
                   <span className={`ml-1 text-xs ${
-                    isDynConcl(g) ? 'text-green-200' : 'text-yellow-200'
+                    isDynConcl(g) ? 'text-cyan-100' : 'text-yellow-200'
                   }`}>
                     ({isDynConcl(g) ? 'conclusive' : 'inconclusive'})
                   </span>
@@ -313,13 +399,13 @@ export default function ShapPanel({ resultBundleId }: Props) {
       {/* Gene result header */}
       {geneResult && (
         <div className={`p-3 rounded mb-4 flex items-center justify-between ${
-          isDynConcl(selGene) ? 'bg-green-50 border border-green-200' :
+          isDynConcl(selGene) ? 'bg-sky-50 border border-sky-200' :
           'bg-yellow-50 border border-yellow-200'
         }`}>
           <div>
             <span className="text-sm font-semibold">{selGene} Mutation:</span>
             <span className={`ml-2 px-2 py-0.5 rounded text-xs font-bold ${
-              isDynConcl(selGene) ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
+              isDynConcl(selGene) ? 'bg-sky-200 text-sky-900' : 'bg-yellow-200 text-yellow-800'
             }`}>
               {isDynConcl(selGene) ? 'Conclusive' : 'Inconclusive'}
             </span>
@@ -350,7 +436,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
               {[
                 { label: 'Combined', val: geneResult.ablation.p_proposed, color: 'bg-blue-500' },
                 { label: 'Emb-only', val: geneResult.ablation.p_emb_only, color: 'bg-orange-400' },
-                { label: 'Pat-only', val: geneResult.ablation.p_pat_only, color: 'bg-green-500' },
+                { label: 'Pat-only', val: geneResult.ablation.p_pat_only, color: 'bg-violet-500' },
               ].map(item => (
                 <div key={item.label} className="flex flex-col items-center gap-1 w-20">
                   <span className="text-xs font-mono font-bold">{((item.val || 0) * 100).toFixed(1)}%</span>
@@ -362,6 +448,19 @@ export default function ShapPanel({ resultBundleId }: Props) {
                 </div>
               ))}
             </div>
+            {mp &&
+              CHOQUET_STYLE_GENES.includes(selGene as (typeof CHOQUET_STYLE_GENES)[number]) && (
+                <PatternSynergyExplainBlock
+                  selGene={selGene}
+                  caseId={caseId}
+                  geneResult={geneResult}
+                  morphologicProfile={mp}
+                  synergyExpl={synergyExpl}
+                  setSynergyExpl={setSynergyExpl}
+                  synergyLoading={synergyLoading}
+                  setSynergyLoading={setSynergyLoading}
+                />
+              )}
           </div>
         </div>
       )}
@@ -397,9 +496,11 @@ export default function ShapPanel({ resultBundleId }: Props) {
                 </div>
                 {shapDecomp.top_pattern_dims && (
                   <div className="mt-2 text-xs text-gray-600">
-                    Top patterns: {shapDecomp.top_pattern_dims.map((p: string) => (
+                    Top patterns: {shapDecomp.top_pattern_dims
+                      .filter((p: string) => !isDisallowedPatternName(p))
+                      .map((p: string) => (
                       <span key={p} className="capitalize bg-gray-100 rounded px-1.5 py-0.5 mr-1">
-                        <span className="w-2 h-2 rounded-full inline-block mr-0.5" style={{ backgroundColor: PATTERN_COLORS[p] }} />
+                        <span className="w-2 h-2 rounded-full inline-block mr-0.5" style={{ backgroundColor: patternColor(p) }} />
                         {p}
                       </span>
                     ))}
@@ -450,6 +551,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
                   <div className="space-y-1">
                     {(() => {
                       const entries = Object.entries(choquetData.shapley_values as Record<string, number>)
+                        .filter(([pattern]) => !isDisallowedPatternName(pattern))
                         .sort(([, a], [, b]) => (b as number) - (a as number));
                       const maxVal = Math.max(...entries.map(([, v]) => v as number), 0.001);
                       const uniform = 1.0 / entries.length;
@@ -457,20 +559,20 @@ export default function ShapPanel({ resultBundleId }: Props) {
                         const delta = (val as number) - uniform;
                         return (
                           <div key={pattern} className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: PATTERN_COLORS[pattern] || '#ccc' }} />
+                            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: patternColor(pattern) }} />
                             <span className="text-xs w-24 capitalize">{pattern}</span>
                             <div className="flex-1 bg-gray-100 rounded h-4 overflow-hidden">
                               <div
                                 className="h-full rounded"
                                 style={{
                                   width: `${Math.min(((val as number) / maxVal) * 100, 100)}%`,
-                                  backgroundColor: PATTERN_COLORS[pattern] || '#888',
+                                  backgroundColor: patternColor(pattern),
                                   opacity: 0.7,
                                 }}
                               />
                             </div>
                             <span className="text-xs font-mono w-16">{(val as number).toFixed(4)}</span>
-                            <span className={`text-[10px] font-mono w-14 ${delta > 0.002 ? 'text-green-600' : delta < -0.002 ? 'text-red-600' : 'text-gray-400'}`}>
+                            <span className={`text-[10px] font-mono w-14 ${delta > 0.002 ? 'text-sky-600' : delta < -0.002 ? 'text-rose-600' : 'text-gray-400'}`}>
                               {delta > 0 ? '+' : ''}{(delta * 100).toFixed(2)}%
                             </span>
                           </div>
@@ -495,16 +597,20 @@ export default function ShapPanel({ resultBundleId }: Props) {
                     </thead>
                     <tbody>
                       {Object.entries(choquetData.interaction_indices as Record<string, number>)
+                        .filter(([pair]) => {
+                          const parts = pair.split('_');
+                          return parts.length >= 2 && !isDisallowedPatternName(parts[0]) && !isDisallowedPatternName(parts[1]);
+                        })
                         .sort(([, a], [, b]) => Math.abs(b as number) - Math.abs(a as number))
                         .map(([pair, val]) => {
                           const [p1, p2] = pair.split('_');
                           return (
                             <tr key={pair} className="hover:bg-gray-50">
                               <td className="border px-2 py-1 capitalize">
-                                <span className="w-2 h-2 rounded-full inline-block mr-0.5" style={{ backgroundColor: PATTERN_COLORS[p1] || '#ccc' }} />
+                                <span className="w-2 h-2 rounded-full inline-block mr-0.5" style={{ backgroundColor: patternColor(p1) }} />
                                 {p1}
                                 <span className="text-gray-400 mx-1">×</span>
-                                <span className="w-2 h-2 rounded-full inline-block mr-0.5" style={{ backgroundColor: PATTERN_COLORS[p2] || '#ccc' }} />
+                                <span className="w-2 h-2 rounded-full inline-block mr-0.5" style={{ backgroundColor: patternColor(p2) }} />
                                 {p2}
                               </td>
                               <td className="border px-2 py-1 text-right font-mono">{(val as number).toFixed(4)}</td>
@@ -552,7 +658,8 @@ export default function ShapPanel({ resultBundleId }: Props) {
               <div className="text-xs text-gray-500">Total Tiles</div>
               <div className="font-bold text-lg">{mp.n_tiles_total}</div>
             </div>
-            {Object.entries(PATTERN_COLORS).map(([pattern, color]) => {
+            {ANORAK_PATTERN_ORDER.map((pattern) => {
+              const color = PATTERN_COLORS[pattern];
               const val = (mp as any)[`pct_${pattern}`] ?? 0;
               return (
                 <div key={pattern} className="rounded p-2 text-center" style={{ backgroundColor: color + '15' }}>
@@ -565,6 +672,21 @@ export default function ShapPanel({ resultBundleId }: Props) {
               );
             })}
           </div>
+          {geneResult &&
+            mp &&
+            !geneResult.ablation &&
+            CHOQUET_STYLE_GENES.includes(selGene as (typeof CHOQUET_STYLE_GENES)[number]) && (
+              <PatternSynergyExplainBlock
+                selGene={selGene}
+                caseId={caseId}
+                geneResult={geneResult}
+                morphologicProfile={mp}
+                synergyExpl={synergyExpl}
+                setSynergyExpl={setSynergyExpl}
+                synergyLoading={synergyLoading}
+                setSynergyLoading={setSynergyLoading}
+              />
+            )}
         </div>
       )}
 
@@ -590,7 +712,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                       a.artifact_type?.includes('attention') ? 'bg-orange-100 text-orange-700' :
                       a.artifact_type?.includes('decomp') ? 'bg-indigo-100 text-indigo-700' :
-                      a.artifact_type?.includes('overlay') ? 'bg-green-100 text-green-700' :
+                      a.artifact_type?.includes('overlay') ? 'bg-cyan-100 text-cyan-800' :
                       'bg-gray-100 text-gray-700'
                     }`}>
                       {a.artifact_type}

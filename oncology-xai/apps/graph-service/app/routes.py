@@ -40,6 +40,7 @@ async def _fetch_case_results(db: AsyncSession, case_id: str) -> tuple[list[dict
     patterns = [
         {"pattern": r[0], "score": float(r[1]), "percentage": float(r[2]), "is_conclusive": bool(r[3])}
         for r in pat_rows
+        if (r[0] or "").lower() != "mucinous"
     ]
 
     # Genetic results

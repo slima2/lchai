@@ -61,6 +61,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+      MINIO_CORS_ALLOW_ORIGIN: "http://localhost:3000"
     ports:
       - "9000:9000"
       - "9001:9001"

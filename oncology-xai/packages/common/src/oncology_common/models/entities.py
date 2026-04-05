@@ -32,7 +32,7 @@ class PatternType(str, Enum):
     PAPILLARY = "papillary"
     MICROPAPILLARY = "micropapillary"
     SOLID = "solid"
-    MUCINOUS = "mucinous"
+    CRIBRIFORM = "cribriform"
 
 
 class MutationType(str, Enum):
@@ -199,7 +199,7 @@ class MorphologicProfile(BaseModel):
     pct_papillary: float = 0.0
     pct_micropapillary: float = 0.0
     pct_solid: float = 0.0
-    pct_mucinous: float = 0.0
+    pct_cribriform: float = 0.0
 
 
 class XAIArtifactEntity(BaseModel):

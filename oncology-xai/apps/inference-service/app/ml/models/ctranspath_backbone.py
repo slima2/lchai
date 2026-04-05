@@ -189,15 +189,15 @@ class CTransPathPipeline(nn.Module):
         ck = torch.load(checkpoint_path, map_location=device, weights_only=False)
         config = ck.get("config", {})
         loss_fn = ck.get("loss_fn", {})
-        id2label = ck.get("id2label", {0: "acinar", 1: "lepidic", 2: "micropapillary", 3: "mucinous", 4: "papillary", 5: "solid"})
+        id2label = {int(k): v for k, v in ck.get("id2label", {0: "micropapillary", 1: "cribriform", 2: "papillary", 3: "lepidic", 4: "solid", 5: "acinar"}).items()}
 
         head_weight = loss_fn.get("head.weight", loss_fn.get("weight"))
         if head_weight is None:
             raise ValueError("No classifier weight found in checkpoint")
 
         return {
-            "head_weight": head_weight.to(device),  # (6, 512)
-            "id2label": {int(k): v for k, v in id2label.items()},
+            "head_weight": head_weight.to(device),
+            "id2label": id2label,
             "s_scale": float(config.get("S_SCALE", 30.0)),
             "embed_dim": int(config.get("EMBED_DIM", 512)),
             "img_size": int(config.get("IMG_SIZE", 224)),

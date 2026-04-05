@@ -17,7 +17,7 @@ from app.ml.checkpoints.loader import CheckpointLoader, GENES_V2
 
 logger = logging.getLogger(__name__)
 
-PATTERN_NAMES = ["acinar", "lepidic", "micropapillary", "mucinous", "papillary", "solid"]
+PATTERN_NAMES = ["micropapillary", "cribriform", "papillary", "lepidic", "solid", "acinar"]
 
 
 @dataclass
@@ -111,7 +111,7 @@ def _mock_choquet_result(gene: str) -> ChoquetGeneResult:
     shapley = {k: round(v / total, 4) for k, v in shapley.items()}
     interactions = {
         "solid_micropapillary": round(float(rng.uniform(0.01, 0.1)), 4),
-        "mucinous_acinar": round(float(rng.uniform(0.01, 0.08)), 4),
+        "cribriform_acinar": round(float(rng.uniform(0.01, 0.08)), 4),
     }
     return ChoquetGeneResult(
         gene=gene,

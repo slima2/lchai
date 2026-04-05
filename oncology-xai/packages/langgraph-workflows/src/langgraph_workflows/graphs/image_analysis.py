@@ -23,12 +23,12 @@ logger = logging.getLogger(__name__)
 
 # Pattern palette (DERCAS section 7)
 PATTERN_PALETTE = {
-    "lepidic": (255, 235, 59),
-    "acinar": (76, 175, 80),
-    "papillary": (33, 150, 243),
-    "micropapillary": (233, 30, 99),
-    "solid": (244, 67, 54),
-    "mucinous": (255, 152, 0),
+    "lepidic": (0, 0, 255),
+    "acinar": (255, 0, 0),
+    "papillary": (255, 255, 0),
+    "micropapillary": (255, 0, 255),
+    "solid": (128, 0, 0),
+    "cribriform": (0, 255, 255),
 }
 
 # Mutation threshold (default 0.5)
@@ -185,7 +185,7 @@ async def build_morphologic_profile(state: GraphState) -> GraphState:
         "pct_papillary": composition.get("papillary", 0),
         "pct_micropapillary": composition.get("micropapillary", 0),
         "pct_solid": composition.get("solid", 0),
-        "pct_mucinous": composition.get("mucinous", 0),
+        "pct_cribriform": composition.get("cribriform", 0),
     }
 
     inter["morphologic_profile"] = profile

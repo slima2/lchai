@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { GENE_CLINICAL_ASSOC_ROWS, GENE_CLINICAL_ASSOC_THESIS_REF } from '../data/geneClinicalAssociations';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getOntologies, createProposal, getAuditEvents,
@@ -421,15 +422,20 @@ Linear(256→1) → sigmoid → P(mut)`}</pre>
                   <th className="border px-3 py-2 font-semibold">Treatment Implications</th>
                 </tr></thead>
                 <tbody>
-                  <tr><td className="border px-3 py-2 font-bold">TP53</td><td className="border px-3 py-2">Solid, micropapillary</td><td className="border px-3 py-2">No targeted therapy; immunotherapy may benefit</td></tr>
-                  <tr><td className="border px-3 py-2 font-bold">EGFR</td><td className="border px-3 py-2">Lepidic, papillary</td><td className="border px-3 py-2">Osimertinib (3rd gen TKI), erlotinib, gefitinib</td></tr>
-                  <tr><td className="border px-3 py-2 font-bold">KRAS</td><td className="border px-3 py-2">Mucinous, solid</td><td className="border px-3 py-2">Sotorasib (G12C-specific), adagrasib</td></tr>
-                  <tr><td className="border px-3 py-2 font-bold">STK11</td><td className="border px-3 py-2">Various</td><td className="border px-3 py-2">May predict immunotherapy resistance</td></tr>
-                  <tr><td className="border px-3 py-2 font-bold">KEAP1</td><td className="border px-3 py-2">Various</td><td className="border px-3 py-2">Associated with oxidative stress pathway alterations</td></tr>
-                  <tr><td className="border px-3 py-2 font-bold">RBM10</td><td className="border px-3 py-2">Various</td><td className="border px-3 py-2">RNA splicing factor; research-stage implications</td></tr>
+                  {GENE_CLINICAL_ASSOC_ROWS.map((r) => (
+                    <tr key={r.gene}>
+                      <td className="border px-3 py-2 font-bold">{r.gene}</td>
+                      <td className="border px-3 py-2">{r.patternAssociation}</td>
+                      <td className="border px-3 py-2">{r.treatmentImplications}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
-              <p className="text-xs text-gray-500 mt-2 italic">Sources: IASLC/ATS/ERS classification, OncoKB, NCCN NSCLC guidelines, Lima et al. 2026 thesis.</p>
+              <p className="text-xs text-gray-500 mt-2 italic" title={GENE_CLINICAL_ASSOC_THESIS_REF}>
+                Source: condensed from the thesis integrated gene table (Ch. 3, <code className="text-[10px]">tab:gene_unified</code>
+                ); morphology citations therein include Leighl et al.; Shim et al.; Yoshizawa et al.; Skoulidis et al.; TCGA. For therapy,
+                follow current NCCN / EMA / FDA labels—this UI is not prescribing.
+              </p>
             </div>
           </div>
 

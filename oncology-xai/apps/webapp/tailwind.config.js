@@ -4,12 +4,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        lepidic: '#E6FF32',
-        acinar: '#00FF00',
-        papillary: '#0000FF',
-        micropapillary: '#FFD700',
-        solid: '#FF0000',
-        mucinous: '#FFA500',
+        lepidic: '#0000FF',
+        acinar: '#FF0000',
+        papillary: '#FFFF00',
+        micropapillary: '#FF00FF',
+        solid: '#800000',
+        cribriform: '#00FFFF',
       },
     },
   },

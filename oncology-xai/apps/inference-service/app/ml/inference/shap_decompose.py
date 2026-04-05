@@ -18,7 +18,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-PATTERN_NAMES = ["acinar", "lepidic", "micropapillary", "mucinous", "papillary", "solid"]
+PATTERN_NAMES = ["micropapillary", "cribriform", "papillary", "lepidic", "solid", "acinar"]
 EMBED_DIM = 512
 PATTERN_DIM = 6
 

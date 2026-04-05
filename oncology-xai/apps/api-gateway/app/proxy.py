@@ -66,7 +66,8 @@ def create_proxy_router(settings) -> APIRouter:  # type: ignore[no-untyped-def]
             headers["X-User-Id"] = "dev-user"
 
         body = await request.body()
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        timeout = httpx.Timeout(600.0, connect=30.0) if len(body) > 10_000_000 else httpx.Timeout(120.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
             resp = await client.request(
                 method=request.method,
                 url=url,

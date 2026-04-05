@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthProvider';
 import { getCaseGraph, rebuildGraph, explainGraph } from '../api';
+import { patternColor, isDisallowedPatternName } from '../patternConstants';
 import * as d3 from 'd3';
 
 function escapeXmlContent(s: string): string {
@@ -35,6 +36,23 @@ const NODE_COLORS: Record<string, string> = {
   stage: '#06B6D4',
   curated: '#78909C',
 };
+
+/** Map graph node label/id to canonical pattern slug for overlay colours. */
+function patternSlugFromGraphLabel(label: string): string | null {
+  const noPct = label.replace(/\s*\([^)]*\)\s*$/u, '').trim();
+  const s = noPct.toLowerCase().replace(/\s+pattern$/iu, '').trim();
+  return s || null;
+}
+
+function resolvePatternNodeColor(n: { type?: string; label?: string; color?: string }): string | undefined {
+  if (n.color) return n.color;
+  const t = (n.type || '').toLowerCase();
+  if (t !== 'pattern') return undefined;
+  const slug = patternSlugFromGraphLabel(String(n.label || ''));
+  if (!slug || isDisallowedPatternName(slug)) return undefined;
+  const c = patternColor(slug);
+  return c !== '#888888' ? c : undefined;
+}
 
 const NODE_RADIUS: Record<string, number> = {
   Case: 24,
@@ -205,7 +223,7 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
 
   const rawNodes: GraphNode[] = (graph.data?.nodes || []).map((n: any) => ({
     ...n,
-    color: n.color || NODE_COLORS[n.type] || '#999',
+    color: resolvePatternNodeColor(n) || n.color || NODE_COLORS[n.type] || '#999',
   }));
 
   const rawEdges: GraphEdge[] = (graph.data?.edges || []).filter(

@@ -34,24 +34,25 @@ logger = logging.getLogger(__name__)
 
 # ── Pattern palette (DERCAS 7) ─────────────────────────────────────────
 PATTERN_PALETTE: dict[str, tuple[int, int, int]] = {
-    "lepidic": (230, 255, 50),
-    "acinar": (0, 255, 0),
-    "papillary": (0, 0, 255),
-    "micropapillary": (255, 215, 0),
-    "solid": (255, 0, 0),
-    "mucinous": (255, 165, 0),
+    "cribriform": (0, 255, 255),
+    "micropapillary": (255, 0, 255),
+    "solid": (128, 0, 0),
+    "papillary": (255, 255, 0),
+    "acinar": (255, 0, 0),
+    "lepidic": (0, 0, 255),
 }
 
-PATTERNS = ["lepidic", "acinar", "papillary", "micropapillary", "solid", "mucinous"]
+PATTERNS = ["acinar", "cribriform", "lepidic", "micropapillary", "papillary", "solid"]
 GENES_V1 = ["EGFR", "KRAS", "TP53"]
 GENES_V2 = ["TP53", "EGFR", "KRAS", "STK11", "KEAP1", "RBM10"]
 GENES = GENES_V2
 
 # Checkpoint label mapping (from training)
 _CK_ID2LABEL: dict[int, str] = {
-    0: "acinar", 1: "lepidic", 2: "micropapillary",
-    3: "mucinous", 4: "papillary", 5: "solid",
+    0: "micropapillary", 1: "cribriform", 2: "papillary",
+    3: "lepidic", 4: "solid", 5: "acinar",
 }
+
 
 
 @dataclass
@@ -1087,7 +1088,7 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
         "pct_papillary": percentages.get("papillary", 0.0),
         "pct_micropapillary": percentages.get("micropapillary", 0.0),
         "pct_solid": percentages.get("solid", 0.0),
-        "pct_mucinous": percentages.get("mucinous", 0.0),
+        "pct_cribriform": percentages.get("cribriform", 0.0),
     }
     result.morphologic_profile = profile
 

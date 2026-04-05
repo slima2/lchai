@@ -61,8 +61,7 @@ CURATED_NODES: dict[str, dict] = {
     _ncit("C128849"):   {"label": "Papillary Pattern",         "type": "pattern"},
     _ncit("C128850"):   {"label": "Micropapillary Pattern",    "type": "pattern"},
     _ncit("C128851"):   {"label": "Solid Pattern",             "type": "pattern"},
-    # Mucinous (invasive mucinous adenocarcinoma)
-    _ncit("C136494"):   {"label": "Mucinous Pattern",          "type": "pattern"},
+    _ncit("C35920"):    {"label": "Cribriform Pattern",        "type": "pattern"},
 
     # ── Genes / Biomarkers ──
     _ncit("C17757"):    {"label": "EGFR",                      "type": "gene"},
@@ -120,7 +119,7 @@ CURATED_EDGES: list[dict] = [
     {"s": _ncit("C128849"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
     {"s": _ncit("C128850"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
     {"s": _ncit("C128851"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
-    {"s": _ncit("C136494"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
+    {"s": _ncit("C35920"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
 
     # ── Patterns → Genes (morphology-molecular correlation, TCGA/literature) ──
     # Lepidic: strongly associated with EGFR (TCGA 2014, Kadota et al.)
@@ -137,8 +136,9 @@ CURATED_EDGES: list[dict] = [
     # Solid: associated with KRAS, TP53, poor prognosis
     {"s": _ncit("C128851"), "t": _ncit("C17383"), "label": "associatedWithMutation", "prov": "TCGA/CIViC",  "type": "inferred"},
     {"s": _ncit("C128851"), "t": _ncit("C17387"), "label": "associatedWithMutation", "prov": "TCGA/CIViC",  "type": "inferred"},
-    # Mucinous: strongly associated with KRAS
-    {"s": _ncit("C136494"), "t": _ncit("C17383"), "label": "associatedWithMutation", "prov": "TCGA/OncoKB", "type": "inferred"},
+    # Cribriform: poor-prognosis architecture; overlap with KRAS/TP53 in literature
+    {"s": _ncit("C35920"), "t": _ncit("C17383"), "label": "associatedWithMutation", "prov": "literature", "type": "inferred"},
+    {"s": _ncit("C35920"), "t": _ncit("C17387"), "label": "associatedWithMutation", "prov": "literature", "type": "inferred"},
 
     # ── Genes → Treatments (OncoKB / NCCN Guidelines, FDA-approved) ──
     # EGFR → TKIs
@@ -221,12 +221,12 @@ def _enrich_labels_from_owl(nodes: dict[str, dict], ncit_path: str, mondo_path: 
 # ──────────────────────────────────────────────────────────────────────
 
 PATTERN_NAME_TO_IRI: dict[str, str] = {
-    "lepidic":       _ncit("C128847"),
-    "acinar":        _ncit("C128848"),
-    "papillary":     _ncit("C128849"),
+    "lepidic":        _ncit("C128847"),
+    "acinar":         _ncit("C128848"),
+    "papillary":      _ncit("C128849"),
     "micropapillary": _ncit("C128850"),
-    "solid":         _ncit("C128851"),
-    "mucinous":      _ncit("C136494"),
+    "solid":          _ncit("C128851"),
+    "cribriform":     _ncit("C35920"),
 }
 
 GENE_NAME_TO_IRI: dict[str, str] = {

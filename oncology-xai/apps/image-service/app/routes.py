@@ -205,13 +205,20 @@ async def request_upload(case_id: str, body: dict, request: Request, db: AsyncSe
         "content_type": content_type,
     }
 
+    def _externalize(url: str) -> str:
+        """Replace internal Docker hostname with browser-accessible endpoint."""
+        ext_ep = settings.s3_endpoint_external
+        if ext_ep and ext_ep != settings.s3_endpoint:
+            return url.replace(settings.s3_endpoint, ext_ep, 1)
+        return url
+
     if size_bytes >= MULTIPART_THRESHOLD:
         upload_id = storage.create_multipart_upload(key, content_type=content_type)
         num_parts = max(1, -(-size_bytes // PART_SIZE))  # ceil division
         part_urls = []
         for i in range(1, num_parts + 1):
             url = storage.presigned_upload_part(key, upload_id, i, expires_in=7200)
-            part_urls.append({"part_number": i, "presigned_url": url})
+            part_urls.append({"part_number": i, "presigned_url": _externalize(url)})
         response["multipart"] = True
         response["upload_id"] = upload_id
         response["part_size"] = PART_SIZE
@@ -219,7 +226,7 @@ async def request_upload(case_id: str, body: dict, request: Request, db: AsyncSe
     else:
         presigned_url = storage.presigned_put_url(key, content_type=content_type, expires_in=7200)
         response["multipart"] = False
-        response["presigned_url"] = presigned_url
+        response["presigned_url"] = _externalize(presigned_url)
 
     img = ImageDB(
         id=image_id,

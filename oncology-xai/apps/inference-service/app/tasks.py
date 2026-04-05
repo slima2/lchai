@@ -292,7 +292,7 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
             pct_papillary=result.morphologic_profile.get("pct_papillary", 0.0),
             pct_micropapillary=result.morphologic_profile.get("pct_micropapillary", 0.0),
             pct_solid=result.morphologic_profile.get("pct_solid", 0.0),
-            pct_mucinous=result.morphologic_profile.get("pct_mucinous", 0.0),
+            pct_mucinous=result.morphologic_profile.get("pct_cribriform", 0.0),
         )
         db.add(mp)
 

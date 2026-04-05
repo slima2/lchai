@@ -1,15 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { getImages, uploadImage, processImage, getJob, getLatestResults, getArtifactUrl, createPatient, createCase, api } from '../api';
-
-const PATTERN_COLORS: Record<string, string> = {
-  lepidic: '#E6FF32',
-  acinar: '#00FF00',
-  papillary: '#0000FF',
-  micropapillary: '#FFD700',
-  solid: '#FF0000',
-  mucinous: '#FFA500',
-};
+import {
+  PATTERN_COLORS,
+  patternColor,
+  filterAllowedPatternResults,
+  predominantPatternForDisplay,
+  isDisallowedPatternName,
+} from '../patternConstants';
 
 const GENES_V2 = ['TP53', 'EGFR', 'KRAS', 'STK11', 'KEAP1', 'RBM10'];
 
@@ -143,6 +141,8 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
 
   const rb = results.data;
   const isV2 = rb?.pipeline_version?.startsWith('2');
+  const patternResultsFiltered = filterAllowedPatternResults(rb?.pattern_results);
+  const predominantDisplay = predominantPatternForDisplay(rb?.predominant_pattern, rb?.pattern_results || []);
 
   const aurocValues: Record<string, number> = params.data?.auroc_values || {};
   const aurocThreshold: number = params.data?.auroc_threshold ?? 0.70;
@@ -179,7 +179,7 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
           </button>
         )}
         {isV2 && (
-          <span className="self-center text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium">
+          <span className="self-center text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">
             v2.0 Pipeline
           </span>
         )}
@@ -232,10 +232,10 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
 
             {/* Stage details */}
             <div className="bg-gray-50 rounded p-3 text-xs text-gray-500 space-y-1">
-              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.05 ? 'text-green-600' : ''}`}>
+              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.05 ? 'text-blue-600' : ''}`}>
                 <span>{(job.data.progress || 0) >= 0.10 ? '✓' : '⏳'}</span> Decoding image
               </div>
-              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.20 ? 'text-green-600' : ''}`}>
+              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.20 ? 'text-blue-600' : ''}`}>
                 <span>{(job.data.progress || 0) >= 0.50 ? '✓' : (job.data.progress || 0) >= 0.20 ? '⏳' : '○'}</span> CTransPath tile inference {(() => {
                   const tileMatch = (job.data.stage || '').match(/(\d+)\s*tiles/);
                   if (tileMatch) {
@@ -246,16 +246,16 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                   return '';
                 })()}
               </div>
-              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.55 ? 'text-green-600' : ''}`}>
+              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.55 ? 'text-blue-600' : ''}`}>
                 <span>{(job.data.progress || 0) >= 0.65 ? '✓' : (job.data.progress || 0) >= 0.55 ? '⏳' : '○'}</span> Mutation prediction (ABMIL/Choquet)
               </div>
-              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.65 ? 'text-green-600' : ''}`}>
+              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.65 ? 'text-blue-600' : ''}`}>
                 <span>{(job.data.progress || 0) >= 0.75 ? '✓' : (job.data.progress || 0) >= 0.65 ? '⏳' : '○'}</span> Ablation + permutation analysis
               </div>
-              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.75 ? 'text-green-600' : ''}`}>
+              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.75 ? 'text-blue-600' : ''}`}>
                 <span>{(job.data.progress || 0) >= 0.85 ? '✓' : (job.data.progress || 0) >= 0.75 ? '⏳' : '○'}</span> SHAP decomposition
               </div>
-              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.85 ? 'text-green-600' : ''}`}>
+              <div className={`flex items-center gap-2 ${(job.data.progress || 0) >= 0.85 ? 'text-blue-600' : ''}`}>
                 <span>{(job.data.progress || 0) >= 0.95 ? '✓' : (job.data.progress || 0) >= 0.85 ? '⏳' : '○'}</span> Saving results
               </div>
             </div>
@@ -343,7 +343,7 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                     <td className="border px-3 py-2 text-right font-mono">{pct}%</td>
                     <td className="border px-3 py-2 text-center">
                       <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                        isConcl ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        isConcl ? 'bg-sky-100 text-sky-900' : 'bg-yellow-100 text-yellow-800'
                       }`}>
                         {isConcl ? 'Conclusive' : 'Inconclusive'}
                       </span>
@@ -374,11 +374,12 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                           <div className="text-[10px] text-gray-500 mb-0.5">Choquet Shapley</div>
                           <div className="flex flex-wrap gap-0.5">
                             {Object.entries(gr.choquet_shapley.shapley_values as Record<string, number>)
+                              .filter(([pat]) => !isDisallowedPatternName(pat))
                               .sort(([, a], [, b]) => (b as number) - (a as number))
                               .slice(0, 3)
                               .map(([pat, val]) => (
                                 <span key={pat} className="bg-gray-100 rounded px-1 py-0.5 text-[10px]">
-                                  <span className="w-2 h-2 rounded-full inline-block mr-0.5" style={{ backgroundColor: PATTERN_COLORS[pat] || '#ccc' }} />
+                                  <span className="w-2 h-2 rounded-full inline-block mr-0.5" style={{ backgroundColor: patternColor(pat) }} />
                                   <span className="capitalize">{pat.slice(0, 3)}</span> {(val as number).toFixed(3)}
                                 </span>
                               ))}
@@ -469,13 +470,13 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
               <div>
                 <h4 className="font-semibold mb-2 text-sm">Pattern Composition</h4>
                 <div className="bg-yellow-50 border border-yellow-300 rounded p-2 mb-3 text-xs text-yellow-800">
-                  Predominant: <strong className="capitalize">{rb.predominant_pattern}</strong>
+                  Predominant: <strong className="capitalize">{predominantDisplay}</strong>
                   {' | '}Evidence: {rb.evidence_source}
                 </div>
 
                 {/* Bar chart */}
                 <div className="space-y-1">
-                  {rb.pattern_results
+                  {patternResultsFiltered
                     .sort((a: any, b: any) => (b.percentage || 0) - (a.percentage || 0))
                     .map((p: any) => (
                     <div key={p.pattern} className="flex items-center gap-2">
@@ -485,13 +486,13 @@ export default function ImagePanel({ caseId, imageId: initialImageId, onImageSel
                           className="h-full rounded transition-all duration-500"
                           style={{
                             width: `${Math.min(p.percentage || 0, 100)}%`,
-                            backgroundColor: PATTERN_COLORS[p.pattern] || '#ccc',
+                            backgroundColor: patternColor(p.pattern),
                             opacity: 0.8,
                           }}
                         />
                       </div>
                       <span className="text-xs font-mono w-14">{(p.percentage || 0).toFixed(1)}%</span>
-                      <span className={`text-[10px] ${(p.percentage || 0) >= 5 ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                      <span className={`text-[10px] ${(p.percentage || 0) >= 5 ? 'text-slate-700 font-medium' : 'text-gray-400'}`}>
                         {(p.percentage || 0) >= 20 ? 'Major' : (p.percentage || 0) >= 5 ? 'Minor' : ''}
                       </span>
                     </div>

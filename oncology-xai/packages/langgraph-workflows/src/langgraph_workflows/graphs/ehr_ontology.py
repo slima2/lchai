@@ -38,7 +38,7 @@ PATTERN_KEYWORDS = {
     "papillary": r"\bpapillary\b",
     "micropapillary": r"\bmicro[\-]?papillary\b",
     "solid": r"\bsolid\b",
-    "mucinous": r"\bmucinous\b",
+    "cribriform": r"\bcribriform\b",
 }
 
 DIAGNOSIS_KEYWORDS = {

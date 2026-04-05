@@ -34,7 +34,7 @@ PATTERNS = {
     "papillary": ["papillary", "papilar"],
     "micropapillary": ["micropapillary", "micropapilar"],
     "solid": ["solid", "sólido"],
-    "mucinous": ["mucinous", "mucinoso"],
+    "cribriform": ["cribriform", "cribiforme"],
 }
 
 DIAGNOSES = [

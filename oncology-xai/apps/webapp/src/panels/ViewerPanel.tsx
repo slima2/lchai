@@ -1,6 +1,7 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api, getResultBundle, getArtifacts, getArtifactUrl, getImages } from '../api';
+import { patternColor, filterAllowedPatternResults, predominantPatternForDisplay } from '../patternConstants';
 
 interface Props {
   caseId: string;
@@ -9,11 +10,6 @@ interface Props {
 }
 
 type LayerMode = 'original' | 'pattern' | 'attention' | 'combined';
-
-const PATTERN_COLORS: Record<string, string> = {
-  lepidic: '#E6FF32', acinar: '#00FF00', papillary: '#0000FF',
-  micropapillary: '#FFD700', solid: '#FF0000', mucinous: '#FFA500',
-};
 
 export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) {
   const [zoom, setZoom] = useState(1);
@@ -122,7 +118,11 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
 
   const rb = bundle.data;
   const genetics = rb?.genetic_results || [];
-  const patterns = rb?.pattern_results || [];
+  const patterns = useMemo(
+    () => filterAllowedPatternResults(rb?.pattern_results || []).sort((a: any, b: any) => (b.percentage || 0) - (a.percentage || 0)),
+    [rb?.pattern_results],
+  );
+  const predominantLabel = rb ? predominantPatternForDisplay(rb.predominant_pattern, rb.pattern_results || []) : '—';
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)]">
@@ -153,7 +153,7 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
         <div className="flex-1" />
         {rb && (
           <div className="flex gap-3 text-xs text-gray-400">
-            <span>Pattern: <strong className="text-white capitalize">{rb.predominant_pattern}</strong></span>
+            <span>Pattern: <strong className="text-white capitalize">{predominantLabel}</strong></span>
             <span>Tiles: <strong className="text-white">{rb.morphologic_profile?.n_tiles_total?.toLocaleString()}</strong></span>
             <span>Pipeline: <strong className="text-green-400">v{rb.pipeline_version}</strong></span>
           </div>
@@ -224,10 +224,7 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
               style={{ left: tooltip.x + 12, top: tooltip.y - 30 }}
             >
               <span className="inline-block w-2.5 h-2.5 rounded-full mr-1.5" style={{
-                backgroundColor: ({
-                  acinar: '#00FF00', lepidic: '#E6FF32', papillary: '#0000FF',
-                  micropapillary: '#FFD700', solid: '#FF0000', mucinous: '#FFA500',
-                } as Record<string, string>)[tooltip.pattern] || '#888'
+                backgroundColor: patternColor(tooltip.pattern),
               }} />
               {tooltip.pattern}
             </div>
@@ -262,9 +259,9 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
           )) : <p className="text-gray-500 text-xs">Process an image first</p>}
 
           <h4 className="text-gray-300 text-xs font-bold mt-4 mb-2 uppercase tracking-wide">Patterns</h4>
-          {patterns.sort((a: any, b: any) => (b.percentage || 0) - (a.percentage || 0)).map((p: any) => (
+          {patterns.map((p: any) => (
             <div key={p.pattern} className="flex items-center gap-1.5 mb-1">
-              <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: PATTERN_COLORS[p.pattern] || '#888' }} />
+              <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: patternColor(p.pattern) }} />
               <span className="text-gray-300 text-xs capitalize flex-1">{p.pattern}</span>
               <span className="text-gray-400 text-xs font-mono">{(p.percentage || 0).toFixed(1)}%</span>
             </div>

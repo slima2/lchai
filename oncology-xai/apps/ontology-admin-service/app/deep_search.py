@@ -38,7 +38,7 @@ ENTITY_IRI_MAP: dict[str, dict] = {
     "papillary":     {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128849", "type": "pattern"},
     "micropapillary": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128850", "type": "pattern"},
     "solid":         {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128851", "type": "pattern"},
-    "mucinous":      {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C136494", "type": "pattern"},
+    "cribriform":    {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C35920", "type": "pattern"},
     # Diagnoses
     "adenocarcinoma": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C2852", "type": "diagnosis"},
     "NSCLC":          {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C2926", "type": "diagnosis"},
