@@ -20,26 +20,28 @@ spec:
           effect: "NoSchedule"
       initContainers:
         - name: download-models
-          image: {{ .Values.image.registry }}/{{ .Values.image.prefix }}/inference-service:{{ .Values.image.tag }}
-          command: ["python3", "-c", "
-import boto3, os;
-s3 = boto3.client('s3', region_name='{{ .Values.s3.region }}');
-os.makedirs('/data/models', exist_ok=True);
-os.makedirs('/data/checkpoints', exist_ok=True);
-bucket_m = '{{ .Values.s3.modelsBucket }}';
-bucket_c = '{{ .Values.s3.modelsBucket }}';
-for obj in s3.list_objects_v2(Bucket=bucket_m, Prefix='backbones/').get('Contents', []):
-    key = obj['Key']; name = key.split('/')[-1];
-    if name.endswith('.pth') and '_backup' not in key:
-        print(f'Downloading {key}...');
-        s3.download_file(bucket_m, key, f'/data/models/{name}');
-for obj in s3.list_objects_v2(Bucket=bucket_c, Prefix='checkpoints/').get('Contents', []):
-    key = obj['Key']; name = key.split('/')[-1];
-    if name.endswith('.pth'):
-        print(f'Downloading {key}...');
-        s3.download_file(bucket_c, key, f'/data/checkpoints/{name}');
-print('Done');
-"]
+          image: 632100838024.dkr.ecr.us-east-1.amazonaws.com/lchai-prod/inference-service:latest
+          command:
+            - python3
+            - -c
+            - |
+              import boto3, os
+              s3 = boto3.client('s3', region_name='us-east-1')
+              os.makedirs('/data/models', exist_ok=True)
+              os.makedirs('/data/checkpoints', exist_ok=True)
+              for obj in s3.list_objects_v2(Bucket='lchai-prod-models', Prefix='backbones/').get('Contents', []):
+                  key = obj['Key']
+                  name = key.split('/')[-1]
+                  if name.endswith('.pth') and '_backup' not in key:
+                      print(f'Downloading {key}...')
+                      s3.download_file('lchai-prod-models', key, f'/data/models/{name}')
+              for obj in s3.list_objects_v2(Bucket='lchai-prod-models', Prefix='checkpoints/').get('Contents', []):
+                  key = obj['Key']
+                  name = key.split('/')[-1]
+                  if name.endswith('.pth'):
+                      print(f'Downloading {key}...')
+                      s3.download_file('lchai-prod-models', key, f'/data/checkpoints/{name}')
+              print('Model download complete')
           volumeMounts:
             - name: model-data
               mountPath: /data
@@ -50,13 +52,8 @@ print('Done');
                 name: lchai-secrets
       containers:
         - name: inference-worker
-          image: {{ .Values.image.registry }}/{{ .Values.image.prefix }}/inference-service:{{ .Values.image.tag }}
+          image: 632100838024.dkr.ecr.us-east-1.amazonaws.com/lchai-prod/inference-service:latest
           command: ["celery", "-A", "app.celery_app:celery", "worker", "--loglevel=info", "--concurrency=1"]
-          envFrom:
-            - configMapRef:
-                name: lchai-config
-            - secretRef:
-                name: lchai-secrets
           env:
             - name: CTRANSPATH_CHECKPOINT
               value: "/data/models/ctranspath.pth"
@@ -64,6 +61,11 @@ print('Done');
               value: "/data/models/best_fuzzyarcloss_v2.pth"
             - name: V2_CHECKPOINT_DIR
               value: "/data/checkpoints"
+          envFrom:
+            - configMapRef:
+                name: lchai-config
+            - secretRef:
+                name: lchai-secrets
           volumeMounts:
             - name: model-data
               mountPath: /data

@@ -7,6 +7,7 @@
   (dict "name" "graph-service" "port" 8005 "replicas" .Values.services.graphService.replicas)
   (dict "name" "ontology-admin-service" "port" 8006 "replicas" .Values.services.ontologyAdmin.replicas)
   (dict "name" "audit-service" "port" 8007 "replicas" .Values.services.auditService.replicas)
+  (dict "name" "active-learning-service" "port" 8008 "replicas" .Values.services.activeLearning.replicas)
 }}
 {{- range $svc := $services }}
 ---

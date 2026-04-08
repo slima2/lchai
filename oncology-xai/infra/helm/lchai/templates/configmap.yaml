@@ -32,3 +32,4 @@ data:
   GRAPH_SERVICE_URL: "http://graph-service:8005"
   ONTOLOGY_ADMIN_SERVICE_URL: "http://ontology-admin-service:8006"
   AUDIT_SERVICE_URL: "http://audit-service:8007"
+  ACTIVE_LEARNING_SERVICE_URL: "http://active-learning-service:8008"

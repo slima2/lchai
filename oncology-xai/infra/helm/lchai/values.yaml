@@ -58,3 +58,5 @@ services:
     replicas: 1
   auditService:
     replicas: 1
+  activeLearning:
+    replicas: 1
