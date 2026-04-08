@@ -314,9 +314,10 @@ export default function AdminPanel() {
                 <h5 className="font-semibold text-sm mb-1">B2 — Embeddings-only ABMIL (TP53, EGFR)</h5>
                 <pre className="bg-gray-50 rounded p-3 text-xs font-mono whitespace-pre-wrap leading-relaxed">{`tiles (224×224) → CTransPath Swin Tiny → embeddings (N×512)
       ↓
-encoder(512→256) → LayerNorm → ReLU
+encoder(512→256) → LayerNorm → ReLU → Dropout(0.25)
       ↓
-Gated Attention: αᵢ = softmax(w·tanh(V·hᵢ) ⊙ σ(U·hᵢ))
+Gated Attention: αᵢ = softmax(w·tanh(V₂₅₆→₁₂₈·hᵢ) ⊙ σ(U₂₅₆→₁₂₈·hᵢ))
+                  w: ℝ¹²⁸→ℝ¹ (learnable projection)
       ↓
 z = Σ αᵢ·hᵢ  (attention-weighted sum, 256-dim)
       ↓
@@ -331,9 +332,10 @@ Linear(256→1) → sigmoid → P(mut)`}</pre>
       ↓
 concat(emb₅₁₂, pat₆) = 518-dim per tile
       ↓
-encoder(518→256) → LayerNorm → ReLU
+encoder(518→256) → LayerNorm → ReLU → Dropout(0.25)
       ↓
-Gated Attention: αᵢ = softmax(w·tanh(V·hᵢ) ⊙ σ(U·hᵢ))
+Gated Attention: αᵢ = softmax(w·tanh(V₂₅₆→₁₂₈·hᵢ) ⊙ σ(U₂₅₆→₁₂₈·hᵢ))
+                  w: ℝ¹²⁸→ℝ¹ (learnable projection)
       ↓
 z = Σ αᵢ·hᵢ  (attention-weighted sum, 256-dim)
       ↓
@@ -346,15 +348,20 @@ Linear(256→1) → sigmoid → P(mut)`}</pre>
                 <pre className="bg-gray-50 rounded p-3 text-xs font-mono whitespace-pre-wrap leading-relaxed">{`tiles (224×224) → CTransPath → embeddings (N×512)
               → FuzzyArcLoss V2 → pattern probs (N×6)
       ↓
-encoder(512→256) → Gated Attention → z (256-dim)
+encoder(512→256) → LayerNorm → ReLU → Dropout(0.25)
       ↓
-proj(concat(z₂₅₆, pattern_composition₆) = 262-dim → 256)
+Gated Attention: αᵢ = softmax(w·tanh(V₂₅₆→₁₂₈·hᵢ) ⊙ σ(U₂₅₆→₁₂₈·hᵢ))
+z_attn = Σ αᵢ·hᵢ  (attention-weighted sum, 256-dim)
       ↓
-Choquet Aggregation: ∫ f dμ
-  (learned fuzzy measure μ: 6 Shapley values + 15 interaction indices = 21 params)
+Choquet Aggregation: cv = s · ∫ f dμ   (s = learnable scale, init=10.0)
+  (learned fuzzy μ: 6 Shapley values + 15 interaction indices = 21 params)
+  (tiles subsampled to max 512 for Choquet integral)
+  cv output: 6-dim (one value per pattern)
+      ↓
+proj(concat(cv₆, z_attn₂₅₆) = 262-dim) → Linear(262→256) → LayerNorm → ReLU → Dropout(0.25)
       ↓
 Linear(256→1) → sigmoid → P(mut)`}</pre>
-                <p className="text-xs text-gray-500 mt-1">Models supra-additive interactions among histological patterns via a 2-additive fuzzy measure with Choquet integral aggregation.</p>
+                <p className="text-xs text-gray-500 mt-1">Dual-pathway hybrid: ABMIL attention on embeddings (256-d) fused with Choquet integral on pattern probs (6-d) via a learned 2-additive fuzzy measure. The Choquet branch models supra-additive interactions among histological patterns.</p>
               </div>
             </div>
           </div>
