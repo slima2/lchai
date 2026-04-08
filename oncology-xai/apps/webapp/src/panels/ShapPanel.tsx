@@ -160,6 +160,7 @@ function PatternSynergyExplainBlock({
   setSynergyExpl,
   synergyLoading,
   setSynergyLoading,
+  language = 'en',
 }: any) {
   const row = clinicalAssocForGene(selGene);
   const litPatterns = row?.patternAssociation ?? 'Unknown';
@@ -202,7 +203,7 @@ Task: Write a concise clinical interpretation (max 220 words) for a pathologist 
 (3) Why interaction-aware aggregation (Fuzzy Choquet) is informative for other genes (e.g. KRAS) but ${selGene} is evaluated with embedding-led models in this pipeline.
 Do NOT say "diagnose" or "confirmed".`;
 
-      const resp = await api.post(`/cases/${caseId}/graph/explain`, { language: 'en', extra_context: prompt });
+      const resp = await api.post(`/cases/${caseId}/graph/explain`, { language, extra_context: prompt });
       const text = resp.data?.explanation || 'Explanation not available.';
       _explanationCache[cacheKey] = text;
       setSynergyExpl(text);
@@ -236,7 +237,7 @@ Do NOT say "diagnose" or "confirmed".`;
   );
 }
 
-function ChoquetExplainBlock({ selGene, caseId, geneResult, choquetData, choquetExpl, setChoquetExpl, choquetLoading, setChoquetLoading }: any) {
+function ChoquetExplainBlock({ selGene, caseId, geneResult, choquetData, choquetExpl, setChoquetExpl, choquetLoading, setChoquetLoading, language = 'en' }: any) {
   const row = clinicalAssocForGene(selGene);
   const litPatterns = row?.patternAssociation ?? 'Unknown';
   const litTreatment = row?.treatmentImplications ?? 'Unknown';
@@ -256,9 +257,10 @@ function ChoquetExplainBlock({ selGene, caseId, geneResult, choquetData, choquet
             .map(([p, v]) => `  ${p.replace('_', ' x ')}: ${(v as number) > 0 ? '+' : ''}${(v as number).toFixed(4)} (${(v as number) > 0 ? 'synergy' : 'redundancy'})`)
             .join('\n')
         : 'None';
-      const prompt = `You are a clinical decision support system for lung adenocarcinoma. Explain the following Choquet Shapley analysis results for a pathologist who is NOT a data scientist. Be concise (max 200 words), clinically grounded, and honest about limitations.\n\nGene: ${selGene}\nMutation probability: ${((geneResult.score || geneResult.probability || 0) * 100).toFixed(1)}%\nKnown clinical association (thesis Table gene_unified summary): ${selGene} mutations are often discussed in relation to ${litPatterns}. Treatment context: ${litTreatment}.\n\nLearned Shapley values (pattern importance from the AI model):\n${svText}\n\nTop interaction indices (pattern pair synergies/redundancies):\n${ixText}\n\nExplain: 1) What the Shapley values tell us clinically, 2) Whether they align with known literature, 3) What the interaction indices mean for this patient, 4) Any limitations. Use language a pathologist would understand. Do NOT use the word "diagnose" or "confirmed".`;
+      const langInstruction = language !== 'en' ? `\n\nIMPORTANT: Respond ENTIRELY in ${language === 'es' ? 'Spanish' : language === 'de' ? 'German' : language === 'fr' ? 'French' : language === 'pt' ? 'Portuguese' : language}.` : '';
+      const prompt = `You are a clinical decision support system for lung adenocarcinoma. Explain the following Choquet Shapley analysis results for a pathologist who is NOT a data scientist. Be concise (max 200 words), clinically grounded, and honest about limitations.\n\nGene: ${selGene}\nMutation probability: ${((geneResult.score || geneResult.probability || 0) * 100).toFixed(1)}%\nKnown clinical association (thesis Table gene_unified summary): ${selGene} mutations are often discussed in relation to ${litPatterns}. Treatment context: ${litTreatment}.\n\nLearned Shapley values (pattern importance from the AI model):\n${svText}\n\nTop interaction indices (pattern pair synergies/redundancies):\n${ixText}\n\nExplain: 1) What the Shapley values tell us clinically, 2) Whether they align with known literature, 3) What the interaction indices mean for this patient, 4) Any limitations. Use language a pathologist would understand. Do NOT use the word "diagnose" or "confirmed".${langInstruction}`;
 
-      const resp = await api.post(`/cases/${caseId}/graph/explain`, { language: 'en', extra_context: prompt });
+      const resp = await api.post(`/cases/${caseId}/graph/explain`, { language, extra_context: prompt });
       const text = resp.data?.explanation || 'Explanation not available.';
       _explanationCache[cacheKey] = text;
       setChoquetExpl(text);
@@ -459,6 +461,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
                   setSynergyExpl={setSynergyExpl}
                   synergyLoading={synergyLoading}
                   setSynergyLoading={setSynergyLoading}
+                  language={preferredLanguage}
                 />
               )}
           </div>
@@ -651,6 +654,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
           setChoquetExpl={setChoquetExpl}
           choquetLoading={choquetLoading}
           setChoquetLoading={setChoquetLoading}
+          language={preferredLanguage}
         />
       )}
 
@@ -690,6 +694,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
                 setSynergyExpl={setSynergyExpl}
                 synergyLoading={synergyLoading}
                 setSynergyLoading={setSynergyLoading}
+                language={preferredLanguage}
               />
             )}
         </div>
