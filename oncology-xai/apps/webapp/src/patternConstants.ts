@@ -17,7 +17,7 @@ export const PATTERN_COLORS: Record<AnorakPattern, string> = {
   lepidic: '#0000FF',
   acinar: '#FF0000',
   papillary: '#FFFF00',
-  micropapillary: '#FF00FF',
+  micropapillary: '#00FF00',
   solid: '#800000',
   cribriform: '#00FFFF',
 };

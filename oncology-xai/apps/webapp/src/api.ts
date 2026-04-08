@@ -103,5 +103,11 @@ export const getArtifactUrl = (uri: string) => {
   return `${API_URL}/api/v1/artifacts/presigned?key=${encodeURIComponent(key)}`;
 };
 
+// Active Learning — Pattern Corrections
+export const submitPatternCorrections = (resultBundleId: string, caseId: string, corrections: any[]) =>
+  api.post(`/results/${resultBundleId}/pattern-corrections`, { case_id: caseId, corrections });
+export const getPatternCorrections = (resultBundleId: string) =>
+  api.get(`/results/${resultBundleId}/pattern-corrections`);
+
 // Audit
 export const getAuditEvents = (params?: any) => api.get('/audit/events', { params });

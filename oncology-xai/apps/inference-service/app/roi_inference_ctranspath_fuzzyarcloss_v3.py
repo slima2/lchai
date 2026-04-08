@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 # ── Pattern palette (DERCAS 7) ─────────────────────────────────────────
 PATTERN_PALETTE: dict[str, tuple[int, int, int]] = {
     "cribriform": (0, 255, 255),
-    "micropapillary": (255, 0, 255),
+    "micropapillary": (0, 255, 0),
     "solid": (128, 0, 0),
     "papillary": (255, 255, 0),
     "acinar": (255, 0, 0),

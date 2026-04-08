@@ -26,7 +26,7 @@ PATTERN_PALETTE = {
     "lepidic": (0, 0, 255),
     "acinar": (255, 0, 0),
     "papillary": (255, 255, 0),
-    "micropapillary": (255, 0, 255),
+    "micropapillary": (0, 255, 0),
     "solid": (128, 0, 0),
     "cribriform": (0, 255, 255),
 }
