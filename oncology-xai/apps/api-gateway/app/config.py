@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     graph_service_url: str = "http://graph-service:8005"
     ontology_admin_service_url: str = "http://ontology-admin-service:8006"
     audit_service_url: str = "http://audit-service:8007"
+    active_learning_service_url: str = "http://active-learning-service:8008"
 
     # Observability
     otel_exporter_otlp_endpoint: str | None = None

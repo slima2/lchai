@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, getResultBundle, getArtifacts, getArtifactUrl, getImages, getJob, submitPatternCorrections } from '../api';
+import { api, getResultBundle, getArtifacts, getArtifactUrl, getImages, getJob, submitPatternCorrections, getActiveLearningJob } from '../api';
 import { patternColor, filterAllowedPatternResults, predominantPatternForDisplay, PATTERN_COLORS, type AnorakPattern } from '../patternConstants';
 
 interface Props {
@@ -185,12 +185,12 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // Poll retrain job
+  // Poll active-learning-service job
   useEffect(() => {
     if (!retrainJobId || retrainStatus === 'COMPLETED' || retrainStatus === 'FAILED') return;
     const interval = setInterval(async () => {
       try {
-        const { data } = await getJob(retrainJobId);
+        const { data } = await getActiveLearningJob(retrainJobId);
         setRetrainProgress(data.progress || 0);
         setRetrainStage(data.error_detail || data.stage || '');
         if (data.status === 'COMPLETED') {
@@ -230,7 +230,7 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
       setRetrainStatus('PENDING');
       setRetrainProgress(0);
       setRetrainStage('Submitting corrections...');
-      const { data } = await submitPatternCorrections(resultBundleId, caseId, corrections);
+      const { data } = await submitPatternCorrections(resultBundleId, caseId, imageId || '', corrections);
       setRetrainJobId(data.job_id);
       setRetrainStatus('RUNNING');
     } catch (err: any) {

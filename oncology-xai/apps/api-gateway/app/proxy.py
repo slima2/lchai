@@ -40,6 +40,8 @@ ROUTE_MAP: list[dict[str, Any]] = [
     {"prefix": "/admin/kg", "upstream": "ontology_admin_service_url", "roles": ["admin"]},
     # Audit
     {"prefix": "/audit", "upstream": "audit_service_url", "roles": ["auditor", "admin"]},
+    # Active Learning
+    {"prefix": "/active-learning", "upstream": "active_learning_service_url", "roles": ["clinician", "admin"]},
 ]
 
 

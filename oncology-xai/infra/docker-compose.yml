@@ -370,6 +370,25 @@ services:
     networks:
       - oncology-net
 
+  active-learning-service:
+    build:
+      context: ..
+      dockerfile: apps/active-learning-service/Dockerfile
+    container_name: oncology-active-learning
+    env_file: ../.env
+    environment:
+      - SERVICE_NAME=active-learning-service
+      - SERVICE_PORT=8008
+    ports:
+      - "8008:8008"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - oncology-net
+
   webapp:
     build:
       context: ..
