@@ -1,0 +1,48 @@
+/* LCHAI v2.0 Keycloak Login Theme */
+
+/* Dark background matching LCHAI header */
+.login-pf body {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%) !important;
+}
+
+#kc-header-wrapper {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+    padding-top: 40px !important;
+    padding-bottom: 10px !important;
+}
+
+/* Title styling */
+#kc-header-wrapper {
+    text-align: center !important;
+}
+
+/* Logo between title and form — injected via ::after pseudo-element on header */
+#kc-header::after {
+    content: '';
+    display: block;
+    width: 200px;
+    height: 106px;
+    margin: 20px auto 10px auto;
+    background: url('../img/lchai_logo.png') center center no-repeat;
+    background-size: contain;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+}
+
+/* Card styling */
+#kc-form-wrapper,
+.card-pf {
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Sign in button */
+#kc-login {
+    background-color: #1565C0 !important;
+    border-color: #1565C0 !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+}
+
+#kc-login:hover {
+    background-color: #0D47A1 !important;
+}
