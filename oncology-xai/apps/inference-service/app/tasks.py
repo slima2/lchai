@@ -152,6 +152,16 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
             np.savez_compressed(emb_buf, embedding=result.embedding)
             storage.upload_bytes(f"{prefix}/embedding.npz", emb_buf.getvalue(), "application/octet-stream")
 
+        if result.tile_embeddings is not None and result.tile_pattern_probs is not None:
+            import numpy as np
+            tile_buf = io.BytesIO()
+            np.savez_compressed(tile_buf, tile_embeddings=result.tile_embeddings,
+                                tile_pattern_probs=result.tile_pattern_probs,
+                                tile_coords=np.array(result.tile_coords) if result.tile_coords else np.array([]))
+            storage.upload_bytes(f"{prefix}/tile_data.npz", tile_buf.getvalue(), "application/octet-stream")
+            logger.info("Saved tile_data.npz: embeddings=%s, probs=%s",
+                        result.tile_embeddings.shape, result.tile_pattern_probs.shape)
+
         metrics_json = json.dumps(result.metrics).encode()
         storage.upload_bytes(f"{prefix}/metrics.json", metrics_json, "application/json")
 

@@ -103,11 +103,18 @@ export const getArtifactUrl = (uri: string) => {
   return `${API_URL}/api/v1/artifacts/presigned?key=${encodeURIComponent(key)}`;
 };
 
-// Active Learning — Pattern Corrections
-export const submitPatternCorrections = (resultBundleId: string, caseId: string, corrections: any[]) =>
-  api.post(`/results/${resultBundleId}/pattern-corrections`, { case_id: caseId, corrections });
+// Active Learning — Pattern Corrections (separate microservice)
+export const submitPatternCorrections = (
+  resultBundleId: string, caseId: string, imageId: string, corrections: any[]
+) =>
+  api.post('/active-learning/corrections', {
+    case_id: caseId, image_id: imageId,
+    result_bundle_id: resultBundleId, corrections,
+  });
+export const getActiveLearningJob = (jobId: string) =>
+  api.get(`/active-learning/jobs/${jobId}`);
 export const getPatternCorrections = (resultBundleId: string) =>
-  api.get(`/results/${resultBundleId}/pattern-corrections`);
+  api.get(`/active-learning/corrections/${resultBundleId}`);
 
 // Audit
 export const getAuditEvents = (params?: any) => api.get('/audit/events', { params });
