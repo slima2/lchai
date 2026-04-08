@@ -115,7 +115,6 @@ services:
       - "8080:8080"
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
-      - ./keycloak/themes/lchai:/opt/keycloak/themes/lchai
     depends_on:
       postgres:
         condition: service_healthy
