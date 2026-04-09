@@ -54,7 +54,7 @@ function GeneExplanation({ gene, geneResult, language = 'en', patternResults = [
 
     const langInstruction = language !== 'en' ? `\n\nIMPORTANT: Respond ENTIRELY in ${language === 'es' ? 'Spanish' : language === 'de' ? 'German' : language === 'fr' ? 'French' : language === 'pt' ? 'Portuguese' : language}.` : '';
 
-    const prompt = `You are an expert computational pathologist explaining an AI mutation prediction to a clinician. Be precise, clinically grounded, and honest about limitations (5-8 sentences).
+    const prompt = `You are an expert computational pathologist explaining AI mutation prediction results to a clinician. Your explanation appears ABOVE a bar chart that the clinician can see. You must reference the chart and other visual elements explicitly. Be precise, clinically grounded (5-8 sentences).
 
 Gene: ${gene}
 Prediction method: ${geneResult.prediction_method || 'unknown'}
@@ -65,24 +65,27 @@ LITERATURE GROUND TRUTH (from published studies):
 - ${gene} mutations are typically associated with: ${litPatterns}
 - Treatment context: ${litTreatment}
 
-THIS SLIDE'S ACTUAL PATTERN COMPOSITION:
+THIS SLIDE'S ACTUAL PATTERN COMPOSITION (visible in Card 2 and Viewer tab):
 - Predominant patterns: ${patternSummary}
 
-SHAP DECOMPOSITION (embedding vs pattern contribution):
+SHAP DECOMPOSITION (shown as Emb/Pat split bar in Card 1):
 - Embedding contribution: ${shapEmbPct}%, Pattern contribution: ${shapPatPct}%
-- ${isPatternDominant ? 'PATTERNS DOMINATE the prediction signal — the six-class pattern taxonomy carries the majority of the attribution for this gene on this slide.' : isEmbeddingDominant ? 'EMBEDDINGS DOMINATE — the model relies primarily on sub-cellular texture features captured by CTransPath, not the explicit pattern classification.' : 'Roughly balanced contribution between visual texture (embeddings) and histological patterns.'}
+- ${isPatternDominant ? 'PATTERNS DOMINATE — the six-class pattern taxonomy carries the majority of the attribution.' : isEmbeddingDominant ? 'EMBEDDINGS DOMINATE — the model relies primarily on sub-cellular texture features (CTransPath), not the explicit pattern classification.' : 'Roughly balanced contribution between visual texture (embeddings) and histological patterns.'}
 
-ABLATION COMPARISON:
-- Combined model: ${pComb}%, Embeddings-only: ${pEmb}%, Patterns-only: ${pPat}%
-${combLessThanEmb ? `Adding pattern features REDUCES the prediction (${pComb}% < ${pEmb}%), suggesting interference.` : `Pattern features help or are neutral.`}
+ABLATION CHART (the 3 bars shown BELOW this text):
+- Blue bar "Combined": ${pComb}% — uses both embeddings (512-d) + patterns (6-d)
+- Orange bar "Emb-only": ${pEmb}% — uses only visual embeddings
+- Purple bar "Pat-only": ${pPat}% — uses only the 6 pattern probabilities
+${combLessThanEmb ? `IMPORTANT: Combined (${pComb}%) < Emb-only (${pEmb}%). Adding patterns REDUCES the prediction — pattern information interferes with the embedding signal.` : `Combined >= Emb-only: pattern features help or are neutral.`}
 
-YOUR EXPLANATION MUST INCLUDE ALL OF THE FOLLOWING:
-1. Whether the slide's pattern composition matches or mismatches the known ${gene}-associated patterns from literature (${litPatterns}). If there is a mismatch, explain explicitly what patterns are expected vs what was found.
-2. What the SHAP embedding/pattern split (${shapEmbPct}%/${shapPatPct}%) tells about WHERE the model is finding (or not finding) the mutation signal.
-3. ${(geneResult.score || 0) < 0.5 ? `This is a LOW prediction (${((geneResult.score || 0) * 100).toFixed(1)}%). Explain that a low probability does NOT mean the patient is definitely wild-type — it means the model did not find sufficient morphological signal in this slide. The mutation may still be present. ALWAYS recommend molecular testing.` : `This is a HIGH prediction. Explain what morphological features support it and recommend molecular confirmation.`}
-4. If the SHAP shows pattern-dominant signal but the prediction is still low, explain that the model DETECTED partial pattern-level information but it was insufficient for a confident prediction.
-5. Mention the DeepSearch knowledge enrichment pipeline as a mechanism to discover new pattern-mutation associations beyond current literature.
-Do NOT use the word "diagnose" or "confirmed".${langInstruction}`;
+YOUR EXPLANATION MUST:
+1. Start by referencing the ablation chart: "As shown in the comparison chart below, the three models produce probabilities of X%, Y%, Z% respectively..."
+2. Explain what the difference between the 3 bars means for this gene — does adding patterns help, hurt, or make no difference?
+3. State whether this slide's patterns (${patternSummary}) match or mismatch the expected ${gene}-associated patterns from literature (${litPatterns}). Be explicit about the mismatch if it exists.
+4. Reference the SHAP split (${shapEmbPct}%/${shapPatPct}%) to explain WHERE the signal comes from.
+5. ${(geneResult.score || 0) < 0.5 ? `This is a LOW prediction (${((geneResult.score || 0) * 100).toFixed(1)}%). State clearly: "A low probability does NOT mean the patient is wild-type — it means the model did not find sufficient morphological signal on this slide. Molecular testing is recommended."` : `This is a HIGH prediction (${((geneResult.score || 0) * 100).toFixed(1)}%). Explain what supports it and recommend molecular confirmation.`}
+6. Briefly mention DeepSearch as a pipeline to discover new pattern-mutation associations.
+Do NOT use "diagnose" or "confirmed".${langInstruction}`;
 
     api.post('/gene-explain', { gene, prompt, language })
       .then(r => {
@@ -480,22 +483,69 @@ export default function ShapPanel({ resultBundleId }: Props) {
             {/* LLM-generated explanation */}
             <GeneExplanation gene={selGene} geneResult={geneResult} language={preferredLanguage} patternResults={patterns} shapDecomp={shapDecomp} />
 
-            {/* Compact vertical bars — no redundant numbers above */}
-            <div className="flex items-end justify-center gap-10 h-40">
-              {[
-                { label: 'Combined', val: geneResult.ablation.p_proposed, color: 'bg-blue-500' },
-                { label: 'Emb-only', val: geneResult.ablation.p_emb_only, color: 'bg-orange-400' },
-                { label: 'Pat-only', val: geneResult.ablation.p_pat_only, color: 'bg-violet-500' },
-              ].map(item => (
-                <div key={item.label} className="flex flex-col items-center gap-1 w-20">
-                  <span className="text-xs font-mono font-bold">{((item.val || 0) * 100).toFixed(1)}%</span>
-                  <div className="w-12 bg-gray-100 rounded-t relative" style={{ height: '110px' }}>
-                    <div className={`absolute bottom-0 left-0 right-0 rounded-t ${item.color}`}
-                      style={{ height: `${Math.min((item.val || 0) * 100, 100)}%` }} />
-                  </div>
-                  <span className="text-[10px] text-gray-600 text-center font-medium">{item.label}</span>
+            {/* Charts side by side: Ablation bars + SHAP decomposition */}
+            <div className="flex items-start justify-center mt-6" style={{ gap: '300px' }}>
+              {/* Left: Ablation comparison bars */}
+              <div>
+                <h4 className="text-xs font-semibold text-gray-500 mb-2 text-center uppercase tracking-wide">Ablation Comparison — Mutation Probability by Model</h4>
+                <div className="flex items-end justify-center gap-10 h-40">
+                  {[
+                    { label: 'Combined', desc: 'Emb + Pat (518-d)', val: geneResult.ablation.p_proposed, color: 'bg-blue-500' },
+                    { label: 'Emb-only', desc: 'Visual features (512-d)', val: geneResult.ablation.p_emb_only, color: 'bg-orange-400' },
+                    { label: 'Pat-only', desc: 'Patterns (6-d)', val: geneResult.ablation.p_pat_only, color: 'bg-violet-500' },
+                  ].map(item => (
+                    <div key={item.label} className="flex flex-col items-center gap-1 w-24">
+                      <span className="text-xs font-mono font-bold">{((item.val || 0) * 100).toFixed(1)}%</span>
+                      <div className="w-12 bg-gray-100 rounded-t relative" style={{ height: '110px' }}>
+                        <div className={`absolute bottom-0 left-0 right-0 rounded-t ${item.color}`}
+                          style={{ height: `${Math.min((item.val || 0) * 100, 100)}%` }} />
+                      </div>
+                      <span className="text-[10px] text-gray-700 text-center font-semibold">{item.label}</span>
+                      <span className="text-[9px] text-gray-400 text-center leading-tight">{item.desc}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              {/* Right: SHAP Decomposition bar (for ALL genes, not just proposed) */}
+              {shapDecomp && (
+                <div className="w-64 flex-shrink-0">
+                  <h4 className="text-xs font-semibold text-gray-500 mb-2 text-center uppercase tracking-wide">SHAP Decomposition — Signal Source</h4>
+                  <div className="h-10 rounded overflow-hidden flex bg-gray-100 mt-8">
+                    <div
+                      className="bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold"
+                      style={{ width: `${shapDecomp.embedding_contribution_pct}%` }}
+                    >
+                      Emb {shapDecomp.embedding_contribution_pct?.toFixed(0)}%
+                    </div>
+                    <div
+                      className="bg-red-500 flex items-center justify-center text-white text-[10px] font-bold"
+                      style={{ width: `${shapDecomp.pattern_contribution_pct}%` }}
+                    >
+                      Pat {shapDecomp.pattern_contribution_pct?.toFixed(0)}%
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-[9px] text-gray-400 mt-1">
+                    <span>Embeddings (512-d CTransPath)</span>
+                    <span>Patterns (6 classes)</span>
+                  </div>
+                  {shapDecomp.top_pattern_dims && shapDecomp.top_pattern_dims.length > 0 && (
+                    <div className="mt-2 text-[10px] text-gray-500">
+                      Top contributing: {shapDecomp.top_pattern_dims
+                        .filter((p: string) => !isDisallowedPatternName(p))
+                        .map((p: string) => (
+                        <span key={p} className="capitalize bg-gray-100 rounded px-1 py-0.5 mr-1">
+                          <span className="w-1.5 h-1.5 rounded-full inline-block mr-0.5" style={{ backgroundColor: patternColor(p) }} />
+                          {p}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-[9px] text-gray-400 mt-2 italic leading-tight">
+                    Shows whether the prediction relies on sub-cellular visual texture (embeddings) or the explicit 6-class histological pattern classification (patterns).
+                  </p>
+                </div>
+              )}
             </div>
             {mp &&
               CHOQUET_STYLE_GENES.includes(selGene as (typeof CHOQUET_STYLE_GENES)[number]) && (
@@ -511,77 +561,6 @@ export default function ShapPanel({ resultBundleId }: Props) {
                   language={preferredLanguage}
                 />
               )}
-          </div>
-        </div>
-      )}
-
-      {/* ── OUTPUT 3: SHAP Decomposition (only for Proposed concat genes: STK11, KEAP1) ── */}
-      {shapDecomp && geneResult?.prediction_method?.includes('proposed') && (
-        <div className="mb-6 border rounded-lg shadow-sm overflow-hidden">
-          <div className="bg-indigo-50 border-b border-indigo-200 px-4 py-2">
-            <h3 className="font-bold text-indigo-900">SHAP Decomposition — {selGene}</h3>
-          </div>
-          <div className="p-4">
-            <div className="grid grid-cols-3 gap-4">
-              {/* Stacked bar */}
-              <div className="col-span-1">
-                <h4 className="text-xs font-semibold text-gray-600 mb-2">Embedding vs Pattern contribution</h4>
-                <div className="h-8 rounded overflow-hidden flex bg-gray-100">
-                  <div
-                    className="bg-blue-500 flex items-center justify-center text-white text-[10px] font-bold"
-                    style={{ width: `${shapDecomp.embedding_contribution_pct}%` }}
-                  >
-                    {shapDecomp.embedding_contribution_pct?.toFixed(1)}%
-                  </div>
-                  <div
-                    className="bg-red-400 flex items-center justify-center text-white text-[10px] font-bold"
-                    style={{ width: `${shapDecomp.pattern_contribution_pct}%` }}
-                  >
-                    {shapDecomp.pattern_contribution_pct?.toFixed(1)}%
-                  </div>
-                </div>
-                <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                  <span>Embeddings (512d)</span>
-                  <span>Patterns (6d)</span>
-                </div>
-                {shapDecomp.top_pattern_dims && (
-                  <div className="mt-2 text-xs text-gray-600">
-                    Top patterns: {shapDecomp.top_pattern_dims
-                      .filter((p: string) => !isDisallowedPatternName(p))
-                      .map((p: string) => (
-                      <span key={p} className="capitalize bg-gray-100 rounded px-1.5 py-0.5 mr-1">
-                        <span className="w-2 h-2 rounded-full inline-block mr-0.5" style={{ backgroundColor: patternColor(p) }} />
-                        {p}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* SHAP decomposition bar plot */}
-              <div className="col-span-1">
-                <h4 className="text-xs font-semibold text-gray-600 mb-2">Decomposition Plot</h4>
-                <div className="border rounded bg-gray-50 h-40 flex items-center justify-center overflow-hidden">
-                  {decompBarArt ? (
-                    <ArtifactImage uri={decompBarArt.uri} alt={`SHAP decomposition ${selGene}`} className="max-h-full max-w-full object-contain" />
-                  ) : (
-                    <span className="text-gray-400 text-xs">No decomposition plot</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Pattern-dim SHAP */}
-              <div className="col-span-1">
-                <h4 className="text-xs font-semibold text-gray-600 mb-2">Pattern-Dimension SHAP</h4>
-                <div className="border rounded bg-gray-50 h-40 flex items-center justify-center overflow-hidden">
-                  {decompPatArt ? (
-                    <ArtifactImage uri={decompPatArt.uri} alt={`Pattern SHAP ${selGene}`} className="max-h-full max-w-full object-contain" />
-                  ) : (
-                    <span className="text-gray-400 text-xs">No pattern SHAP plot</span>
-                  )}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       )}
