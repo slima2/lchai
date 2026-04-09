@@ -104,7 +104,8 @@ def _compute_gradient_shap(
 
     model.eval()
     N = features.shape[0]
-    bg_idx = np.random.choice(N, min(background_size, N), replace=False)
+    rng = np.random.default_rng(42)
+    bg_idx = rng.choice(N, min(background_size, N), replace=False)
     bg = features[bg_idx]
     bg_mean = bg.mean(axis=0)
 
