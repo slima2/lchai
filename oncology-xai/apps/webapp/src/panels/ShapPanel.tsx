@@ -16,7 +16,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const _explanationCache: Record<string, string> = {};
 
-function GeneExplanation({ gene, geneResult, language = 'en' }: { gene: string; geneResult: any; language?: string }) {
+function GeneExplanation({ gene, geneResult, language = 'en', patternResults = [], shapDecomp = null }: { gene: string; geneResult: any; language?: string; patternResults?: any[]; shapDecomp?: any }) {
   const [explanation, setExplanation] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -40,27 +40,49 @@ function GeneExplanation({ gene, geneResult, language = 'en' }: { gene: string; 
     const combLessThanEmb = (a.p_proposed || 0) < (a.p_emb_only || 0);
     const combLessThanPat = (a.p_proposed || 0) < (a.p_pat_only || 0);
 
-    const prompt = `You are an expert computational pathologist explaining an AI mutation prediction ablation study. Be precise and insightful (4-6 sentences).
+    const row = clinicalAssocForGene(gene);
+    const litPatterns = row?.patternAssociation ?? 'Unknown';
+    const litTreatment = row?.treatmentImplications ?? 'Unknown';
+
+    const topPatterns = [...patternResults].sort((a: any, b: any) => (b.percentage || 0) - (a.percentage || 0)).slice(0, 3);
+    const patternSummary = topPatterns.map((p: any) => `${p.pattern} (${(p.percentage || 0).toFixed(1)}%)`).join(', ') || 'unknown';
+
+    const shapEmbPct = shapDecomp?.embedding_contribution_pct ?? '?';
+    const shapPatPct = shapDecomp?.pattern_contribution_pct ?? '?';
+    const isPatternDominant = shapDecomp && shapDecomp.pattern_contribution_pct > 50;
+    const isEmbeddingDominant = shapDecomp && shapDecomp.embedding_contribution_pct > 70;
+
+    const langInstruction = language !== 'en' ? `\n\nIMPORTANT: Respond ENTIRELY in ${language === 'es' ? 'Spanish' : language === 'de' ? 'German' : language === 'fr' ? 'French' : language === 'pt' ? 'Portuguese' : language}.` : '';
+
+    const prompt = `You are an expert computational pathologist explaining an AI mutation prediction to a clinician. Be precise, clinically grounded, and honest about limitations (5-8 sentences).
 
 Gene: ${gene}
-Prediction method used by system: ${geneResult.prediction_method || 'unknown'}
+Prediction method: ${geneResult.prediction_method || 'unknown'}
 Final prediction probability: ${((geneResult.score || 0) * 100).toFixed(1)}%
+Confidence label: ${geneResult.confidence_label || 'unknown'}
 
-Ablation comparison on THIS specific slide:
-- Combined model (512-d visual embeddings + 6-d pattern probabilities = 518-d): ${pComb}%
-- Embeddings-only model (512-d CTransPath features): ${pEmb}%
-- Patterns-only model (6 histological pattern probabilities): ${pPat}%
+LITERATURE GROUND TRUTH (from published studies):
+- ${gene} mutations are typically associated with: ${litPatterns}
+- Treatment context: ${litTreatment}
 
-Key observation: ${combLessThanEmb ? `Combined (${pComb}%) is LOWER than embeddings-only (${pEmb}%). This means adding pattern features HURTS the prediction — pattern information interferes with the embedding signal.` : `Combined (${pComb}%) is higher than or equal to embeddings-only (${pEmb}%). Pattern features help or are neutral.`}
-${combLessThanPat ? `Combined is also lower than patterns-only (${pPat}%).` : ''}
+THIS SLIDE'S ACTUAL PATTERN COMPOSITION:
+- Predominant patterns: ${patternSummary}
 
-Permutation importance: shuffling pattern dims changes prediction by ${p?.importance_pct?.toFixed(1) || '?'}%
+SHAP DECOMPOSITION (embedding vs pattern contribution):
+- Embedding contribution: ${shapEmbPct}%, Pattern contribution: ${shapPatPct}%
+- ${isPatternDominant ? 'PATTERNS DOMINATE the prediction signal — the six-class pattern taxonomy carries the majority of the attribution for this gene on this slide.' : isEmbeddingDominant ? 'EMBEDDINGS DOMINATE — the model relies primarily on sub-cellular texture features captured by CTransPath, not the explicit pattern classification.' : 'Roughly balanced contribution between visual texture (embeddings) and histological patterns.'}
 
-Explain:
-1. WHY the combined model might perform differently than individual models (interference, signal dilution, or synergy)
-2. What this tells us about which features (sub-cellular morphology in embeddings vs. histological growth patterns) drive the mutation signal for ${gene}
-3. Whether the pattern composition of this specific slide aligns with known ${gene} associations from literature
-4. Clinical implication: is the prediction reliable and what should the clinician do?`;
+ABLATION COMPARISON:
+- Combined model: ${pComb}%, Embeddings-only: ${pEmb}%, Patterns-only: ${pPat}%
+${combLessThanEmb ? `Adding pattern features REDUCES the prediction (${pComb}% < ${pEmb}%), suggesting interference.` : `Pattern features help or are neutral.`}
+
+YOUR EXPLANATION MUST INCLUDE ALL OF THE FOLLOWING:
+1. Whether the slide's pattern composition matches or mismatches the known ${gene}-associated patterns from literature (${litPatterns}). If there is a mismatch, explain explicitly what patterns are expected vs what was found.
+2. What the SHAP embedding/pattern split (${shapEmbPct}%/${shapPatPct}%) tells about WHERE the model is finding (or not finding) the mutation signal.
+3. ${(geneResult.score || 0) < 0.5 ? `This is a LOW prediction (${((geneResult.score || 0) * 100).toFixed(1)}%). Explain that a low probability does NOT mean the patient is definitely wild-type — it means the model did not find sufficient morphological signal in this slide. The mutation may still be present. ALWAYS recommend molecular testing.` : `This is a HIGH prediction. Explain what morphological features support it and recommend molecular confirmation.`}
+4. If the SHAP shows pattern-dominant signal but the prediction is still low, explain that the model DETECTED partial pattern-level information but it was insufficient for a confident prediction.
+5. Mention the DeepSearch knowledge enrichment pipeline as a mechanism to discover new pattern-mutation associations beyond current literature.
+Do NOT use the word "diagnose" or "confirmed".${langInstruction}`;
 
     api.post('/gene-explain', { gene, prompt, language })
       .then(r => {
@@ -258,7 +280,32 @@ function ChoquetExplainBlock({ selGene, caseId, geneResult, choquetData, choquet
             .join('\n')
         : 'None';
       const langInstruction = language !== 'en' ? `\n\nIMPORTANT: Respond ENTIRELY in ${language === 'es' ? 'Spanish' : language === 'de' ? 'German' : language === 'fr' ? 'French' : language === 'pt' ? 'Portuguese' : language}.` : '';
-      const prompt = `You are a clinical decision support system for lung adenocarcinoma. Explain the following Choquet Shapley analysis results for a pathologist who is NOT a data scientist. Be concise (max 200 words), clinically grounded, and honest about limitations.\n\nGene: ${selGene}\nMutation probability: ${((geneResult.score || geneResult.probability || 0) * 100).toFixed(1)}%\nKnown clinical association (thesis Table gene_unified summary): ${selGene} mutations are often discussed in relation to ${litPatterns}. Treatment context: ${litTreatment}.\n\nLearned Shapley values (pattern importance from the AI model):\n${svText}\n\nTop interaction indices (pattern pair synergies/redundancies):\n${ixText}\n\nExplain: 1) What the Shapley values tell us clinically, 2) Whether they align with known literature, 3) What the interaction indices mean for this patient, 4) Any limitations. Use language a pathologist would understand. Do NOT use the word "diagnose" or "confirmed".${langInstruction}`;
+      const prob = ((geneResult.score || geneResult.probability || 0) * 100).toFixed(1);
+      const isLowProb = (geneResult.score || geneResult.probability || 0) < 0.5;
+      const prompt = `You are a clinical decision support system for lung adenocarcinoma. Explain the following Choquet Shapley analysis results for a pathologist. Be concise (max 250 words), clinically grounded, and honest about limitations.
+
+Gene: ${selGene}
+Mutation probability: ${prob}%
+Confidence label: ${geneResult.confidence_label || 'unknown'}
+
+LITERATURE GROUND TRUTH:
+- ${selGene} mutations are typically associated with patterns: ${litPatterns}
+- Treatment: ${litTreatment}
+
+Learned Shapley values (pattern importance from the AI model):
+${svText}
+
+Top interaction indices (pattern pair synergies/redundancies):
+${ixText}
+
+YOUR EXPLANATION MUST INCLUDE:
+1) What the Shapley values tell us clinically — which patterns the model considers most important for ${selGene}
+2) Whether these align with known literature associations (${litPatterns}). If they DO NOT align, state this explicitly: "The patterns found on this slide (X, Y) do not match the typical ${selGene}-associated patterns (${litPatterns})."
+3) What the interaction indices mean — synergies suggest the co-presence of two patterns is more predictive than either alone
+4) ${isLowProb ? `CRITICAL: The prediction is LOW (${prob}%). This does NOT mean the patient is wild-type. It means the model did not find sufficient morphological signal. The mutation may still be present. ALWAYS recommend molecular testing.` : `The prediction is elevated. Explain what morphological evidence supports it.`}
+5) Mention that the DeepSearch literature mining pipeline can discover new pattern-mutation relationships beyond current knowledge.
+
+Do NOT use "diagnose" or "confirmed".${langInstruction}`;
 
       const resp = await api.post(`/cases/${caseId}/graph/explain`, { language, extra_context: prompt });
       const text = resp.data?.explanation || 'Explanation not available.';
@@ -431,7 +478,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
           </div>
           <div className="p-4">
             {/* LLM-generated explanation */}
-            <GeneExplanation gene={selGene} geneResult={geneResult} language={preferredLanguage} />
+            <GeneExplanation gene={selGene} geneResult={geneResult} language={preferredLanguage} patternResults={patterns} shapDecomp={shapDecomp} />
 
             {/* Compact vertical bars — no redundant numbers above */}
             <div className="flex items-end justify-center gap-10 h-40">
