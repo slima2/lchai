@@ -137,10 +137,18 @@ async def generate_explanation(
     lang_name = LANG_MAP.get(language, language) if len(language) <= 3 else language
     system_prompt = SYSTEM_PROMPT_TEMPLATE.format(language=lang_name)
 
+    nodes_text, edges_text = _format_graph_for_prompt(nodes, edges)
+    kg_context = (
+        f"\n\nKNOWLEDGE GRAPH CONTEXT (curated + DeepSearch-discovered relations for this case):\n"
+        f"Nodes:\n{nodes_text}\n\nEdges:\n{edges_text}\n\n"
+        f"IMPORTANT: Use ONLY these knowledge graph edges for pattern-gene and gene-treatment associations. "
+        f"Do NOT invent associations not present in this graph. "
+        f"If DeepSearch has discovered new relations, they will appear in the edges above."
+    )
+
     if extra_context:
-        user_prompt = extra_context
+        user_prompt = extra_context + kg_context
     else:
-        nodes_text, edges_text = _format_graph_for_prompt(nodes, edges)
         user_prompt = USER_PROMPT_TEMPLATE.format(
             case_id=case_id,
             nodes_text=nodes_text,

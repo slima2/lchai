@@ -1,0 +1,1264 @@
+% ============================================================================
+% Chapter 4: Methodology
+% Thesis: Fuzzy Margin Representation Learning for Explainable
+%         Architecture–Genotype Associations in Lung Adenocarcinoma
+%         under Data Scarcity
+% Author: Servio F. Lima
+% University of Fribourg
+% ============================================================================
+
+\chapter{Methodology}
+\label{ch:methodology}
+
+This chapter presents the methodological design of the three computational artefacts introduced in Section~\ref{sec:uc:artefact_vision}.
+The exposition follows the Design Science Research principle of providing a complete and reproducible description of the artefacts prior to their implementation (Chapter~\ref{ch:implementation}) and evaluation (Chapter~\ref{ch:evaluation}).
+
+The methodology is organised around the two sequential tasks of the pipeline.
+Section~\ref{sec:meth:tile_pipeline} describes the tile-level preprocessing and feature extraction pipeline that is common to all downstream methods.
+Section~\ref{sec:meth:pattern_classifier} formalises the pattern classification task and the design of FuzzyArcLoss~V2 (Artefact~1), including its mathematical derivation from first principles, the fuzzy membership formulation, and the hyperparameter optimisation strategy.
+Section~\ref{sec:meth:mutation_prediction} presents the mutation prediction framework, detailing the five experimental conditions: the XGBoost baseline (B1), ABMIL on embeddings (B2), ABMIL on patterns (B3), the proposed pattern-informed ABMIL (P), the crisp ablation (A), and the Fuzzy Choquet MIL (FC, Artefact~3).
+Section~\ref{sec:meth:interpretability} describes the interpretability framework.
+Section~\ref{sec:meth:evaluation_protocol} specifies the evaluation protocol, including cross-validation, statistical testing, and metric selection.
+
+
+% ============================================================================
+\section{Tile-Level Preprocessing and Feature Extraction}
+\label{sec:meth:tile_pipeline}
+% ============================================================================
+
+The tile-level pipeline transforms a whole-slide image into a set of feature representations suitable for downstream classification and aggregation.
+This pipeline is shared by all experimental conditions and consists of four stages.
+
+\subsection{Tissue Detection and Tiling}
+\label{sec:meth:tiling}
+
+Given a WSI in Aperio SVS format, tissue regions are segmented from the glass background using Otsu thresholding on the saturation channel of the HSV colour space.
+Connected components smaller than $64 \times 64$ pixels at the target magnification are discarded as debris.
+The remaining tissue area is partitioned into non-overlapping tiles of $224 \times 224$ pixels at $20\times$ magnification (approximately $0.50\,\mu\text{m/pixel}$).
+Tiles with less than 50\% tissue content (measured as the fraction of foreground pixels after thresholding) are excluded.
+
+For a typical LUAD slide, this process yields between 5{,}000 and 80{,}000 tiles, with a median of approximately 25{,}000.
+Let $\mathcal{T}_s = \{t_1, t_2, \ldots, t_{N_s}\}$ denote the set of $N_s$ tiles extracted from slide $s$.
+
+\subsection{Feature Extraction with CTransPath}
+\label{sec:meth:ctranspath_extraction}
+
+Each tile $t_i \in \mathbb{R}^{224 \times 224 \times 3}$ is passed through the CTransPath encoder~\cite{wang2022ctranspath}, a hybrid CNN--Swin Transformer model pretrained on approximately 15 million histopathology tiles with a semantically relevant contrastive learning objective.
+The encoder produces a 768-dimensional feature vector from its backbone:
+\begin{equation}
+\label{eq:ctranspath_backbone}
+\mathbf{e}_i^{\text{raw}} = f_{\text{CTransPath}}(t_i) \in \mathbb{R}^{768}.
+\end{equation}
+
+A learned linear projection head, fine-tuned during the pattern classification training on the Zenodo dataset, compresses the representation to 512 dimensions:
+\begin{equation}
+\label{eq:projection}
+\mathbf{x}_i = \mathbf{W}_{\text{proj}} \, \mathbf{e}_i^{\text{raw}} + \mathbf{b}_{\text{proj}} \in \mathbb{R}^{512},
+\end{equation}
+where $\mathbf{W}_{\text{proj}} \in \mathbb{R}^{512 \times 768}$ and $\mathbf{b}_{\text{proj}} \in \mathbb{R}^{512}$ are the projection parameters.
+This 512-dimensional embedding serves as the primary tile-level representation throughout the pipeline.
+
+\textbf{Rationale for 512 dimensions.}
+The projection from 768 to 512 dimensions was optimised jointly with the FuzzyArcLoss~V2 objective during fine-tuning on the six LUAD histological patterns.
+The resulting embedding space is therefore \emph{pattern-oriented}: its geometry reflects the angular separation of the six histological classes rather than the generic histopathological features of the pretrained CTransPath model.
+While the literature uses embedding dimensions ranging from 512 (CTransPath) to 2048 (RetCCL~\cite{wang2023retccl}), lower dimensionality is advantageous under data scarcity because it reduces the risk of overfitting in downstream models operating on $\sim$687 slides.
+
+\subsection{4-Channel Input with Tissue Mask}
+\label{sec:meth:mask_channel}
+
+For the pattern classification task (Artefact~1), the RGB tile is augmented with a binary tissue segmentation mask as a fourth input channel:
+\begin{equation}
+\label{eq:4channel}
+\hat{t}_i = [t_i^{\text{RGB}} \,\|\, t_i^{\text{mask}}] \in \mathbb{R}^{224 \times 224 \times 4},
+\end{equation}
+where $t_i^{\text{mask}} \in \{0, 1\}^{224 \times 224}$ indicates diagnostically relevant tissue regions (as opposed to glass background, pen marks, or out-of-focus areas).
+
+This spatial prior explicitly informs the classifier about which regions of the tile contain diagnostic tissue, eliminating the need to learn background versus tissue discrimination from the limited training set.
+Ablation experiments (Section~\ref{sec:uc:pipeline_fixes}) demonstrated that this modification contributes an estimated 15--20 percentage points to classification performance.
+
+The first convolutional layer of the CTransPath backbone, originally designed for 3-channel input, is adapted to accept 4 channels by expanding the input convolution kernel weights.
+The additional channel weights are initialised as the mean of the three RGB channel weights, preserving the pretrained feature extraction for the RGB channels while allowing the network to learn the mask signal during fine-tuning.
+
+
+% ============================================================================
+\section{Artefact 1: FuzzyArcLoss V2 for Pattern Classification}
+\label{sec:meth:pattern_classifier}
+% ============================================================================
+
+This section presents the complete mathematical formulation of FuzzyArcLoss~V2, the novel angular margin loss function that constitutes the first artefact of this thesis.
+The derivation proceeds from the standard ArcFace formulation, through the identification of its limitations for histopathological data, to the fuzzy membership modulation that addresses those limitations.
+
+\subsection{Problem Formulation}
+\label{sec:meth:pattern:problem}
+
+The pattern classification task is a supervised multi-class problem.
+Given a tile embedding $\mathbf{x} \in \mathbb{R}^{512}$ (obtained from the projection in Equation~\ref{eq:projection}), the goal is to assign it to one of $K = 6$ classes: $\mathcal{Y} = \{\text{lepidic}, \text{acinar}, \text{papillary}, \text{micropapillary}, \text{solid}, \text{cribriform}\}$.
+
+
+The classifier operates on the unit hypersphere $\mathbb{S}^{511}$ by $\ell_2$-normalising both the embedding and the class weight vectors:
+\begin{equation}
+\label{eq:normalisation}
+\tilde{\mathbf{x}} = \frac{\mathbf{x}}{\|\mathbf{x}\|_2}, \qquad \tilde{\mathbf{w}}_k = \frac{\mathbf{w}_k}{\|\mathbf{w}_k\|_2}, \quad k = 1, \ldots, K,
+\end{equation}
+where $\mathbf{w}_k \in \mathbb{R}^{512}$ is the learnable weight vector (prototype) for class $k$.
+The cosine similarity between the embedding and prototype $k$ is:
+\begin{equation}
+\label{eq:cosine_sim}
+\cos\theta_k = \tilde{\mathbf{w}}_k^\top \tilde{\mathbf{x}} \in [-1, 1],
+\end{equation}
+and $\theta_k = \arccos(\cos\theta_k) \in [0, \pi]$ is the angular distance.
+
+\subsection{Baseline: Standard ArcFace}
+\label{sec:meth:pattern:arcface}
+
+The standard ArcFace loss~\cite{deng2019arcface} introduces a fixed angular margin $m > 0$ to the angle of the correct class $y$:
+\begin{equation}
+\label{eq:arcface_method}
+\mathcal{L}_{\text{ArcFace}} = -\log \frac{e^{s \cos(\theta_y + m)}}{e^{s \cos(\theta_y + m)} + \sum_{k \neq y} e^{s \cos\theta_k}},
+\end{equation}
+where $s > 0$ is the scale parameter that controls the concentration of the softmax distribution.
+
+The margin $m$ has a geometric interpretation: during training, the decision boundary between class $y$ and any other class $k$ requires the embedding to satisfy $\theta_y + m < \theta_k$ rather than just $\theta_y < \theta_k$.
+This stricter condition forces embeddings to cluster more tightly around their class prototypes, producing more discriminative representations.
+
+\textbf{Limitation for histopathology.}
+ArcFace applies the same margin $m$ to all training samples, regardless of their classification difficulty.
+For tiles that clearly exhibit a single pattern (e.g., a tile with dense solid sheets and no glandular structures), the fixed margin is appropriate and encourages tight clustering.
+For tiles at morphological boundaries (e.g., a region transitioning from acinar to papillary, where residual glandular lumina coexist with emergent papillary projections), the fixed margin forces the model to make a confident assignment to one class.
+On a small dataset ($\sim$600 tiles), this can cause the model to memorise the label of ambiguous samples rather than learning a smooth decision boundary, leading to overfitting and degraded generalisation.
+
+\subsection{FuzzyArcLoss V2: Fuzzy Membership Modulation}
+\label{sec:meth:pattern:fuzzyv2}
+
+FuzzyArcLoss~V2 addresses the limitation above by introducing a \emph{per-sample fuzzy membership coefficient} $\mu_i \in [0, 1]$ that modulates the angular margin applied to sample $i$.
+The membership coefficient is derived from the cosine similarity $\cos\theta_y$ between the embedding and the correct class prototype, interpreted as a measure of the sample's classification confidence.
+
+\subsubsection{Fuzzy Membership Function}
+\label{sec:meth:pattern:fuzzyv2:membership}
+
+The membership function is defined as a piecewise linear mapping of the absolute cosine similarity, partitioned by a threshold $\tau \in (0, 1)$:
+\begin{equation}
+\label{eq:membership_v2}
+\mu_i = \begin{cases}
+0.8 + 0.2\,|\cos\theta_i| & \text{if } \cos\theta_i \geq \tau, \\[4pt]
+0.3 + 0.4\,|\cos\theta_i| & \text{if } \cos\theta_i < \tau.
+\end{cases}
+\end{equation}
+
+\textbf{Interpretation from fuzzy set theory.}
+The coefficient $\mu_i$ can be understood as the degree of membership of sample $i$ in the fuzzy set $\tilde{C} = $ ``confidently classifiable samples.''
+The threshold $\tau$ defines the crossover point between two membership regimes:
+
+\begin{itemize}
+    \item \textbf{High-confidence regime} ($\cos\theta_i \geq \tau$): The embedding is already close to its class prototype. The membership $\mu_i \in [0.8, 1.0]$ is high, and nearly the full margin is applied. This regime corresponds to tiles with unambiguous morphology---clear solid sheets, well-formed acini, or classic lepidic growth---where enforcing angular separation is both safe and beneficial.
+
+    \item \textbf{Low-confidence regime} ($\cos\theta_i < \tau$): The embedding is distant from all prototypes, indicating morphological ambiguity. The membership $\mu_i \in [0.3, 0.7]$ is reduced, and only a fraction of the margin is applied. This regime corresponds to tiles at pattern boundaries or with mixed features, where forcing angular separation would introduce label noise into the gradient signal.
+\end{itemize}
+
+\subsubsection{Modulated Target Logit}
+
+In the implemented formulation, the fuzzy membership $\mu_i$ is
+\emph{not} applied by replacing $m$ with $\mu_i m$ inside
+$\cos(\theta + m)$.
+Instead, $\mu_i$ is used to \emph{interpolate} between the
+ArcFace-transformed target logit $\phi_i$ and the plain cosine target
+logit $c_i$:
+\begin{equation}
+\label{eq:fuzzyarcloss_v2_method}
+\tilde{z}_{y_i,i} = \mu_i \, \phi_i + (1 - \mu_i) \, c_i,
+\end{equation}
+where $\phi_i = \cos(\theta_{y_i} + m)$ is the standard ArcFace target
+logit (with boundary correction) and $c_i = \cos\theta_{y_i}$ is the
+margin-free cosine.
+Non-target logits remain unchanged: $\tilde{z}_{k,i} = c_{k,i}$ for
+$k \neq y_i$.
+
+Figure~\ref{fig:fuzzyarcloss_v2_diagram} illustrates the complete mechanism.
+This produces a clear interpretation:
+\begin{itemize}
+    \item If $\mu_i \approx 1$ (confident sample): $\tilde{z}_{y_i,i}
+    \approx \phi_i$ --- standard ArcFace behaviour.
+    \item If $\mu_i$ is small (ambiguous sample): $\tilde{z}_{y_i,i}$
+    moves toward $c_i$ --- the angular margin is effectively reduced.
+\end{itemize}
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/fuzzyarcloss_v2_diagram.png}
+\caption{FuzzyArcLoss~V2 mechanism.
+\textbf{(a)}~Piecewise linear membership function $\mu_i$ as a function of classification confidence $|\cos\theta_y|$.
+The threshold $\tau = 0.448$ (Optuna-optimised) separates the high-confidence regime ($\mu \in [0.8, 1.0]$, blue) from the low-confidence regime ($\mu \in [0.3, 0.7]$, red).
+\textbf{(b)}~Forward pass: the fuzzy membership $\mu_i$ interpolates between the ArcFace target logit $\phi_i = \cos(\theta_y + m)$ and the margin-free cosine $c_i$, producing the modulated logit $\tilde{z}_y$ which is then scaled and passed through the combined loss.}
+\label{fig:fuzzyarcloss_v2_diagram}
+\end{figure}
+
+\subsubsection{Combined Loss Function}
+
+The final logits are scaled by $s$ and passed through a combined loss
+that includes label smoothing cross-entropy and focal
+loss~\cite{lin2017focal}:
+\begin{equation}
+\label{eq:fuzzyarcloss_v2_loss}
+\mathcal{L}_i = \alpha \, \mathcal{L}_{\text{CE-smooth}}(s \tilde{\mathbf{z}}_i, y_i)
+\;+\; (1 - \alpha) \, \mathcal{L}_{\text{focal}}(s \tilde{\mathbf{z}}_i, y_i),
+\end{equation}
+where $\alpha = 0.6$ balances the two components.
+Label smoothing ($\epsilon = 0.1$) prevents overconfident predictions,
+while the focal term (with $\gamma = 2.0$) up-weights hard examples
+that the model classifies poorly---a combination particularly suited
+to the class-imbalanced Zenodo--ANORAK dataset where the minority
+cribriform and micropapillary classes have only 55 training tiles each.
+
+\subsubsection{Gradient Analysis}
+\label{sec:meth:pattern:fuzzyv2:gradient}
+
+Differentiating the modulated target logit
+(Equation~\ref{eq:fuzzyarcloss_v2_method}) with respect to the
+target-class cosine $c_i$ yields
+\begin{equation}
+\label{eq:gradient}
+\frac{\partial \tilde{z}_{y_i,i}}{\partial c_i}
+= \mu_i \, \frac{\partial \phi_i}{\partial c_i}
++ (1 - \mu_i)
++ (\phi_i - c_i) \, \frac{\partial \mu_i}{\partial c_i},
+\end{equation}
+which separates three effects: (i)~the ArcFace contribution scaled by
+$\mu_i$, (ii)~the direct cosine contribution scaled by $(1-\mu_i)$,
+and (iii)~an adaptive term arising because $\mu_i$ itself depends on
+$c_i$.
+The derivative $\frac{\partial \mu_i}{\partial c_i}$ is $0.2$ in the
+high-confidence regime ($|c_i| \ge \tau$) and $0.4$ in the
+low-confidence regime ($|c_i| < \tau$), producing a \emph{larger
+adaptive correction for ambiguous samples}.
+This means the interpolation formulation not only reduces the effective
+margin for uncertain tiles but also creates a smoother optimisation
+landscape near decision boundaries---precisely the regions where
+histological patterns overlap.
+
+\subsubsection{Relationship to Other Adaptive Margins}
+
+Table~\ref{tab:margin_comparison} compares FuzzyArcLoss~V2 with related adaptive margin approaches.
+
+\begin{table}[ht!]
+\centering
+\small
+\caption{Comparison of margin modulation strategies. $\cos\theta_y$ denotes the cosine similarity to the correct class. $\bar{c}_k$ is the class-level average difficulty in AdaptiveFace.}
+\label{tab:margin_comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Method} & \textbf{Margin type} & \textbf{Adaptation level} & \textbf{Modulation signal} \\
+\midrule
+ArcFace & Fixed additive & None & --- \\
+CosFace & Fixed cosine & None & --- \\
+SphereFace & Fixed multiplicative & None & --- \\
+AdaptiveFace & Class-adaptive & Per class & $\bar{c}_k$ (class difficulty) \\
+CurricularFace & Curriculum-adaptive & Per sample & $t$ (EMA of $\cos\theta_y$) + sample $\cos\theta_j$ \\
+\textbf{FuzzyArcLoss V2} & \textbf{Fuzzy interpolation} & \textbf{Per sample} & $\mu(\cos\theta_y)$ (confidence) \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+FuzzyArcLoss~V2 is distinguished by its \emph{sample-level, confidence-based} modulation through an explicit fuzzy membership function that interpolates between the full ArcFace logit and the margin-free cosine (Equation~\ref{eq:fuzzyarcloss_v2_method}).
+AdaptiveFace adjusts margins per class but treats all samples within a class uniformly.
+CurricularFace is also per-sample, but it modulates \emph{negative-class} logits based on an adaptive threshold $t$ (an exponential moving average of target cosine) that evolves during training; the target-class margin itself remains fixed at $m$.
+In contrast, FuzzyArcLoss~V2 modulates the \emph{target-class} logit directly via the fuzzy membership $\mu_i$, which is a deterministic function of instantaneous classification confidence and requires no running statistics.
+This produces a margin that varies both across samples and across training epochs as the model improves.
+
+
+\subsection{FuzzyArcLoss V3: SubCenter Extension}
+\label{sec:meth:pattern:fuzzyv3}
+
+FuzzyArcLoss~V3 extends V2 by maintaining $C$ sub-center prototypes per class, each representing a morphological sub-cluster within the class.
+The cosine similarity for class $k$ is computed against the nearest sub-center:
+\begin{equation}
+\label{eq:subcenter_method}
+\cos\theta_k^{*} = \max_{c=1}^{C} \, \tilde{\mathbf{w}}_{k,c}^\top \tilde{\mathbf{x}},
+\end{equation}
+and the fuzzy membership modulation is applied to the resulting angle $\theta_k^{*}$.
+
+With $C = 4$ sub-centers, V3 requires $K \times C \times d = 6 \times 4 \times 512 = 12{,}288$ prototype parameters, compared to $K \times d = 3{,}072$ for V2.
+This four-fold increase in prototype parameters, combined with the limited training set ($\sim$85 samples per class), leads to overfitting: V3 achieves 91.79\% macro-F1 versus V2's 92.31\% in 15-run evaluation (Section~\ref{ch:evaluation}).
+V3 is therefore evaluated as an ablation condition rather than the primary proposed method.
+
+
+\subsection{FuzzyArcLoss V2 ClassParams: Per-Class Margin Geometry}
+\label{sec:meth:pattern:classparams}
+
+A second variant, \textbf{FuzzyArcLoss~V2~ClassParams}, extends V2 by
+replacing the global hyperparameters $m$ and $\tau$ with per-class
+parameters $m_k$ and $\tau_k$ ($k = 1, \ldots, K$).
+Each histological class can therefore define its own angular margin and
+confidence threshold; for instance, a large margin may benefit the
+well-separated \emph{solid} class while a smaller margin better suits
+the morphologically ambiguous \emph{acinar--papillary} boundary.
+
+With six LUAD classes, this adds $2 \times 6 = 12$ scalar
+hyperparameters compared to V2's two.
+In the single-run screening (Section~\ref{ch:evaluation}),
+V2~ClassParams achieves 93.92\% macro-F1 (rank~4 of~18), but it was
+excluded from the K-fold benchmark because the expanded Optuna search
+space (12~class-specific values instead of~2 global ones) would require
+disproportionate compute for limited expected gain.
+V2~ClassParams is retained as a design reference for future work with
+larger datasets.
+
+
+\subsection{Hyperparameter Optimisation with Optuna}
+\label{sec:meth:pattern:optuna}
+
+The three key hyperparameters of FuzzyArcLoss~V2---scale $s$, margin $m$, and threshold $\tau$---were optimised using Optuna~\cite{akiba2019optuna}, a Bayesian hyperparameter optimisation framework based on the Tree-structured Parzen Estimator (TPE) algorithm.
+
+The search space was defined as:
+\begin{align}
+s &\in [10, 64], \label{eq:optuna_s} \\
+m &\in [0.1, 1.0], \label{eq:optuna_m} \\
+\tau &\in [0.1, 0.8]. \label{eq:optuna_tau}
+\end{align}
+
+\paragraph{Optimisation objective.}
+Because the dataset is multi-class and imbalanced, the Optuna search
+optimised a validation metric that directly captures the
+precision--recall balance:
+\begin{equation}
+\label{eq:avgpr_optuna}
+\mathrm{avgPR} = \frac{\mathrm{MacroPrecision} + \mathrm{MacroRecall}}{2}.
+\end{equation}
+Macro-averaging ensures that minority patterns (particularly cribriform
+and micropapillary with $\sim$69 tiles each) contribute equally to
+the objective.
+Fifty trials were conducted over 60 training epochs each, with pruning
+of unpromising trials after epoch~20 based on the median avgPR of
+completed trials.
+ 
+The complete hyperparameter configuration for FuzzyArcLoss~V2, including
+both default values and the Optuna-optimised settings, is summarised in
+Table~\ref{tab:hyper_fuzzyarc2}.
+ 
+\begin{table}[ht!]
+\centering
+\small
+\caption{Hyperparameters for the FuzzyArcLoss~V2 pattern classifier,
+including Optuna-optimised values.
+Parameters marked with~$\star$ were included in the Optuna search space;
+all others were fixed.}
+\label{tab:hyper_fuzzyarc2}
+\begin{tabular}{l l c c}
+\hline
+\textbf{Parameter} & \textbf{Description} &
+\textbf{Default} & \textbf{Optuna-optimised} \\
+\hline
+Scale $s^\star$         & Logit scaling factor         & 30.0  & \textbf{46.1} \\
+Margin $m^\star$        & Angular margin (radians)     & 0.50  & \textbf{0.518} \\
+Threshold $\tau^\star$  & Confidence threshold for $\mu$ & 0.50 & \textbf{0.448} \\
+Learning rate           & Initial learning rate        & 1e-4  & 1e-4 \\
+Epochs                  & Training epochs              & 120   & 120 \\
+Batch size              & Samples per batch            & 32    & 32 \\
+Optimiser               &                              & AdamW & AdamW \\
+Weight decay            &                              & 1e-4  & 1e-4 \\
+Scheduler               & Cosine annealing + warmup    & yes   & yes \\
+Warmup epochs           &                              & 5     & 5 \\
+Input channels          & RGB + tissue mask            & 4     & 4 \\
+Precision               & Floating-point precision     & fp32  & fp32 \\
+Combined loss          & $0.6\,\mathcal{L}_{\text{CE-smooth}} + 0.4\,\mathcal{L}_{\text{focal}}$  & yes   & yes \\
+MixUp / CutMix          &                              & off   & off \\
+Gradient clipping       &                              & off   & off \\
+\hline
+\end{tabular}
+\end{table}
+
+
+The optimal configuration identified was:
+\begin{equation}
+\label{eq:optuna_result}
+s^* = 46.1, \quad m^* = 0.518, \quad \tau^* = 0.448.
+\end{equation}
+
+\textbf{Interpretation.}
+The notably high scale ($s^* = 46.1$ versus the default $s = 30$ in standard ArcFace) is interpretable through the fuzzy membership mechanism.
+A higher scale sharpens the softmax distribution, making the model more decisive.
+In standard ArcFace, this would risk training instability for ambiguous samples.
+In FuzzyArcLoss~V2, the fuzzy membership acts as a ``safety valve'': the reduced margin for uncertain samples ($\mu_i \approx 0.3$--$0.5$) compensates for the aggressive scale, preventing gradient explosion at decision boundaries.
+The margin $m^* = 0.518$ is close to the ArcFace default ($m = 0.5$), confirming that the modulation mechanism---not the raw margin magnitude---is the source of V2's advantage.
+
+\subsection{Training Protocol}
+\label{sec:meth:pattern:training}
+
+The pattern classifier is trained with the following protocol:
+\begin{itemize}
+    \item \textbf{Optimiser:} AdamW with weight decay $10^{-4}$.
+    \item \textbf{Learning rate schedule:} Linear warmup for 5 epochs followed by cosine annealing to $10^{-6}$.
+    \item \textbf{Warmup formula:} $\text{lr}_{\text{epoch}} = \text{lr}_{\text{base}} \cdot (\text{epoch} + 1) / \text{warmup\_epochs}$.
+    \item \textbf{Epochs:} 120 (reduced from 150 to prevent overfitting on the small dataset).
+    \item \textbf{Precision:} fp32 (mixed-precision fp16 was found to corrupt angular margin gradients; see Section~\ref{sec:uc:pipeline_fixes}).
+    \item \textbf{Batch size:} 32 with \texttt{drop\_last=True} and plain shuffle (no WeightedRandomSampler).
+    \item \textbf{Augmentation:} Random horizontal/vertical flip, random rotation ($\pm 90°$), colour jitter (brightness, contrast, saturation, hue), Gaussian blur. No MixUp or CutMix.
+    \item \textbf{Model selection:} Best checkpoint selected by average precision (avgPR) on the test set.
+    \item \textbf{Evaluation logits:} Margin-free logits (i.e., $s \cos\theta_k$ without the margin term) are used for all evaluation metrics.
+\end{itemize}
+
+
+% ============================================================================
+\section{Artefact 2: Pattern-Informed ABMIL for Mutation Prediction}
+\label{sec:meth:mutation_prediction}
+% ============================================================================
+
+This section presents the methodology for the mutation prediction task, which constitutes the second artefact: Pattern-Informed Attention-Based Multiple Instance Learning (Pattern-Informed ABMIL).
+
+\subsection{Task Formulation}
+\label{sec:meth:mutation:task}
+
+The mutation prediction task is formulated as a collection of independent binary classification problems, one per target gene $g \in \mathcal{G} = \{\textit{TP53}, \textit{KRAS}, \textit{KEAP1}, \textit{EGFR}, \textit{STK11}, \textit{RBM10}\}$.
+For each slide $s$ with tile set $\mathcal{T}_s$ and mutation label $Y_s^{(g)} \in \{0, 1\}$, the goal is to learn a function:
+\begin{equation}
+\label{eq:mutation_task}
+f_g: \{\mathbf{h}_1, \mathbf{h}_2, \ldots, \mathbf{h}_{N_s}\} \mapsto \hat{Y}_s^{(g)} \in [0, 1],
+\end{equation}
+where $\mathbf{h}_i$ is the representation of tile $i$ (whose definition varies across experimental conditions).
+
+\subsection{Tile-Level Representations Across Conditions}
+\label{sec:meth:mutation:representations}
+
+The six experimental conditions differ in how the tile-level representation $\mathbf{h}_i$ is constructed.
+Let $\mathbf{x}_i \in \mathbb{R}^{512}$ be the CTransPath embedding and $\mathbf{p}_i \in \Delta^5$ the six-dimensional pattern probability vector (where $\Delta^5$ denotes the 5-simplex, i.e., $\sum_k p_{i,k} = 1$ and $p_{i,k} \geq 0$), both obtained from Artefact~1.
+Let $\mathbf{o}_i \in \{0,1\}^6$ be the one-hot encoding of the predicted pattern class $\hat{y}_i = \arg\max_k p_{i,k}$.
+
+\begin{table}[htbp]
+\centering
+\caption{Tile-level representation $\mathbf{h}_i$ for each experimental condition.}
+\label{tab:tile_representations}
+\begin{tabular}{c l l c}
+\hline
+\textbf{ID} & \textbf{Condition} & \textbf{Tile representation $\mathbf{h}_i$} & \textbf{Dim.} \\
+\hline
+B1 & XGBoost baseline & N/A (slide-level features) & 7 \\
+B2 & ABMIL --- embeddings & $\mathbf{h}_i = \mathbf{x}_i$ & 512 \\
+B3 & ABMIL --- patterns & $\mathbf{h}_i = \mathbf{p}_i$ & 6 \\
+P  & Proposed (concat soft) & $\mathbf{h}_i = [\mathbf{x}_i \,\|\, \mathbf{p}_i]$ & 518 \\
+A  & Ablation (one-hot) & $\mathbf{h}_i = [\mathbf{x}_i \,\|\, \mathbf{o}_i]$ & 518 \\
+FC & Fuzzy Choquet (hybrid) & $\mathbf{h}_i = (\mathbf{x}_i, \mathbf{p}_i)$ (dual pathway) & 512+6 \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{The key comparison} is between condition P (proposed) and condition B2 (standard ABMIL).
+If P outperforms B2, the fuzzy pattern probabilities contribute information beyond what the CTransPath embeddings encode implicitly.
+The comparison between P and A tests whether the continuous (fuzzy) representation $\mathbf{p}_i$ is more informative than the discrete (crisp) representation $\mathbf{o}_i$.
+
+\subsection{Attention-Based MIL Architecture}
+\label{sec:meth:mutation:abmil}
+
+For conditions B2, B3, P, and A, the ABMIL architecture consists of three modules: a tile-level transformation, an attention mechanism, and a slide-level classifier.
+
+\subsubsection{Tile-Level Transformation}
+
+Each tile representation is projected through a two-layer feedforward network:
+\begin{equation}
+\label{eq:tile_transform}
+\mathbf{h}_i' = \text{ReLU}(\mathbf{W}_2 \cdot \text{ReLU}(\mathbf{W}_1 \mathbf{h}_i + \mathbf{b}_1) + \mathbf{b}_2) \in \mathbb{R}^{L},
+\end{equation}
+where $L = 256$ is the hidden dimension.
+Dropout with $p = 0.25$ is applied after each ReLU activation.
+
+\subsubsection{Gated Attention Mechanism}
+
+The attention weight for tile $i$ is computed using the gated attention formulation~\cite{lu2021data}:
+\begin{equation}
+\label{eq:gated_attn}
+a_i = \frac{\exp\left(\mathbf{w}^\top \left(\tanh(\mathbf{V} \mathbf{h}_i') \odot \sigma(\mathbf{U} \mathbf{h}_i')\right)\right)}{\sum_{j=1}^{N_s} \exp\left(\mathbf{w}^\top \left(\tanh(\mathbf{V} \mathbf{h}_j') \odot \sigma(\mathbf{U} \mathbf{h}_j')\right)\right)},
+\end{equation}
+where $\mathbf{V}, \mathbf{U} \in \mathbb{R}^{128 \times L}$ are the attention and gating transformation matrices, $\mathbf{w} \in \mathbb{R}^{128}$ is the attention vector, $\sigma$ denotes the sigmoid function, and $\odot$ is element-wise multiplication.
+The gating mechanism allows the network to suppress irrelevant tiles (e.g., normal tissue, necrosis, artefacts) more aggressively than standard $\tanh$-only attention.
+
+\subsubsection{Slide-Level Aggregation and Classification}
+
+The slide-level representation is the attention-weighted sum of the transformed tile features:
+\begin{equation}
+\label{eq:slide_repr}
+\mathbf{z}_s = \sum_{i=1}^{N_s} a_i \, \mathbf{h}_i' \in \mathbb{R}^{L}.
+\end{equation}
+
+The mutation prediction for gene $g$ is obtained through a linear classifier:
+\begin{equation}
+\label{eq:mutation_pred}
+\hat{Y}_s^{(g)} = \sigma\left(\mathbf{w}_g^\top \mathbf{z}_s + b_g\right),
+\end{equation}
+where $\mathbf{w}_g \in \mathbb{R}^L$ and $b_g \in \mathbb{R}$ are gene-specific parameters.
+A separate ABMIL model is trained for each gene, following the standard practice in the field~\cite{coudray2018classification,saldanha2023npj}.
+
+\subsubsection{Training Objective}
+
+The ABMIL model is trained to minimise the binary cross-entropy loss:
+\begin{equation}
+\label{eq:bce}
+\mathcal{L}_{\text{BCE}}^{(g)} = -\frac{1}{|\mathcal{S}|} \sum_{s \in \mathcal{S}} \left[Y_s^{(g)} \log \hat{Y}_s^{(g)} + (1 - Y_s^{(g)}) \log(1 - \hat{Y}_s^{(g)})\right],
+\end{equation}
+where $\mathcal{S}$ is the set of slides in the training fold.
+
+
+\subsection{Baseline B1: XGBoost on Slide-Level Pattern Features}
+\label{sec:meth:mutation:xgboost}
+
+Condition B1 serves as a non-deep-learning baseline.
+For each slide $s$, a seven-dimensional feature vector is computed from the tile-level pattern predictions:
+\begin{equation}
+\label{eq:xgboost_features}
+\mathbf{f}_s = \left[\text{frac}_1, \text{frac}_2, \ldots, \text{frac}_6, H_s\right] \in \mathbb{R}^7,
+\end{equation}
+where $\text{frac}_k = |\{i : \hat{y}_i = k\}| / N_s$ is the fraction of tiles assigned to pattern $k$, and $H_s = -\sum_{k=1}^{6} \text{frac}_k \log(\text{frac}_k + \epsilon)$ is the Shannon entropy of the pattern distribution, measuring intra-tumoral heterogeneity.
+
+An XGBoost gradient-boosted tree classifier~\cite{chen2016xgboost} is trained on these seven features.
+XGBoost is chosen for its robustness to small sample sizes, built-in regularisation, and compatibility with SHAP for feature attribution.
+
+\textbf{Rationale.}
+Converting locally ambiguous tile predictions into a global distributional
+representation yields two advantages:
+(i)~it is robust to individual tile labelling errors, since the mutation
+genotype is better reflected by global architectural composition than by
+any single microscopic region~\cite{coudray2018classification}; and
+(ii)~it produces a fixed-dimensional case representation regardless of
+slide size (5{,}000--80{,}000 tiles), enabling direct comparison across
+the heterogeneous TCGA-LUAD cohort.
+ 
+
+% ============================================================================
+\section{Artefact 3: Fuzzy Choquet MIL}
+\label{sec:meth:choquet_mil}
+% ============================================================================
+
+The Fuzzy Choquet MIL architecture replaces the attention-weighted aggregation of standard ABMIL with a Choquet integral operating on tile-level fuzzy pattern memberships.
+This section presents its mathematical formulation.
+
+\subsection{Motivation}
+\label{sec:meth:choquet:motivation}
+
+The standard ABMIL attention mechanism (Equation~\ref{eq:gated_attn}) learns which \emph{tiles} are important but treats each tile's pattern memberships independently.
+It cannot model interactions between patterns: for example, the co-occurrence of solid and micropapillary morphology in the same tumour may predict TP53 mutation more strongly than either pattern alone, but ABMIL has no mechanism to capture this superadditive effect.
+
+The Choquet integral provides exactly this capability.
+By operating on the six-dimensional fuzzy membership vector with a learned fuzzy measure, it aggregates pattern contributions while accounting for pairwise (and higher-order) interactions between patterns.
+
+\subsection{Architecture}
+\label{sec:meth:choquet:architecture}
+
+The Fuzzy Choquet MIL pipeline follows a \emph{dual-pathway} architecture
+that processes embeddings and pattern memberships through separate branches
+before merging them for classification.
+
+\subsubsection{Embedding Pathway (Shared with ABMIL)}
+
+The CTransPath embedding $\mathbf{x}_i \in \mathbb{R}^{512}$ of each tile
+is projected through the same encoder--attention architecture used in
+Artefact~2:
+\begin{equation}
+\label{eq:choquet_emb_path}
+\mathbf{z}_{\text{attn}} = \sum_{i=1}^{N_s} \alpha_i \, \text{Encoder}(\mathbf{x}_i) \in \mathbb{R}^{256},
+\end{equation}
+where $\text{Encoder}$ is a two-layer feedforward network
+($512 \to 256$, LayerNorm, ReLU, Dropout) and $\alpha_i$ are gated
+attention weights (Equation~\ref{eq:gated_attn}).
+This pathway captures the same visual features as condition~B2.
+
+\subsubsection{Choquet Pathway (Pattern Interactions)}
+
+In parallel, the tile-level fuzzy membership vectors
+$\{\mathbf{p}_1, \ldots, \mathbf{p}_{N_s}\}$ are passed through the
+discrete Choquet integral with a learned 2-additive fuzzy measure $g$.
+Following Section~\ref{sec:bg:choquet:secondorder}, the fuzzy measure is
+parameterised by Shapley values $\{\phi_k\}_{k=1}^{6}$ and pairwise
+interaction indices $\{I_{jk}\}_{j < k}$:
+\begin{equation}
+\label{eq:fuzzy_measure_method}
+g(A) = \sum_{k \in A} \phi_k + \sum_{\{j,k\} \subseteq A} I_{jk}, \quad A \subseteq \{1, \ldots, 6\}.
+\end{equation}
+
+The Shapley values are constrained to be non-negative and sum to~1 via a
+softmax parameterisation:
+\begin{equation}
+\label{eq:shapley_param}
+\phi_k = \frac{e^{\psi_k}}{\sum_{l=1}^{6} e^{\psi_l}}, \quad \psi_k \in \mathbb{R} \text{ (unconstrained)}.
+\end{equation}
+
+The interaction indices are unconstrained but regularised toward zero to
+encourage sparsity:
+\begin{equation}
+\label{eq:interaction_reg}
+\mathcal{R}_{\text{int}} = \lambda_I \sum_{j < k} |I_{jk}|,
+\end{equation}
+with $\lambda_I = 0.01$.
+
+The Choquet integral produces a 6-dimensional vector
+$\mathbf{c}_s \in \mathbb{R}^6$ capturing the per-pattern aggregated
+contributions under the learned measure.
+
+\subsubsection{Merge and Classification}
+
+The two pathway outputs are concatenated and projected to the hidden
+dimension before classification:
+\begin{equation}
+\label{eq:choquet_merge}
+\mathbf{z}_s = \text{ReLU}\!\left(\mathbf{W}_{\text{proj}}
+\left[\mathbf{c}_s \,\|\, \mathbf{z}_{\text{attn}}\right] + \mathbf{b}_{\text{proj}}\right)
+\in \mathbb{R}^{256},
+\end{equation}
+where $\mathbf{W}_{\text{proj}} \in \mathbb{R}^{256 \times 262}$.
+The mutation prediction is:
+\begin{equation}
+\label{eq:choquet_classifier}
+\hat{Y}_s^{(g)} = \sigma\left(\mathbf{w}_g^\top \mathbf{z}_s + b_g\right).
+\end{equation}
+
+This dual-pathway design means the Choquet branch contributes
+\emph{interpretable pattern interaction information} alongside the
+embedding-based attention, rather than replacing it.
+The fuzzy measure's 21~parameters (6~Shapley values + 15~interaction
+indices) remain intrinsically interpretable even though the full model
+shares the embedding encoder with ABMIL.
+
+\subsection{Parameter Count and Feasibility}
+\label{sec:meth:choquet:params}
+
+Table~\ref{tab:param_count} breaks down the parameter count for the
+two MIL architectures evaluated in the mutation prediction benchmark.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Parameter count comparison: ABMIL (condition~P) vs Fuzzy
+Choquet MIL (condition~FC).}
+\label{tab:param_count}
+\begin{tabular}{l r r}
+\hline
+\textbf{Component} & \textbf{ABMIL (P)} & \textbf{Choquet (FC)} \\
+\hline
+Encoder (Linear + LayerNorm) & 133{,}376 & 131{,}840 \\
+Gated Attention ($\mathbf{V}$, $\mathbf{U}$, $\mathbf{w}$) & 65{,}920 & 65{,}920 \\
+Fuzzy Measure ($\phi_k$, $I_{jk}$) & --- & 42 \\
+Choquet scale & --- & 1 \\
+Projection (merge pathway) & --- & 67{,}840 \\
+Classifier & 257 & 257 \\
+\hline
+\textbf{Total} & \textbf{$\sim$200{,}k} & \textbf{$\sim$266{,}k} \\
+\hline
+\end{tabular}
+\end{table}
+
+The Fuzzy Choquet MIL is approximately 33\% larger than ABMIL due to
+the merge projection layer ($262 \to 256$).
+The parsimony argument therefore applies to the \emph{interpretable
+component} of the model---the 21-parameter fuzzy measure---rather than
+to the model as a whole.
+The embedding pathway is shared with ABMIL to ensure that any
+performance difference between conditions~P and~FC is attributable to
+the aggregation mechanism (concatenation vs Choquet integral), not to
+differences in model capacity.
+
+\subsection{Training Objective}
+\label{sec:meth:choquet:training}
+
+The Fuzzy Choquet MIL is trained with binary cross-entropy plus the interaction regulariser:
+\begin{equation}
+\label{eq:choquet_loss}
+\mathcal{L}_{\text{Choquet}} = \mathcal{L}_{\text{BCE}}^{(g)} + \mathcal{R}_{\text{int}}.
+\end{equation}
+
+\textbf{Interpretability by construction.}
+Unlike post-hoc explanation methods (SHAP, attention maps), the Choquet integral provides built-in interpretability through its learned parameters:
+\begin{itemize}
+    \item The Shapley value $\phi_k$ quantifies the marginal contribution of pattern $k$ to the fuzzy measure.
+    Because the softmax parameterisation (Equation~\ref{eq:shapley_param}) ensures $\sum_k \phi_k = 1$, the uniform baseline is $\phi_k = 1/6 \approx 0.167$.
+    Values substantially above $1/6$ indicate that the model considers pattern $k$ disproportionately important for the aggregation; values near $1/6$ for \emph{all} patterns indicate no learned pattern preference, meaning the Choquet integral approximates a simple average.
+    \item The interaction index $I_{jk}$ indicates whether the co-occurrence of patterns $j$ and $k$ is synergistic ($I_{jk} > 0$) or redundant ($I_{jk} < 0$).
+    Due to the $L_1$ regulariser (Equation~\ref{eq:interaction_reg}), learned indices are typically small ($|I_{jk}| \sim 0.01\text{--}0.05$); this is expected and does not indicate irrelevance.
+    Even small interaction indices modify the fuzzy measure at the pair level, altering how pattern combinations are weighted in the Choquet aggregation.
+\end{itemize}
+
+\textbf{Causal chain to $P(\text{mut})$.}
+The Shapley values and interaction indices are \emph{not} in the same units as $P(\text{mut})$ and do not add to or subtract from it directly.
+The relationship is:
+\begin{quote}
+pattern scores $\mathbf{p}_i$ $\;\to\;$ Choquet integral (shaped by $\phi_k$, $I_{jk}$) $\;\to\;$ $\mathbf{c}_s \in \mathbb{R}^6$ $\;\to\;$ concat with $\mathbf{z}_{\text{attn}}$ $\;\to\;$ projection $\;\to\;$ $\sigma(\cdot)$ $\;\to\;$ $P(\text{mut})$.
+\end{quote}
+A near-uniform Shapley profile with small interaction indices means the Choquet branch contributes a pattern-averaged signal, and the discriminative power comes primarily from the shared embedding pathway via $\mathbf{z}_{\text{attn}}$.
+Conversely, if specific patterns deviate substantially from $1/6$ or strong interactions emerge, the Choquet branch encodes pattern-specific information that complements the embedding attention.
+
+For example, if the learned measure for TP53 prediction yields $\phi_{\text{solid}} = 0.35$, $\phi_{\text{micropapillary}} = 0.20$, and $I_{\text{solid,micropap}} = 0.08$, this indicates that solid morphology receives the highest weight in the Choquet aggregation, micropapillary contributes independently, and their co-occurrence has a synergistic effect beyond either pattern alone---even though these weights do not directly translate to percentage-point changes in $P(\text{mut})$.
+
+
+% ============================================================================
+\section{Interpretability Framework}
+\label{sec:meth:interpretability}
+% ============================================================================
+
+The interpretability framework operates at six levels, providing what this thesis terms a \emph{six-level interpretability framework}.
+
+\subsection{Level 1: Spatial Attention Maps}
+\label{sec:meth:interp:attention}
+
+For ABMIL-based conditions (B2, B3, P, A), the attention weights $\{a_i\}$ from Equation~\ref{eq:gated_attn} are overlaid onto the WSI as a heatmap.
+Tiles with high attention weights are highlighted, indicating regions the model considers most informative for the mutation prediction.
+The heatmap uses a continuous colour scale from blue (low attention) to red (high attention).
+
+\subsection{Level 2: Pattern Attribution}
+\label{sec:meth:interp:patterns}
+
+For conditions that incorporate pattern information (B3, P, A, FC), each tile's predicted pattern class $\hat{y}_i$ is overlaid onto the WSI as a categorical colour map.
+This allows the pathologist to assess whether the attended regions (Level~1) correspond to clinically expected patterns (e.g., TP53-attended tiles should be predominantly solid or micropapillary).
+
+When Levels~1 and~2 are combined, the resulting visualisation shows both \emph{where} the model attends and \emph{what} the model sees at those locations, providing a clinically verifiable chain of reasoning:
+\begin{quote}
+``The model predicts TP53 mutation with probability 0.935 because it
+attends primarily to a central subregion (attention enriched $3\times$),
+where tiles are classified as lepidic pattern---a morphological signal
+associated with dedifferentiation at the tumour boundary.''
+\end{quote}
+
+\subsection{Level 3: Feature Attribution via SHAP}
+\label{sec:meth:interp:shap}
+
+For condition B1 (XGBoost), TreeSHAP~\cite{lundberg2020treeshap} provides exact Shapley values for each of the seven slide-level features.
+For ABMIL conditions, DeepSHAP attributes the prediction to individual dimensions of the tile representation $\mathbf{h}_i$.
+In the proposed condition P, the SHAP decomposition can distinguish contributions from the CTransPath embedding dimensions (positions 1--512) versus the pattern probability dimensions (positions 513--518), quantifying the relative importance of visual features versus pattern knowledge for each gene.
+
+\subsection{Level 4: Choquet Shapley Values (Artefact 3 Only)}
+\label{sec:meth:interp:choquet_shapley}
+
+For the Fuzzy Choquet condition (FC), the learned Shapley values and interaction indices provide a fourth level of interpretability that is \emph{intrinsic} to the model rather than post-hoc.
+These values can be directly compared against known biological associations (Table~\ref{tab:expected_associations}) to assess clinical plausibility.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Expected pattern--mutation associations based on clinical
+literature, used to validate learned Choquet parameters.}
+\label{tab:expected_associations}
+\begin{tabular}{p{1.4cm} p{4.2cm} p{7.2cm}}
+\hline
+\textbf{Gene} & \textbf{Expected high-Shapley patterns} &
+\textbf{Evidence} \\
+\hline
+\textit{TP53}  & Solid, micropapillary &
+  Nuclear pleomorphism, high grade~\cite{leighl2002tp53morphology} \\
+\textit{KRAS}  & Solid (mucinous not in ANORAK) &
+  IMA enriched for \textit{KRAS} G12D~\cite{shim2015krasmucinous};
+  mucinous absent from 6 ANORAK classes \\
+\textit{EGFR}  & Lepidic, papillary &
+  Low atypia, indolent growth~\cite{yoshizawa2013egfrmorph} \\
+\textit{STK11} & High entropy (no dominant pattern) &
+  Reduced TILs; ``cold'' microenvironment~\cite{skoulidis2018stk11immune} \\
+\textit{KEAP1} & Diffuse (no single pattern) &
+  Oxidative stress pathway~\cite{tcga2014luad} \\
+\textit{RBM10} & Solid, high grade &
+  RNA splicing regulator; enriched in high-grade tumours~\cite{tcga2014luad} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Level 5: Per-Slide Feature Channel Ablation}
+\label{sec:meth:interp:ablation}
+
+SHAP (Level~3) reveals how a \emph{single trained model} distributes
+its internal attribution across input dimensions.
+A distinct and complementary question is whether a feature channel
+\emph{actually helps or harms} prediction on a given slide.
+To answer this, LCHAI~v2.0 performs a \textbf{per-slide feature
+channel ablation} (cf.\ Section~\ref{sec:bg:channel_ablation}) by
+running three \emph{separately trained} models on the same tile set:
+
+\begin{enumerate}
+    \item \textbf{Combined} ($f_{\text{P}}$): the proposed concat model
+    (condition~P), operating on the full 518-d representation
+    $\mathbf{h}_i = [\mathbf{x}_i \,\|\, \mathbf{p}_i]$.
+    \item \textbf{Embeddings-only} ($f_{\text{B2}}$): the ABMIL model
+    trained on CTransPath embeddings alone (condition~B2),
+    $\mathbf{h}_i = \mathbf{x}_i \in \mathbb{R}^{512}$.
+    \item \textbf{Patterns-only} ($f_{\text{B3}}$): the ABMIL model
+    trained on fuzzy pattern probabilities alone (condition~B3),
+    $\mathbf{h}_i = \mathbf{p}_i \in \Delta^5$.
+\end{enumerate}
+
+For a slide with tile embeddings $\{\mathbf{x}_i\}$ and pattern
+probabilities $\{\mathbf{p}_i\}$, the three models produce three
+mutation probabilities:
+\begin{equation}
+\label{eq:ablation_perslide}
+P_{\text{comb}} = \sigma(f_{\text{P}}(\{\mathbf{h}_i\})), \quad
+P_{\text{emb}} = \sigma(f_{\text{B2}}(\{\mathbf{x}_i\})), \quad
+P_{\text{pat}} = \sigma(f_{\text{B3}}(\{\mathbf{p}_i\})),
+\end{equation}
+where $\sigma$ is the sigmoid function.
+The \textbf{pattern ablation delta} is then:
+\begin{equation}
+\label{eq:delta_pattern}
+\Delta_{\text{pat}} = P_{\text{comb}} - P_{\text{emb}}.
+\end{equation}
+
+Figure~\ref{fig:ablation_causal_chain} illustrates the complete causal
+chain from tile features to $P(\text{mut})$ for the three ablation
+models.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/ablation_causal_chain.png}
+\caption[Causal chain from tile features to $P(\text{mut})$ in the
+ablation framework]{%
+    Causal chain from tile features to $P(\text{mut})$.
+    Three independently trained ABMIL models operate on different input
+    representations: Combined (518-d), Embeddings-only (512-d), and
+    Patterns-only (6-d).
+    Each model produces its own $P(\text{mut})$ via a sigmoid
+    classification head.
+    The pattern ablation delta $\Delta_{\text{pat}} = P_{\text{comb}} -
+    P_{\text{emb}}$ measures whether adding pattern features helps or
+    harms the prediction.
+    The $P(\text{mut})$ displayed in the LCHAI~v2.0 interface comes
+    from the gene-optimal model (Finding~2), which may differ from any
+    of the three ablation models.}
+\label{fig:ablation_causal_chain}
+\end{figure}
+
+When $\Delta_{\text{pat}} > 0$, adding pattern features to
+embeddings improves the prediction on this specific slide; when
+$\Delta_{\text{pat}} < 0$, pattern features introduce
+\emph{interference} that degrades it.
+
+\textbf{Why separately trained models.}
+Unlike gradient-based methods (SHAP) that explain a single model's
+internals, channel ablation requires models that were \emph{trained}
+with the ablated input space---otherwise the model would simply see
+zeros or noise in the missing dimensions, which does not reflect its
+true capability without those features.
+The five-fold cross-validated B2 and B3 checkpoints from the
+evaluation protocol (Section~\ref{sec:meth:eval:cv}) serve this
+purpose: they represent the best each channel can achieve in
+isolation, trained and selected under identical conditions.
+
+\textbf{Interpretation alongside SHAP.}
+Combining SHAP (Level~3) with ablation (Level~5) yields a richer
+picture:
+\begin{itemize}
+    \item \textbf{High SHAP pattern attribution + positive
+    $\Delta_{\text{pat}}$}: The model attends to patterns AND they
+    help. Example: KRAS (SHAP 41\% pattern, $\Delta = +7.6$\,pp).
+    \item \textbf{High SHAP pattern attribution + negative
+    $\Delta_{\text{pat}}$}: The model attends to patterns but they
+    \emph{hurt}. Example: KEAP1 (SHAP 60\% pattern,
+    $\Delta = -44.7$\,pp).
+    \item \textbf{Low SHAP pattern attribution + negative
+    $\Delta_{\text{pat}}$}: The model largely ignores patterns, yet
+    even the residual attention degrades prediction. Example: STK11
+    (SHAP 10\% pattern, $\Delta = -5.5$\,pp).
+\end{itemize}
+Figure~\ref{fig:shap_ablation_quadrant} maps all six genes into this
+two-dimensional space, revealing the dissociation between
+\emph{attribution} (what the model attends to) and \emph{utility}
+(what actually helps)---a key finding of the evaluation
+(Chapter~\ref{ch:evaluation}).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{chapters/figures/shap_ablation_quadrant.png}
+\caption[Attribution vs utility: SHAP pattern attribution versus
+ablation delta for six genes]{%
+    Attribution versus utility for the six target genes on
+    representative TCGA-LUAD slides.
+    The $x$-axis shows $\Delta_{\text{pat}}$ (pattern ablation delta
+    in percentage points); the $y$-axis shows SHAP pattern attribution
+    (\%).
+    KRAS occupies the top-right quadrant (patterns attend and help);
+    KEAP1 occupies the top-left (patterns attend but hurt---the most
+    clinically dangerous miscalibration);
+    STK11 falls in the bottom-left (patterns ignored and still degrade
+    prediction).
+    This dissociation motivates the gene-dependent method selection
+    strategy (Finding~2).}
+\label{fig:shap_ablation_quadrant}
+\end{figure}
+
+\subsection{Level 6: Fuzzy Linguistic Interpretation}
+\label{sec:meth:interp:fuzzy_labels}
+
+Levels~1--5 produce numeric outputs whose magnitude is difficult for
+clinicians to assess without calibrated reference scales.
+Level~6 addresses this by applying trapezoidal fuzzy membership
+functions (Section~\ref{sec:bg:fuzzy:sets}) to classify each numeric
+output into a \emph{linguistic label}---an intensity term such as
+``Moderate Synergy'' or ``Embedding-Led.''
+Five fuzzy scales are defined (Table~\ref{tab:fuzzy_scales}):
+SHAP Balance, Shapley Profile, Shapley Individual, Interaction Index,
+and ABMIL Attention Level.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Fuzzy linguistic scales for XAI output classification.}
+\label{tab:fuzzy_scales}
+\begin{tabular}{l l l}
+\hline
+\textbf{Scale} & \textbf{Input} & \textbf{Labels} \\
+\hline
+SHAP Balance & Pattern \% & Emb-Dominated, Emb-Led, Balanced, Pat-Led, Pat-Dominated \\
+Shapley Profile & spread & Uniform, Near-Uniform, Mod.\ Diff., Strongly Diff., Polarised \\
+Shapley Individual & $|\delta_k|$ & Average, Slightly, Moderately, Strongly Above/Below \\
+Interaction Index & $|I_{jk}|$ & Negligible, Weak, Moderate, Strong, Very Strong \\
+Attention Level & percentile & Very Low, Low, Moderate, High, Very High \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:fuzzy_mf_scales} shows the trapezoidal membership
+functions for all five scales.
+The overlapping regions between adjacent sets reflect the gradual
+transition between linguistic categories---a core property of fuzzy
+classification that avoids the brittleness of crisp thresholds.
+
+\begin{figure}[htbp]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/fuzzy_mf_shap_balance.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/fuzzy_mf_interaction_index.png}
+\end{minipage}\\[6pt]
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/fuzzy_mf_shapley_profile.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/fuzzy_mf_shapley_individual.png}
+\end{minipage}\\[6pt]
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/fuzzy_mf_attention_level.png}
+\end{minipage}
+\caption[Trapezoidal membership functions for fuzzy linguistic XAI scales]{%
+    Trapezoidal membership functions for the five fuzzy linguistic
+    scales used to classify XAI outputs.
+    Each scale maps a continuous input to overlapping fuzzy sets;
+    the winning label (highest $\mu$) is displayed in the
+    LCHAI~v2.0 interface and injected into LLM prompts.
+    \textbf{Top left}: SHAP Balance (pattern contribution \%).
+    \textbf{Top right}: Interaction Index ($|I_{jk}|$).
+    \textbf{Middle left}: Shapley Profile (spread).
+    \textbf{Middle right}: Shapley Individual ($|\delta_k|$).
+    \textbf{Bottom}: ABMIL Attention Level (tile percentile).
+    All thresholds are editable via the Admin panel
+    (Section~\ref{sec:impl:lchai:fuzzy_labels}).}
+\label{fig:fuzzy_mf_scales}
+\end{figure}
+
+The winning label (highest $\mu$) is injected verbatim into the LLM
+prompt, creating a \textbf{dual anti-hallucination mechanism}: the KG
+constrains \emph{what} the LLM says, and the fuzzy labels constrain
+\emph{how} it says it.
+All thresholds are configurable at runtime via the Admin panel.
+This level extends fuzzy logic to a fourth pipeline layer:
+(i)~training, (ii)~representation, (iii)~aggregation,
+(iv)~interpretation.
+
+
+\section{Multi-Ontology Knowledge Graph and Explanation Layer}
+\label{sec:meth:ontology_method}
+ 
+This section describes the methodology for the ontology-grounded
+explanation layer of LCHAI~v2.0 (RQ6, RQ7).
+The explanation layer does not participate in model training or mutation
+prediction; it operates downstream as a semantic substrate that links
+predicted mutation states to canonical biomedical knowledge.
+ 
+\subsection{Ontology Integration}
+\label{sec:meth:ontology:integration}
+ 
+Two public biomedical ontologies provide the canonical entity
+identifiers for the knowledge graph:
+\begin{equation}
+\label{eq:kg_union}
+G = G_{\text{NCIt}} \cup G_{\text{MONDO}},
+\end{equation}
+where $G_{\text{NCIt}}$ is the NCI Thesaurus~\cite{sioutos2007ncit}
+(providing IRIs for patterns, genes, diagnoses, and treatments) and
+$G_{\text{MONDO}}$ is the Mondo Disease
+Ontology~\cite{mondo_shefchek2020} (providing cross-disease linkage).
+Rather than parsing the full OWL ontology files, the implementation
+uses a \emph{curated edge store} in which each entity is identified
+by its canonical IRI and each relationship edge carries a provenance
+attribute citing its specific literature source
+(Section~\ref{sec:impl:ontology:construction}).
+ 
+The unified graph encodes the relation chain:
+\begin{equation}
+\label{eq:kg_chain}
+\text{pattern} \xrightarrow{\texttt{assocWithMutation}}
+\text{gene} \xrightarrow{\texttt{treatedWith}}
+\text{therapy},
+\end{equation}
+grounded in canonical IRIs (Table~\ref{tab:iri_mapping}).
+ 
+\begin{table}[htbp]
+\centering
+\small
+\caption{Canonical IRI assignments for LUAD knowledge graph entities.}
+\label{tab:iri_mapping}
+\begin{tabular}{l l l l}
+\hline
+\textbf{Entity} & \textbf{Type} & \textbf{Ontology} & \textbf{Code} \\
+\hline
+Lepidic pattern       & Pattern   & NCIt  & C128847 \\
+Acinar pattern        & Pattern   & NCIt  & C128848 \\
+Papillary pattern     & Pattern   & NCIt  & C128849 \\
+Micropapillary pattern & Pattern  & NCIt  & C128850 \\
+Solid pattern         & Pattern   & NCIt  & C128851 \\
+Cribriform pattern    & Pattern   & NCIt  & C35920 \\
+\hline
+EGFR  & Gene & NCIt & C17757 \\
+KRAS  & Gene & NCIt & C17383 \\
+TP53  & Gene & NCIt & C17387 \\
+STK11 & Gene & NCIt & C18609 \\
+KEAP1 & Gene & NCIt & C97660 \\
+RBM10 & Gene & NCIt & C114948 \\
+\hline
+Adenocarcinoma & Diagnosis & NCIt  & C2852 \\
+NSCLC          & Diagnosis & MONDO & 0005233 \\
+\hline
+Osimertinib  & Treatment & NCIt & C102402 \\
+Sotorasib    & Treatment & NCIt & C168990 \\
+Alectinib    & Treatment & NCIt & C101790 \\
+\hline
+\end{tabular}
+\end{table}
+ 
+\subsection{Three-Layer Architecture}
+\label{sec:meth:ontology:layers}
+ 
+The knowledge graph follows a three-layer architecture:
+ 
+\textbf{Layer~1 (Curated assertions)} encodes established clinical
+evidence as a curated edge store.  Each entity is identified by its
+canonical NCIt or MONDO IRI (Table~\ref{tab:iri_mapping}), and each
+edge carries a \texttt{provenance} attribute citing a specific
+PubMed identifier (e.g., PMID:23619604 for solid $\to$ KRAS) or
+evidence source (e.g., OncoKB/FDA for gene $\to$ treatment edges).
+This layer contains 30 curated edges covering six patterns, six
+thesis genes, three diagnoses, and eight representative therapies.
+Pattern--gene edges are restricted to associations with published
+evidence (Table~5.1); patterns without established gene associations
+(acinar, cribriform) have no \texttt{associatedWithMutation} edges.
+ 
+\textbf{Layer~2 (Dynamic case filtering)} retains, at inference time,
+only the subgraph relevant to the case's actual pattern composition
+and mutation predictions.
+Patterns with $>0.5\%$ composition, genes reachable from those patterns
+or predicted positive/inconclusive, and their associated therapies are
+included.
+This ensures that a case dominated by solid and micropapillary
+morphology produces a graph centred on TP53---not on EGFR inhibitors
+irrelevant to that morphological profile.
+ 
+\textbf{Layer~3 (Literature-discovered relations)} is populated by the
+DeepSearch batch pipeline (Section~\ref{sec:meth:deepsearch}), which
+continuously mines PubMed, Semantic Scholar, and arXiv for new
+pattern--mutation--treatment associations and merges them as
+\texttt{inferred} edges with provenance pointers to source papers.
+ 
+\subsection{SPARQL-Driven Explanation}
+\label{sec:meth:ontology:sparql}
+ 
+At inference time, case-specific explanations are generated through
+SPARQL queries over the case-filtered subgraph:
+ 
+\begin{lstlisting}[language=SPARQL,
+caption={SPARQL query for pattern--mutation--treatment retrieval.},
+label={lst:sparql_method}]
+SELECT ?cancer ?mutation ?treatment
+WHERE {
+  ?cancer   lc:hasPattern   <predictedPatternURI> .
+  ?cancer   lc:hasMutation  ?mutation .
+  ?mutation lc:treatedWith  ?treatment .
+}
+\end{lstlisting}
+ 
+Retrieved IRIs are resolved to human-readable labels via
+\texttt{rdfs:label} and incorporated into natural-language explanation
+templates by an LLM agent (Claude~3.5 Haiku / GPT-4o-mini).
+A key design principle is that \textbf{every LLM prompt is grounded
+in the current state of the knowledge graph}: the case-specific
+subgraph (curated edges + DeepSearch-discovered relations) is always
+injected into the prompt as structured context, and the LLM is
+instructed to use \emph{only} these edges for clinical associations.
+This ensures that (a)~explanations evolve automatically as DeepSearch
+discovers new relations, (b)~the LLM cannot hallucinate associations
+absent from the verified KG, and (c)~all intensity terms are
+pre-computed by the fuzzy linguistic label system
+(Level~6, Section~\ref{sec:meth:interp:fuzzy_labels}) and injected
+verbatim, preventing the LLM from inventing arbitrary characterisations.
+Clinical guardrails additionally prevent the use of prohibited phrases
+such as ``confirmed diagnosis'' or ``definitive treatment,'' ensuring
+that outputs remain within the system's intended role as a
+research/decision-support tool.
+ 
+\subsection{DeepSearch: Continuous Knowledge Enrichment}
+\label{sec:meth:deepsearch}
+ 
+The DeepSearch pipeline operates in batch mode and consists of six
+steps:
+(i)~literature search across PubMed, Semantic Scholar, and arXiv using
+twelve curated LUAD-specific queries
+(Table~\ref{tab:deepsearch_queries});
+(ii)~relation extraction via LLM-prompted structured triple extraction
+with predicates restricted to:
+\texttt{associatedWithMutation}, \texttt{treatedWith},
+\texttt{subtypeOf}, \texttt{mutatedIn}, \texttt{resistantTo},
+\texttt{biomarkerFor};
+(iii)~entity linking to canonical IRIs;
+(iv)~deduplication by \texttt{(subject\_iri, predicate, object\_iri)};
+(v)~validation against type-constraint rules; and
+(vi)~versioned persistence as \texttt{discovered\_relations} with full
+changelog.
+ 
+Because LLM-extracted relations may contain false positives
+(e.g., a paper mentioning ``acinar'' and ``KRAS'' in the same
+abstract does not imply a positive association---pooled evidence
+shows an inverse relationship, OR~$= 0.65$,
+$p < 0.01$~\cite{ejso2019pooled}), discovered relations can be
+individually deactivated by an administrator without deleting the
+audit record (Section~\ref{sec:impl:ontology:deepsearch}).
+
+\textbf{KPI~7:} The executed DeepSearch run produced 50 discovered
+relations across PubMed, Semantic Scholar, and arXiv (e.g.,
+solid~pattern $\to$ \texttt{associatedWithMutation} $\to$ KRAS;
+osimertinib $\to$ \texttt{resistantTo} $\to$ EGFR-mutant NSCLC)
+with provenance links to source papers
+(Section~\ref{sec:eval:lchai}).
+
+% ============================================================================
+\section{Evaluation Protocol}
+\label{sec:meth:evaluation_protocol}
+% ============================================================================
+
+\subsection{Cross-Validation Strategy}
+\label{sec:meth:eval:cv}
+
+\subsubsection{Pattern Classification (Artefact 1)}
+
+The pattern classifier is evaluated using 5-fold stratified cross-validation
+repeated with 3 random seeds, yielding 15 runs per method.
+Stratification ensures that the class distribution (including the minority
+lepidic class with $\sim$38 samples) is preserved in each fold.
+Results are reported as mean $\pm$ standard deviation of macro-F1 across the
+15 runs.
+
+\subsubsection{Mutation Prediction (Artefacts 2 and 3)}
+
+The mutation prediction benchmark uses 5-fold \emph{patient}-stratified
+cross-validation on the 687 LUAD slides (668 unique patients).
+Because 19 patients contribute more than one slide, stratification is applied
+at the patient level to prevent data leakage between training and test folds.
+Concretely, all slides from a given patient are assigned to the same fold.
+The binary mutation label is used to preserve the per-gene mutation prevalence
+across folds.
+
+For genes with low prevalence, the expected number of positive cases per fold
+is as follows:
+\begin{itemize}
+    \item \textit{RBM10} (5.4\%, 37 mutated): $\approx$7 positive cases per fold.
+    \item \textit{STK11} (9.9\%, 68 mutated): $\approx$14 positive cases per fold.
+    \item \textit{EGFR} (11.4\%, 78 mutated): $\approx$16 positive cases per fold.
+\end{itemize}
+
+These counts are sufficient for AUROC estimation but contribute to the
+high fold-to-fold variance (std 0.05--0.10) observed in the results.
+
+$K = 5$ was chosen over $K = 10$ because the latter would produce folds
+with only $\sim$3--4 positive cases for RBM10---below the minimum for
+reliable AUROC estimation---and $\sim$7 for STK11, which is marginal.
+
+All six experimental conditions (B1: XGBoost on pattern features; B2: ABMIL on embeddings; B3: ABMIL on patterns; P: Pattern-Informed ABMIL; A: crisp ablation; FC: Fuzzy Choquet MIL) share the same fold splits.
+Conditions B2, B3, P and A evaluate Artefact~2 under different input representations, while condition FC evaluates Artefact~3.
+
+\subsection{Metrics}
+\label{sec:meth:eval:metrics}
+
+\textbf{Primary metric:} AUROC (Area Under the Receiver Operating
+Characteristic Curve), the standard metric in the mutation prediction
+literature, reported as mean $\pm$ standard deviation across folds.
+
+\textbf{Secondary metrics:} AUPRC (Area Under the Precision-Recall
+Curve), particularly informative for imbalanced genes (RBM10 at 5.4\%,
+STK11 at 9.9\%);
+and F1 score at the 0.5 probability threshold, with the caveat that
+threshold optimisation (e.g., Youden's $J$) would be needed for
+clinical deployment.
+AUPRC is reported for the XGBoost baseline (B1).
+The primary comparison across all six conditions relies on AUROC,
+as the models are not calibrated and F1 at a fixed threshold of 0.5
+does not reflect their true discriminative ability
+(see Section~\ref{sec:disc:lim:method}).
+
+\textbf{Pattern classification metric:} Macro-F1, which weights all six
+classes equally regardless of prevalence, penalising models that sacrifice
+minority classes (especially cribriform) for overall accuracy.
+
+\subsection{Statistical Testing}
+\label{sec:meth:eval:testing}
+
+\subsubsection{Paired $t$-Test}
+
+For comparing two conditions on the same folds, a paired two-tailed $t$-test is applied to the fold-level AUROC values.
+With $K = 5$ folds, the test has limited statistical power; significance at $p < 0.05$ therefore represents a strong result.
+
+\subsubsection{Cohen's $d$ Effect Size}
+
+To complement $p$-values, Cohen's $d$ quantifies the standardised difference between two conditions:
+\begin{equation}
+\label{eq:cohens_d}
+d = \frac{\bar{x}_1 - \bar{x}_2}{s_{\text{pooled}}},
+\end{equation}
+where $s_{\text{pooled}}$ is the pooled standard deviation.
+Following standard conventions: $|d| < 0.2$ = negligible, $0.2 \leq |d| < 0.5$ = small, $0.5 \leq |d| < 0.8$ = medium, $|d| \geq 0.8$ = large.
+
+\subsubsection{Win Rate}
+
+For the pattern classifier (15 runs), the win rate reports the fraction of runs in which condition A outperforms condition B.
+A win rate of $\geq 13/15$ (86.7\%) provides strong evidence of consistent superiority beyond random variation.
+
+\subsection{Ablation Design}
+\label{sec:meth:eval:ablation}
+
+The experimental conditions form a structured ablation:
+\begin{enumerate}
+    \item \textbf{Does pattern information help at all?} $P > B2$ and $B3 > \text{random}$.
+    \item \textbf{Are embeddings necessary alongside patterns?} $P > B3$ and $B2 > B3$.
+    \item \textbf{Are soft (fuzzy) probabilities better than hard (crisp) labels?} $P > A$.
+    \item \textbf{Is MIL necessary beyond slide-level aggregation?} $B2 > B1$.
+    \item \textbf{Does the Choquet branch add value over standard attention?} $FC$ vs $P$ per gene. Because FC shares the embedding pathway with ABMIL, this isolates the contribution of the Choquet aggregation. Shapley interaction analysis provides a qualitative plausibility check.
+    \item \textbf{Is the hybrid Choquet model competitive with concatenation?} $FC$ vs $P$, with the advantage that FC provides intrinsic interpretability (Shapley values and interaction indices) absent from~P.
+\end{enumerate}
+
+Each comparison addresses a specific component of the methodology, enabling attribution of performance gains (or losses) to individual design decisions.
+
+
+% ============================================================================
+\section{Chapter Summary}
+\label{sec:meth:summary}
+% ============================================================================
+
+This chapter has presented the complete methodology for the three artefacts of this thesis:
+
+\textbf{Artefact 1 (FuzzyArcLoss V2)} introduces a per-sample fuzzy membership coefficient $\mu_i$ that interpolates between the ArcFace target logit and the margin-free cosine, derived from a piecewise linear function of classification confidence.
+The interpolation provides gentle effective margins for morphologically ambiguous tiles and strong margins for unambiguous ones, addressing the overfitting risk of fixed-margin losses on small datasets.
+A combined loss---label-smoothing cross-entropy plus focal loss---complements the margin modulation to handle class imbalance.
+Optuna hyperparameter optimisation identified an aggressive scale ($s = 46.1$) compensated by the fuzzy safety valve.
+Two ablation variants were also specified: FuzzyArcLoss~V3 (sub-centre extension) and FuzzyArcLoss~V2~ClassParams (per-class margin geometry).
+
+\textbf{Artefact 2 (Pattern-Informed ABMIL)} concatenates CTransPath 512-d embeddings with 6-d fuzzy pattern probability vectors to create enriched 518-d tile representations.
+The gated attention MIL mechanism learns which tiles are most informative for mutation prediction, while the pattern channel provides an explicit biological prior and enables the six-level interpretability framework.
+
+\textbf{Artefact 3 (Fuzzy Choquet MIL)} augments the ABMIL embedding pathway with a parallel Choquet integral branch operating on fuzzy pattern memberships under a learned 2-additive fuzzy measure.
+The 21-parameter fuzzy measure provides built-in interpretability through Shapley values and interaction indices, while the shared embedding encoder ensures that capacity differences do not confound the comparison with ABMIL.
+The full model has $\sim$266{,}000 parameters, comparable to ABMIL's $\sim$200{,}000.
+
+The evaluation protocol specifies 5-fold stratified cross-validation with AUROC as the primary metric, paired $t$-tests and Cohen's $d$ for statistical comparison, and a structured six-condition ablation design.
+
+Chapter~\ref{ch:implementation} describes the software implementation of these artefacts, and Chapter~\ref{ch:evaluation} presents the evaluation results.

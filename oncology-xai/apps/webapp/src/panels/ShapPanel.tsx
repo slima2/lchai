@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
-import { api, getResultBundle, getArtifacts, getArtifactUrl } from '../api';
+import { api, getResultBundle, getArtifacts, getArtifactUrl, getGeneAssociations } from '../api';
 import { clinicalAssocForGene } from '../data/geneClinicalAssociations';
 import { useAuth } from '../auth/AuthProvider';
 import {
@@ -16,7 +16,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const _explanationCache: Record<string, string> = {};
 
-function GeneExplanation({ gene, geneResult, language = 'en', patternResults = [], shapDecomp = null }: { gene: string; geneResult: any; language?: string; patternResults?: any[]; shapDecomp?: any }) {
+function GeneExplanation({ gene, geneResult, language = 'en', patternResults = [], shapDecomp = null, kgRow = null }: { gene: string; geneResult: any; language?: string; patternResults?: any[]; shapDecomp?: any; kgRow?: any }) {
   const [explanation, setExplanation] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -40,7 +40,7 @@ function GeneExplanation({ gene, geneResult, language = 'en', patternResults = [
     const combLessThanEmb = (a.p_proposed || 0) < (a.p_emb_only || 0);
     const combLessThanPat = (a.p_proposed || 0) < (a.p_pat_only || 0);
 
-    const row = clinicalAssocForGene(gene);
+    const row = kgRow || clinicalAssocForGene(gene);
     const litPatterns = row?.patternAssociation ?? 'Unknown';
     const litTreatment = row?.treatmentImplications ?? 'Unknown';
 
@@ -186,8 +186,9 @@ function PatternSynergyExplainBlock({
   synergyLoading,
   setSynergyLoading,
   language = 'en',
+  kgRow = null,
 }: any) {
-  const row = clinicalAssocForGene(selGene);
+  const row = kgRow || clinicalAssocForGene(selGene);
   const litPatterns = row?.patternAssociation ?? 'Unknown';
   const litTreatment = row?.treatmentImplications ?? 'Unknown';
   const cacheKey = `synergy_${selGene}_${caseId}`;
@@ -262,8 +263,8 @@ Do NOT say "diagnose" or "confirmed".`;
   );
 }
 
-function ChoquetExplainBlock({ selGene, caseId, geneResult, choquetData, choquetExpl, setChoquetExpl, choquetLoading, setChoquetLoading, language = 'en' }: any) {
-  const row = clinicalAssocForGene(selGene);
+function ChoquetExplainBlock({ selGene, caseId, geneResult, choquetData, choquetExpl, setChoquetExpl, choquetLoading, setChoquetLoading, language = 'en', kgRow = null }: any) {
+  const row = kgRow || clinicalAssocForGene(selGene);
   const litPatterns = row?.patternAssociation ?? 'Unknown';
   const litTreatment = row?.treatmentImplications ?? 'Unknown';
   const cacheKey = `choquet_${selGene}_${caseId}`;
@@ -285,6 +286,15 @@ function ChoquetExplainBlock({ selGene, caseId, geneResult, choquetData, choquet
       const langInstruction = language !== 'en' ? `\n\nIMPORTANT: Respond ENTIRELY in ${language === 'es' ? 'Spanish' : language === 'de' ? 'German' : language === 'fr' ? 'French' : language === 'pt' ? 'Portuguese' : language}.` : '';
       const prob = ((geneResult.score || geneResult.probability || 0) * 100).toFixed(1);
       const isLowProb = (geneResult.score || geneResult.probability || 0) < 0.5;
+      const abl = geneResult?.ablation;
+      const ablComb = abl ? ((abl.p_proposed || 0) * 100).toFixed(1) : null;
+      const ablEmb = abl ? ((abl.p_emb_only || 0) * 100).toFixed(1) : null;
+      const ablDelta = abl ? (((abl.p_proposed || 0) - (abl.p_emb_only || 0)) * 100).toFixed(1) : null;
+      const patternsHelp = abl && (abl.p_proposed || 0) > (abl.p_emb_only || 0);
+      const ablContext = abl
+        ? `\nABLATION CONTEXT:\n- Combined model: ${ablComb}%, Emb-only: ${ablEmb}%, Delta: ${ablDelta}pp\n- Patterns ${patternsHelp ? 'CONSTRUCTIVELY improve' : 'DESTRUCTIVELY interfere with'} the prediction for ${selGene} on this slide.\n- ${patternsHelp ? 'The Choquet Shapley values below are clinically meaningful — they explain HOW patterns contribute.' : 'The Choquet Shapley values below describe what patterns the model attends to, but this attention HURTS the prediction. Interpret with caution.'}`
+        : '';
+
       const prompt = `You are a clinical decision support system for lung adenocarcinoma. Explain the following Choquet Shapley analysis results for a pathologist. Be concise (max 250 words), clinically grounded, and honest about limitations.
 
 Gene: ${selGene}
@@ -294,19 +304,22 @@ Confidence label: ${geneResult.confidence_label || 'unknown'}
 LITERATURE GROUND TRUTH:
 - ${selGene} mutations are typically associated with patterns: ${litPatterns}
 - Treatment: ${litTreatment}
+${ablContext}
 
 Learned Shapley values (pattern importance from the AI model):
 ${svText}
+NOTE: A uniform measure gives 1/6 ≈ 0.1667 per pattern. If all values are within ±0.003 of uniform, state that NO single pattern dominates and the insight lies in the interaction indices below.
 
 Top interaction indices (pattern pair synergies/redundancies):
 ${ixText}
 
 YOUR EXPLANATION MUST INCLUDE:
-1) What the Shapley values tell us clinically — which patterns the model considers most important for ${selGene}
-2) Whether these align with known literature associations (${litPatterns}). If they DO NOT align, state this explicitly: "The patterns found on this slide (X, Y) do not match the typical ${selGene}-associated patterns (${litPatterns})."
-3) What the interaction indices mean — synergies suggest the co-presence of two patterns is more predictive than either alone
-4) ${isLowProb ? `CRITICAL: The prediction is LOW (${prob}%). This does NOT mean the patient is wild-type. It means the model did not find sufficient morphological signal. The mutation may still be present. ALWAYS recommend molecular testing.` : `The prediction is elevated. Explain what morphological evidence supports it.`}
-5) Mention that the DeepSearch literature mining pipeline can discover new pattern-mutation relationships beyond current knowledge.
+1) Whether the singleton Shapley values show meaningful deviation from uniform (1/6). If they are nearly uniform, say so explicitly and focus on interaction indices instead.
+2) What the interaction indices mean — synergies (positive) suggest the co-presence of two patterns is more predictive than either alone; redundancies (negative) suggest overlapping information. Focus on the STRONGEST interactions.
+3) Whether these findings align with known literature associations (${litPatterns}). If they DO NOT align, state this explicitly.
+4) ${patternsHelp === false ? `IMPORTANT: The ablation comparison shows patterns HURT the prediction for ${selGene} on this slide (delta: ${ablDelta}pp). The Shapley values describe what the model attends to, but this attention is counterproductive. State this clearly.` : patternsHelp === true ? `The ablation comparison confirms patterns HELP the prediction (+${ablDelta}pp). The Shapley decomposition below explains HOW.` : ''}
+5) ${isLowProb ? `CRITICAL: The prediction is LOW (${prob}%). This does NOT mean the patient is wild-type. The mutation may still be present. ALWAYS recommend molecular testing.` : `The prediction is elevated. Explain what morphological evidence supports it.`}
+6) Mention that the DeepSearch literature mining pipeline can discover new pattern-mutation relationships beyond current knowledge.
 
 Do NOT use "diagnose" or "confirmed".${langInstruction}`;
 
@@ -367,6 +380,27 @@ export default function ShapPanel({ resultBundleId }: Props) {
     staleTime: 0,
     refetchOnMount: 'always' as const,
   });
+
+  const kgAssoc = useQuery({
+    queryKey: ['kg-gene-associations'],
+    queryFn: () => getGeneAssociations().then(r => r.data),
+    staleTime: 60_000,
+  });
+
+  const kgAssocForGene = useCallback((gene: string) => {
+    const assocs = kgAssoc.data?.associations as any[] | undefined;
+    if (!assocs) return clinicalAssocForGene(gene);
+    const match = assocs.find((a: any) => a.gene === gene);
+    if (!match) return clinicalAssocForGene(gene);
+    const patterns = (match.patterns || []).map((p: any) => p.pattern).join(', ');
+    const treatments = (match.treatments || []).map((t: any) => t.treatment).join(', ');
+    return {
+      gene,
+      patternAssociation: patterns || clinicalAssocForGene(gene)?.patternAssociation || 'Unknown',
+      treatmentImplications: treatments || clinicalAssocForGene(gene)?.treatmentImplications || 'Unknown',
+      citationNote: 'From Knowledge Graph (curated + DeepSearch)',
+    };
+  }, [kgAssoc.data]);
 
   const aurocValues: Record<string, number> = params.data?.auroc_values || {};
   const aurocThreshold: number = params.data?.auroc_threshold ?? 0.70;
@@ -481,7 +515,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
           </div>
           <div className="p-4">
             {/* LLM-generated explanation */}
-            <GeneExplanation gene={selGene} geneResult={geneResult} language={preferredLanguage} patternResults={patterns} shapDecomp={shapDecomp} />
+            <GeneExplanation gene={selGene} geneResult={geneResult} language={preferredLanguage} patternResults={patterns} shapDecomp={shapDecomp} kgRow={kgAssocForGene(selGene)} />
 
             {/* Charts side by side: Ablation bars + SHAP decomposition */}
             <div className="flex items-start justify-center mt-6" style={{ gap: '300px' }}>
@@ -559,6 +593,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
                   synergyLoading={synergyLoading}
                   setSynergyLoading={setSynergyLoading}
                   language={preferredLanguage}
+                  kgRow={kgAssocForGene(selGene)}
                 />
               )}
           </div>
@@ -681,6 +716,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
           choquetLoading={choquetLoading}
           setChoquetLoading={setChoquetLoading}
           language={preferredLanguage}
+          kgRow={kgAssocForGene(selGene)}
         />
       )}
 
@@ -721,6 +757,7 @@ export default function ShapPanel({ resultBundleId }: Props) {
                 synergyLoading={synergyLoading}
                 setSynergyLoading={setSynergyLoading}
                 language={preferredLanguage}
+                kgRow={kgAssocForGene(selGene)}
               />
             )}
         </div>

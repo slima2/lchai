@@ -81,6 +81,89 @@ async def _fetch_discovered_relations(db: AsyncSession) -> list[dict]:
     ]
 
 
+@router.get("/graph/gene-associations")
+async def get_gene_associations(db: AsyncSession = Depends(get_db)):
+    """Return pattern-gene and gene-treatment associations from the KG.
+
+    Combines curated edges with DeepSearch-discovered relations so that
+    all LLM prompts use the latest KG state as their ground truth.
+    """
+    from app.ontology_loader import (
+        CURATED_EDGES, CURATED_NODES,
+        GENE_NAME_TO_IRI, PATTERN_NAME_TO_IRI,
+    )
+
+    iri_to_name: dict[str, str] = {}
+    for n_id, n_data in CURATED_NODES.items():
+        iri_to_name[n_data.get("iri", n_id)] = n_data.get("label", n_id)
+
+    gene_iri_to_name = {v: k for k, v in GENE_NAME_TO_IRI.items()}
+    pattern_iri_to_name = {v: k for k, v in PATTERN_NAME_TO_IRI.items()}
+
+    pattern_gene: list[dict] = []
+    gene_treatment: list[dict] = []
+
+    for e in CURATED_EDGES:
+        if e["label"] == "associatedWithMutation":
+            pat = pattern_iri_to_name.get(e["s"], iri_to_name.get(e["s"], e["s"]))
+            gene = gene_iri_to_name.get(e["t"], iri_to_name.get(e["t"], e["t"]))
+            pattern_gene.append({
+                "pattern": pat, "gene": gene,
+                "provenance": e.get("prov", "curated"), "source": "curated",
+            })
+        elif e["label"] == "treatedWith":
+            gene = gene_iri_to_name.get(e["s"], iri_to_name.get(e["s"], e["s"]))
+            drug = iri_to_name.get(e["t"], e["t"])
+            gene_treatment.append({
+                "gene": gene, "treatment": drug,
+                "provenance": e.get("prov", "curated"), "source": "curated",
+            })
+
+    discovered = await _fetch_discovered_relations(db)
+    for rel in discovered:
+        if rel.get("predicate") == "associatedWithMutation":
+            pattern_gene.append({
+                "pattern": rel.get("subject_label", ""),
+                "gene": rel.get("object_label", ""),
+                "provenance": rel.get("provenance", "DeepSearch"),
+                "source": "deepsearch",
+            })
+        elif rel.get("predicate") == "treatedWith":
+            gene_treatment.append({
+                "gene": rel.get("subject_label", ""),
+                "treatment": rel.get("object_label", ""),
+                "provenance": rel.get("provenance", "DeepSearch"),
+                "source": "deepsearch",
+            })
+
+    assoc_by_gene: dict[str, dict] = {}
+    for pg in pattern_gene:
+        g = pg["gene"]
+        if g not in assoc_by_gene:
+            assoc_by_gene[g] = {"gene": g, "patterns": [], "treatments": []}
+        assoc_by_gene[g]["patterns"].append({
+            "pattern": pg["pattern"],
+            "provenance": pg["provenance"],
+            "source": pg["source"],
+        })
+    for gt in gene_treatment:
+        g = gt["gene"]
+        if g not in assoc_by_gene:
+            assoc_by_gene[g] = {"gene": g, "patterns": [], "treatments": []}
+        assoc_by_gene[g]["treatments"].append({
+            "treatment": gt["treatment"],
+            "provenance": gt["provenance"],
+            "source": gt["source"],
+        })
+
+    return {
+        "associations": list(assoc_by_gene.values()),
+        "total_pattern_gene_edges": len(pattern_gene),
+        "total_gene_treatment_edges": len(gene_treatment),
+        "sources": ["curated", "deepsearch"],
+    }
+
+
 @router.get("/cases/{case_id}/graph")
 async def get_graph(
     case_id: str,

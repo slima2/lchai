@@ -97,6 +97,9 @@ export const createKGSnapshot = (data: any) => api.post('/admin/kg/snapshots', d
 export const getKGChangelog = (snapshotId: string) =>
   api.get(`/admin/kg/snapshots/${snapshotId}/changelog`);
 
+// KG gene-pattern-treatment associations (dynamic, includes DeepSearch)
+export const getGeneAssociations = () => api.get('/graph/gene-associations');
+
 // Artifacts — streamed from MinIO via image-service proxy
 export const getArtifactUrl = (uri: string) => {
   const key = uri.replace(/^s3:\/\/[^/]+\//, '');

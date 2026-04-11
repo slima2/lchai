@@ -1,0 +1,2525 @@
+% ============================================================================
+% Chapter 6: Evaluation
+% Thesis: Fuzzy Margin Representation Learning for Explainable
+%         Architecture–Genotype Associations in Lung Adenocarcinoma
+%         under Data Scarcity
+% Author: Servio F. Lima
+% University of Fribourg
+% ============================================================================
+
+\chapter{Evaluation of Artifacts}
+\label{ch:evaluation}
+
+This chapter presents the quantitative and qualitative evaluation of the three computational artifacts developed in this thesis.
+Following the Design Science Research methodology, each artefact is evaluated against its baselines using the protocol specified in Section~\ref{sec:meth:evaluation_protocol}, and the results are interpreted in terms of the research questions defined in Section~\ref{sec:uc:clinical_questions}.
+
+The evaluation is organised in three parts.
+Section~\ref{sec:eval:pattern} evaluates Artifact~1 (FuzzyArcLoss~V2 for pattern classification).
+Section~\ref{sec:eval:mutation} evaluates Artifacts~2 and~3 (Pattern-Informed ABMIL and Fuzzy Choquet MIL for mutation prediction).
+Section~\ref{sec:eval:literature} compares the results against the published literature.
+Section~\ref{sec:eval:interpretability} presents the qualitative interpretability analysis.
+Section~\ref{sec:eval:rq} synthesises the findings by answering each research question.
+
+
+% ============================================================================
+\section{Evaluation of Artifact 1: Pattern Classification}
+\label{sec:eval:pattern}
+% ============================================================================
+% ============================================================================
+% Section 6.1.1 — Single-Run Screening of 18 Loss Functions
+% ============================================================================
+
+\subsection{Single-Run Results: Screening of 18 Loss Functions}
+\label{sec:eval:pattern:singlerun}
+
+Prior to the rigorous K-fold evaluation, all 18 loss function variants
+(Table~\ref{tab:loss_variants}) were screened on a single 80/20
+train/test split (509 training tiles, 128 test tiles) to identify the
+top performers for the computationally expensive multi-seed
+cross-validation.
+The key finding was a universal improvement of approximately 18 percentage
+points in macro-F1 across \emph{all} 18 variants, from a range of
+71--76\% before the pipeline corrections documented in
+Section~\ref{sec:uc:pipeline_fixes} to 89--95\% after corrections.
+This universal improvement confirms that the dominant performance gains
+were attributable to the pipeline fixes (4-channel mask input, fp32
+precision, margin-free evaluation logits) rather than to any specific
+loss function.
+
+Table~\ref{tab:singlerun_all18} reports the single-run macro-F1 for all
+18 loss functions within the corrected pipeline.
+These results are based on a single data split of 128 test tiles and
+are therefore subject to high variance; they serve as a screening step
+to select the top~5 methods for the definitive K-fold evaluation
+(Section~\ref{sec:eval:pattern:kfold}).
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{All 18 loss functions ranked by macro-F1 on a single 80/20
+split (128 test tiles).
+These results motivated the selection of the top~5 methods
+(marked with $\bigstar$) for the 15-run K-fold evaluation.
+Results are from a single run and should \emph{not} be used as
+the primary evaluation.}
+\label{tab:singlerun_all18}
+\begin{tabular}{c l c c l}
+\hline
+\textbf{Rank} & \textbf{Loss function} & \textbf{F1 (\%)} &
+\textbf{Acc (\%)} & \textbf{Selected} \\
+\hline
+1  & SphereFace                          & 95.03 & 95.3 & $\bigstar$ \\
+2  & FuzzyArcLoss V2 (Optuna)            & 94.48 & 94.5 & $\bigstar$ \\
+3  & AdaptiveFace                        & 93.97 & 93.8 & \\
+4  & FuzzyArcLoss V2 ClassParams         & 93.92 & 93.8 & \\
+5  & FuzzyArcLoss V3 SubCenters (Optuna) & 93.73 & 93.8 & $\bigstar$ \\
+6  & ArcFace                             & 93.38 & 93.8 & $\bigstar$ \\
+7  & FuzzyCosFace V2                     & 93.21 & 93.0 & \\
+8  & Softmax (CE)                        & 92.87 & 93.0 & $\bigstar$ \\
+9  & Label Smoothing CE                  & 92.64 & 93.0 & \\
+10 & FuzzyArcLoss V1                     & 92.48 & 92.2 & \\
+11 & Combined Margin (Arc+Cos)           & 92.31 & 92.2 & \\
+12 & FuzzyArcLoss V2 (default)           & 92.10 & 92.2 & \\
+13 & FuzzySphereFace V2                  & 91.85 & 91.4 & \\
+14 & CosFace                             & 91.72 & 91.4 & \\
+15 & FuzzyArcLoss V3 (Optuna)            & 91.30 & 92.2 & \\
+16 & Center Loss + Softmax               & 90.88 & 91.4 & \\
+17 & Focal Loss                          & 90.54 & 91.4 & \\
+18 & Triplet + Angular                   & 89.23 & 89.8 & \\
+\hline
+\end{tabular}
+\end{table}
+
+Two observations from the single-run screening motivated the K-fold
+evaluation design.
+First, SphereFace ranked first (95.03\%) and FuzzyArcLoss~V2 second
+(94.48\%), separated by only 0.55~pp on 128 test samples---well within
+the expected run-to-run variance of $\pm 0.8$~pp.
+The question of which method truly generalises better could not be
+resolved without multi-run evaluation.
+Second, the top~5 methods spanned three categories: fixed-margin
+(SphereFace, ArcFace), fuzzy-adaptive (FuzzyArcLoss~V2, V3~SubCenters),
+and non-angular (Softmax~CE), ensuring a comprehensive comparison across
+paradigms.
+
+\textbf{Selection criterion for K-fold.}
+The top~5 methods were selected based on two principles:
+(a)~coverage of all three loss paradigms (fixed angular margin,
+fuzzy-adaptive angular margin, and standard cross-entropy), and
+(b)~the top single-run performer from each paradigm.
+AdaptiveFace and FuzzyArcLoss~V2~ClassParams were excluded despite
+strong single-run results because they are conceptual variants of the
+methods already selected (ArcFace and V2~Optuna, respectively), and the
+computational cost of 15 runs per method ($\sim$2.2~hours each)
+constrained the number of methods.
+
+
+% ============================================================================
+% Section 6.1.2 — K-Fold Evaluation: Primary Results (RQ1)
+% ============================================================================
+
+\subsection{K-Fold Evaluation: Primary Results (RQ1)}
+\label{sec:eval:pattern:kfold}
+
+The primary evaluation employed 5-fold stratified cross-validation
+repeated with 3 random seeds (42, 123, 2026), yielding 15 independent
+runs per method (75 total training runs across 5 methods).
+Table~\ref{tab:kfold_f1} reports the final rankings.
+
+\begin{table}[htbp]
+\centering
+\caption{Pattern classification: 15-run evaluation
+(5-fold $\times$ 3 seeds) on 637 annotated tiles across six LUAD
+histological classes.
+Mean macro-F1 $\pm$ standard deviation with 95\% confidence intervals.}
+\label{tab:kfold_f1}
+\begin{tabular}{c l c c c c}
+\hline
+\textbf{Rank} & \textbf{Method} & \textbf{Mean F1 (\%)} &
+\textbf{$\pm$ Std} & \textbf{95\% CI} & \textbf{Mean Acc (\%)} \\
+\hline
+1 & \textbf{FuzzyArcLoss V2 (Optuna)} & \textbf{92.31} & 2.04 &
+  [91.3, 93.3] & 93.46 \\
+2 & ArcFace & 92.17 & 2.15 & [91.1, 93.3] & 93.51 \\
+3 & FuzzyArcLoss V3 SubCenters & 91.79 & 2.12 & [90.7, 92.9] & 93.30 \\
+4 & Softmax (CE) & 91.53 & 1.87 & [90.6, 92.5] & 92.73 \\
+5 & SphereFace & 90.03 & 2.51 & [88.8, 91.3] & 91.89 \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Key finding: ranking reversal.}
+FuzzyArcLoss~V2 achieves the highest mean macro-F1 of $92.31\% \pm 2.04$
+across 15 runs, while SphereFace---which appeared to be the top performer
+in the single-run screening (Table~\ref{tab:singlerun_all18})---drops to
+last place with $90.03\% \pm 2.51$.
+SphereFace's single-run result of 95.03\% was a favourable split artefact
+that the multi-run evaluation corrects by a full 5 percentage points.
+This reversal underscores the necessity of multi-run evaluation on small
+datasets: any conclusion drawn from a single split of 128 test samples
+would have been misleading.
+
+
+\subsubsection{Statistical Significance Analysis}
+\label{sec:eval:pattern:stats}
+
+Table~\ref{tab:pattern_stats} reports pairwise statistical comparisons of
+FuzzyArcLoss~V2 against each competitor, using paired $t$-tests on the 15
+fold-level macro-F1 values, Cohen's $d$ effect sizes, and win rates.
+
+\begin{table}[htbp]
+\centering
+\caption{Statistical comparison of FuzzyArcLoss~V2 against baseline loss
+functions (15 paired runs).
+Significant results ($p < 0.05$) are marked with~$^{*}$.
+Win rate counts the number of runs (out of~15) where V2 achieved
+strictly higher macro-F1.}
+\label{tab:pattern_stats}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{l c c c c c l}
+\hline
+\textbf{Comparison (V2 vs.)} & \textbf{$\Delta$ F1} &
+\textbf{$p$-value} & \textbf{Cohen's $d$} & \textbf{V2 wins} &
+\textbf{Interpretation} \\
+\hline
+SphereFace &
+  $+$2.28\,pp & $0.001^{*}$ & 1.00 (large) & 14/15 &
+  V2 significantly better \\
+Softmax (CE) &
+  $+$0.78\,pp & 0.138 & 0.39 (small) & 9/15$^{\dagger}$ &
+  V2 edges Softmax; not significant \\
+V3 SubCenters &
+  $+$0.51\,pp & 0.148 & 0.25 (small) & 10/15 &
+  V2 edges V3; not significant \\
+ArcFace &
+  $+$0.14\,pp & 0.651 & 0.07 (negligible) & 9/15 &
+  Essentially tied \\
+\hline
+\end{tabular}}%
+\begin{flushleft}
+\footnotesize
+$^{\dagger}$Plus 1 exact tie (run at seed=2026, fold=4:
+both methods achieved 92.2\% macro-F1).
+\end{flushleft}
+\end{table}
+
+The comparison between V2 and SphereFace is statistically significant
+($p = 0.001$) with a large effect size (Cohen's $d = 1.00$) and V2
+winning 14 of 15 runs.
+SphereFace's large fixed multiplicative margin ($m = 4$) produces the
+highest variance among all methods (std = 2.51), suggesting that its
+aggressive margin destabilises training on certain data splits.
+The single run where SphereFace outperformed V2 (seed=123, fold=3:
+SphereFace 92.4\% vs V2 91.7\%) was the only fold where SphereFace's
+aggressive margin happened to benefit rather than harm generalisation.
+FuzzyArcLoss~V2's adaptive membership, which reduces the penalty for
+ambiguous samples near class boundaries, produces more consistent
+performance across splits.
+
+The differences between V2 and ArcFace ($+$0.14~pp, $p = 0.651$),
+V3~SubCenters ($+$0.51~pp, $p = 0.148$), and Softmax~CE ($+$0.78~pp,
+$p = 0.138$) are not statistically significant at $p < 0.05$.
+However, the consistent ranking---V2 first in all comparisons---and the
+directional advantage across 9--10 of 15 runs suggest a real but small
+effect that the 15-run protocol lacks power to confirm.
+With $n = 15$ paired observations, the minimum detectable effect at
+80\% power and $\alpha = 0.05$ is approximately $d \approx 0.78$,
+meaning that only large effects (such as the V2-vs-SphereFace gap) can
+be reliably detected.
+
+
+\subsubsection{Per-Class Analysis}
+\label{sec:eval:pattern:perclass}
+
+The per-class F1 scores reveal where FuzzyArcLoss~V2's adaptive margin
+provides the greatest benefit and where all methods converge.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Per-class F1 scores (\%, mean $\pm$ std across 15 runs) for
+the five evaluated methods.
+The six classes are the ANORAK-annotated LUAD histological growth
+patterns: cribriform (Cri), micropapillary (MPap), solid (Sol),
+papillary (Pap), acinar (Aci), and lepidic (Lep).
+Cribriform, with only $\sim$55 training samples, is the hardest class.}
+\label{tab:perclass_f1}
+
+\begin{tabular}{l c c c c c c}
+\hline
+\textbf{Method} &
+  {\textbf{Cribri.}} & {\textbf{Micropap.}} & {\textbf{Solid}} &
+  {\textbf{Papillary}} & {\textbf{Acinar}} & {\textbf{Lepidic}} \\
+\hline
+FuzzyArcLoss V2 &
+  \textbf{83.6}$\pm$9.2 & 93.8$\pm$3.6 & 94.6$\pm$3.1 &
+  91.8$\pm$2.5 & \textbf{95.3}$\pm$1.9 & 94.8$\pm$3.7 \\
+ArcFace &
+  81.4$\pm$10.0 & \textbf{94.9}$\pm$3.4 & \textbf{95.0}$\pm$2.9 &
+  \textbf{92.6}$\pm$3.8 & 95.2$\pm$2.2 & 93.9$\pm$4.4 \\
+V3 SubCenters &
+  79.1$\pm$10.5 & 94.4$\pm$3.6 & 94.3$\pm$2.4 &
+  92.4$\pm$3.3 & 95.2$\pm$1.6 & \textbf{95.4}$\pm$3.7 \\
+Softmax (CE) &
+  81.5$\pm$10.4 & 94.3$\pm$6.0 & 94.7$\pm$2.3 &
+  90.6$\pm$3.8 & 94.3$\pm$2.0 & 93.8$\pm$4.6 \\
+SphereFace &
+  76.1$\pm$12.8 & 91.2$\pm$8.2 & 94.2$\pm$2.5 &
+  91.0$\pm$4.1 & 93.5$\pm$2.4 & 94.3$\pm$4.8 \\
+\hline
+\end{tabular}
+\end{table}
+
+Three findings emerge from the per-class analysis.
+
+\textbf{First, FuzzyArcLoss~V2 achieves the highest F1 on the
+cribriform class} (83.6\% versus ArcFace's 81.4\% and SphereFace's
+76.1\%).
+Cribriform is a minority class with only $\sim$55 training samples and
+morphological features that overlap substantially with acinar (from
+which it is derived as a high-grade variant).
+The $+2.2$~pp advantage over ArcFace and $+7.5$~pp over SphereFace on
+this class is consistent with V2's design principle: the adaptive fuzzy
+membership reduces the angular margin for low-confidence samples, which
+disproportionately benefits underrepresented classes where borderline
+samples constitute a larger fraction of the training set.
+SphereFace's 76.1\% cribriform F1---combined with the highest per-class
+standard deviation (12.8)---indicates that its fixed multiplicative
+margin of $m = 4$ is too aggressive for this data-scarce class,
+producing unreliable representations across splits.
+
+\textbf{Second, the acinar and lepidic classes exceed 93\% F1 across all
+methods}, indicating that these morphologically distinctive patterns are
+well-separated in the embedding space regardless of the loss function.
+Acinar morphology (round-to-oval glandular structures with central
+lumina) and lepidic morphology (``wallpaper-like'' growth along
+pre-existing alveolar walls) have highly distinctive visual signatures
+that even the simplest softmax classifier captures reliably.
+
+\textbf{Third, the differentiation among methods concentrates on the
+harder classes.}
+The inter-method F1 range (best minus worst) is 7.5~pp for cribriform,
+3.7~pp for micropapillary, and only 0.8~pp for solid.
+This confirms that the choice of loss function matters most where
+morphological boundaries are ambiguous and training data is scarce---
+precisely the regime for which FuzzyArcLoss~V2 was designed.
+
+
+\subsubsection{Optuna Hyperparameter Analysis}
+\label{sec:eval:pattern:optuna}
+
+The Optuna Bayesian search over 50 trials identified the optimal
+configuration $s^{*} = 46.1$, $m^{*} = 0.518$, $\tau^{*} = 0.448$
+for FuzzyArcLoss~V2.
+The V2 Optuna model achieved avgPR = 0.9306 on the screening split,
+outperforming the V3~SubCenters Optuna search
+(avgPR = 0.9127) by $+1.8$ percentage points.
+
+The convergence of the margin $m$ to a value close to the ArcFace
+default ($m = 0.5$) while the scale $s$ diverged significantly
+($46.1$ versus the default $30$) confirms that the performance advantage
+of V2 arises from the \emph{modulation mechanism} rather than from the
+raw margin magnitude.
+A higher scale sharpens the softmax distribution, making the model more
+decisive.
+In standard ArcFace, this would risk training instability for ambiguous
+samples.
+In FuzzyArcLoss~V2, the fuzzy membership acts as a ``safety valve'': the
+reduced margin for uncertain samples ($\mu_{i} \approx 0.3$--$0.5$)
+compensates for the aggressive scale, preventing gradient explosion at
+decision boundaries.
+The Optuna search also confirmed that Label Smoothing~$+$~Focal weighting
+is the optimal auxiliary loss for V2 (all top-4 trials agreed), consistent
+with the theoretical complementarity of output-level label smoothing and
+embedding-level fuzzy margin softening.
+
+
+\subsubsection{Summary of Pattern Classification Evaluation}
+\label{sec:eval:pattern:summary}
+
+The 15-run K-fold evaluation resolves the ambiguity of the single-run
+screening and yields the following conclusions for RQ1:
+
+\begin{enumerate}
+    \item FuzzyArcLoss~V2 ranks first with 92.31\% mean macro-F1,
+    consistently ahead of all baselines across 15 independent runs.
+
+    \item The advantage over SphereFace is statistically significant
+    ($p = 0.001$, Cohen's $d = 1.00$, 14/15 wins), establishing that
+    V2's fuzzy-adaptive margin produces reliably better generalisation
+    than SphereFace's aggressive fixed multiplicative margin on this
+    small dataset.
+
+    \item V2 ranks first in \emph{every} pairwise comparison: $+$0.14~pp
+    over ArcFace, $+$0.51~pp over V3~SubCenters, and $+$0.78~pp over
+    Softmax~CE, winning 9--10 of 15 runs in each case.
+    These differences do not reach $p < 0.05$ because with only
+    $n = 15$ paired observations, the protocol can only detect large
+    effects ($d \geq 0.78$); the consistent directional advantage
+    across all comparisons is nonetheless informative.
+
+    \item V2's greatest per-class advantage occurs on the hardest class
+    (cribriform: 83.6\%, $+$2.2~pp over ArcFace, $+$7.5~pp over SphereFace),
+    directly supporting the design hypothesis that adaptive fuzzy margins
+    benefit underrepresented classes with ambiguous morphological boundaries.
+
+    \item The systematic pipeline corrections contributed the largest
+    absolute gains ($+$18~pp across all methods), demonstrating that
+    implementation details---particularly 4-channel mask input, fp32
+    precision, and margin-free evaluation logits---are as critical as
+    algorithmic innovation when applying angular margin losses to small
+    histopathological datasets.
+\end{enumerate}
+
+
+\subsubsection{Confusion Matrix and Expert Validation}
+\label{sec:eval:pattern:confusion}
+
+To understand class-level error patterns beyond aggregate F1 scores,
+Figure~\ref{fig:confusion_matrix} presents the confusion matrix for
+FuzzyArcLoss~V2 on the ANORAK validation set (138~tiles, 80/20 split,
+seed~42), with class names mapped to the official Zenodo annotation
+scheme (Table~\ref{tab:variant_types_patterns}).
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.75\textwidth]{chapters/figures/confusion_matrix_fuzzyarcloss_v2_zenodo.png}
+\caption[Confusion matrix: FuzzyArcLoss V2 on ANORAK validation set]{%
+    Confusion matrix for FuzzyArcLoss~V2 on the ANORAK validation set
+    (N\,=\,138 tiles, Macro-F1\,=\,89.2\%).
+    Class names follow the official Zenodo annotation mapping.
+    Acinar (36/36), solid (21/21), and lepidic (16/16) achieve perfect recall.
+    Cribriform shows the most confusion (63\% recall), primarily
+    misclassified as solid or acinar---consistent with its morphological
+    overlap as a high-grade acinar variant.
+    Micropapillary (77\% recall) is occasionally confused with papillary.}
+\label{fig:confusion_matrix}
+\end{figure}
+
+Three observations emerge from the confusion matrix:
+
+\begin{enumerate}
+    \item \textbf{Acinar, solid, and lepidic are perfectly classified}
+    (100\% recall each), indicating that the model has learned
+    discriminative features for these morphologically distinct patterns.
+
+    \item \textbf{Cribriform is the most confused class} (recall 63\%),
+    primarily misclassified as solid (3~tiles) or acinar (4~tiles).
+    This is morphologically plausible: cribriform is defined as a
+    high-grade acinar variant with sieve-like glandular
+    structures~\cite{who2021thoracic}, and its boundary with complex
+    acinar and solid patterns is a known source of inter-observer
+    disagreement.
+
+    \item \textbf{Micropapillary--papillary confusion} (3~tiles of
+    micropapillary classified as papillary) aligns with the ANORAK
+    paper's finding that micropapillary has the lowest inter-observer
+    agreement among pathologists ($\rho = 0.35$--$0.44$)~\cite{anorak2024}.
+\end{enumerate}
+
+\paragraph{Preliminary expert validation on TCGA slides.}
+A board-certified pathologist from SOLCA (Sociedad de Lucha Contra el
+C\'{a}ncer del Ecuador) independently reviewed eight subregions from
+five TCGA slides processed through LCHAI~v2.0.
+Of these, one case (TCGA-49-AAR9, solid-dominant) matched exactly,
+and one subregion (acinar) also matched.
+However, in five subregions the expert identified \emph{acinar} morphology
+where the model predicted \emph{micropapillary}, and in one subregion
+the expert found the tissue ``non-assessable'' while the model
+predicted micropapillary.
+
+This pattern of disagreement is consistent with two known phenomena:
+(i)~\textbf{domain shift} between the ANORAK training cohort
+(TRACERx, UK institutions) and the TCGA inference cohort (US
+institutions), where differences in scanner hardware, staining
+protocols, and tissue preparation may alter the visual features of
+pattern boundaries even though both pipelines deliver
+$224 \times 224$\,px tiles to the model; and
+(ii)~the \textbf{high inter-observer variability} for micropapillary
+and acinar patterns reported in the ANORAK
+paper~\cite{anorak2024}---the two patterns most frequently
+confused in the expert review are precisely those with the lowest
+pathologist agreement in the literature ($\rho = 0.35$--$0.44$).
+
+Critically, this preliminary expert review \emph{does not invalidate}
+the tile-level classifier on ANORAK data (where acinar achieves 100\%
+recall and micropapillary 77\%), but highlights that
+\textbf{pattern-level predictions on out-of-distribution slides
+should be interpreted with caution} and accompanied by pathologist
+verification---which is the intended clinical workflow in LCHAI~v2.0.
+
+
+% ============================================================================
+\section{Evaluation of Artifacts 2 and 3: Mutation Prediction}
+\label{sec:eval:mutation}
+% ============================================================================
+
+This section presents the mutation prediction results for all six experimental
+conditions on the LUAD-only cohort (687 slides, 5-fold stratified
+cross-validation).
+
+\subsection{Primary Results: LUAD-Only Benchmark}
+\label{sec:eval:mutation:luad}
+
+Table~\ref{tab:mutation_luad} reports the AUROC for each (condition, gene) pair.
+Results are reported as mean $\pm$ standard deviation across 5 folds.
+The highest AUROC per gene is marked in bold.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Mutation prediction AUROC (mean $\pm$ std, 5-fold CV) on 687
+LUAD-only slides. Best per gene in \textbf{bold}.
+B1~=~XGBoost, B2~=~ABMIL embeddings, B3~=~ABMIL patterns,
+P~=~Proposed concat, A~=~Ablation one-hot, FC~=~Fuzzy Choquet.}
+\label{tab:mutation_luad}
+\begin{tabular}{l c c c c c c c}
+\hline
+\textbf{Cond.} & \textbf{TP53} & \textbf{EGFR} & \textbf{STK11} &
+\textbf{KEAP1} & \textbf{KRAS} & \textbf{RBM10} & \textbf{Mean} \\
+\hline
+B1  & .518$\pm$.025 & .634$\pm$.033 & .545$\pm$.055 &
+      .489$\pm$.034 & .522$\pm$.057 & .474$\pm$.101 & .530 \\
+B2  & \textbf{.718}$\pm$.053 & \textbf{.701}$\pm$.049 &
+      .684$\pm$.042 & .597$\pm$.081 & .607$\pm$.078 &
+      .642$\pm$.054 & .658 \\
+B3  & .616$\pm$.043 & .625$\pm$.044 & .617$\pm$.050 &
+      .588$\pm$.031 & .545$\pm$.076 & .653$\pm$.081 & .607 \\
+P   & .717$\pm$.058 & .694$\pm$.051 & \textbf{.695}$\pm$.023 &
+      \textbf{.610}$\pm$.071 & .590$\pm$.071 & .640$\pm$.064 & .658 \\
+A   & .716$\pm$.050 & .695$\pm$.046 & .691$\pm$.050 &
+      .594$\pm$.082 & .594$\pm$.071 & .623$\pm$.048 & .652 \\
+FC  & .716$\pm$.047 & .684$\pm$.037 & .658$\pm$.077 &
+      .589$\pm$.080 & \textbf{.609}$\pm$.059 &
+      \textbf{.661}$\pm$.063 & .653 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/auroc_by_gene_ver_15_mar_2026.png}
+\caption[AUROC per gene: all six conditions]{%
+    Pattern-Informed ABMIL benchmark results: mean AUROC $\pm$ standard
+    deviation per gene across 5-fold patient-stratified cross-validation
+    (687 LUAD slides, 668 patients).
+    Each panel shows one target gene; bars correspond to the six
+    experimental conditions (B1--FC).
+    The dashed horizontal line indicates random performance (AUROC~$= 0.5$).
+    B2 (ABMIL embeddings, orange) and the proposed concat (P, red) are
+    the strongest overall performers; the Fuzzy Choquet (FC, brown) leads
+    for RBM10.
+    High fold-to-fold variance is visible for RBM10 and KEAP1,
+    consistent with their low mutation prevalence (5.4\% and 14.3\%
+    respectively).}
+\label{fig:auroc_by_gene}
+\end{figure}
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.85\textwidth]{chapters/figures/auroc_heatmap_ver_15_mar_2026.png}
+\caption[AUROC heatmap: condition $\times$ gene]{%
+    AUROC heatmap summarising all 36 (condition, gene) combinations.
+    Colour scale: red~$= 0.50$ (random), yellow-green~$\approx 0.70$,
+    dark green~$= 0.90$.
+    Row ordering follows the benchmark hierarchy from the weakest
+    (B1~XGBoost) to the strongest overall conditions (B2, P).
+    Three structural patterns are visible:
+    (1)~B1 shows near-random performance for KEAP1 (0.489) and RBM10
+    (0.474), confirming that slide-level pattern aggregation fails for
+    diffuse or rare mutations;
+    (2)~B2 and P achieve the highest per-cell values for TP53 (0.718)
+    and EGFR (0.701/0.694), consistently the most predictable genes;
+    (3)~the Fuzzy Choquet condition leads for RBM10 (0.661), the
+    lowest-prevalence gene, suggesting that fuzzy aggregation
+    is advantageous when signal is sparse.}
+\label{fig:auroc_heatmap}
+\end{figure}
+
+Figures~\ref{fig:auroc_by_gene} and~\ref{fig:auroc_heatmap} provide
+a visual summary of these results.
+Figure~\ref{fig:auroc_by_gene} shows the per-gene distribution of
+AUROC across conditions with fold-level variance; the heatmap
+(Figure~\ref{fig:auroc_heatmap}) enables direct cross-condition and
+cross-gene comparison of all 36 mean values simultaneously.
+
+
+\subsection{Finding 1: Pattern-Informed Approaches Match Embedding-Only ABMIL}
+\label{sec:eval:mutation:finding1}
+
+The central hypothesis of this thesis (RQ2) is that injecting fuzzy pattern
+information improves mutation prediction.
+Table~\ref{tab:p_vs_b2} compares the proposed condition (P) against the
+embedding-only baseline (B2) gene by gene.
+
+\begin{table}[htbp]
+\centering
+\caption{Gene-level comparison: Proposed (P) versus ABMIL embeddings (B2).
+$\Delta = \text{P} - \text{B2}$.}
+\label{tab:p_vs_b2}
+\begin{tabular}{l c c c}
+\hline
+\textbf{Gene} & \textbf{B2 (emb)} & \textbf{P (concat)} & \textbf{$\Delta$} \\
+\hline
+TP53  & 0.718 & 0.717 & $-$0.001 \\
+EGFR  & 0.701 & 0.694 & $-$0.007 \\
+STK11 & 0.684 & 0.695 & $+$0.011 \\
+KEAP1 & 0.597 & 0.610 & $+$0.013 \\
+KRAS  & 0.607 & 0.590 & $-$0.017 \\
+RBM10 & 0.642 & 0.640 & $-$0.002 \\
+\hline
+\textbf{Mean} & \textbf{0.658} & \textbf{0.658} & \phantom{$-$}0.000 \\
+\hline
+\end{tabular}
+\end{table}
+
+The proposed method is essentially tied with B2 on the overall mean
+(0.658 versus 0.658).
+The deltas are within the fold-to-fold standard deviation for every gene,
+indicating that none of the differences is statistically significant.
+The pattern-informed concatenation neither harms nor substantially improves
+AUROC.
+
+\textbf{Interpretation.}
+The conclusion is that fuzzy pattern probabilities \emph{preserve}
+performance while adding the interpretability pathway through histological
+patterns.
+The CTransPath embeddings already encode the morphological information that
+the pattern probabilities provide; the concatenation is informationally
+redundant but not harmful.
+The value of the pattern channel is therefore primarily \emph{interpretive}
+rather than \emph{discriminative}: it enables the six-level interpretability
+framework (Section~\ref{sec:eval:interpretability}) without sacrificing
+prediction quality.
+
+\subsection{Finding 2: The Optimal Representation Is Gene-Dependent}
+\label{sec:eval:mutation:finding2}
+
+No single condition dominates across all genes.
+Table~\ref{tab:gene_winners} identifies the top condition per gene.
+
+\begin{table}[htbp]
+\centering
+\caption{Best-performing condition per gene (LUAD-only, 687 slides).}
+\label{tab:gene_winners}
+\begin{tabular}{l l c l}
+\hline
+\textbf{Gene} & \textbf{Best condition} & \textbf{AUROC} &
+\textbf{Interpretation} \\
+\hline
+TP53  & B2 (embeddings) & 0.718 & Visual features sufficient \\
+EGFR  & B2 (embeddings) & 0.701 & Visual features sufficient \\
+STK11 & P (proposed)    & 0.695 & Patterns add signal \\
+KEAP1 & P (proposed)    & 0.610 & Patterns add signal over B2 \\
+KRAS  & FC (Fuzzy Choquet) & 0.609 & Fuzzy aggregation captures signal \\
+RBM10 & FC (Fuzzy Choquet) & 0.661 & Choquet best despite low prevalence \\
+\hline
+\end{tabular}
+\end{table}
+
+The results stratify into three distinct groups.
+B2 (embedding-only ABMIL) leads for TP53 and EGFR, where mutations correlate
+with well-defined morphological signatures~\cite{leighl2002tp53morphology,yoshizawa2013egfrmorph} already encoded compactly in the
+CTransPath feature space.
+The proposed pattern-informed concat (P) leads for STK11 and KEAP1, the two
+genes with the most diffuse morphological associations---where, at the
+\emph{population level}, the explicit pattern probabilities provide signal
+that is less efficiently extracted by the generic embeddings alone.
+Note that per-slide ablation analysis (Section~\ref{sec:eval:interp:enrichment})
+reveals that this population-level benefit does not hold for every
+individual slide: on the representative cases, patterns actively degrade
+STK11 ($-5.5$\,pp) and KEAP1 ($-44.7$\,pp) predictions.
+The Fuzzy Choquet MIL (FC) leads for KRAS and RBM10, where inter-pattern
+interactions modelled by the Choquet integral appear to capture relevant
+co-occurrence structure.
+
+This gene-dependent pattern reflects the biological heterogeneity of the
+mutation--morphology associations:
+
+\begin{itemize}
+    \item \textit{TP53 and EGFR}: Mutations correlate with specific,
+    well-defined patterns (solid/micropapillary for TP53~\cite{leighl2002tp53morphology}; lepidic/papillary
+    for EGFR~\cite{yoshizawa2013egfrmorph}) that the CTransPath embeddings encode efficiently.
+    Adding explicit pattern probabilities introduces no new information for
+    these genes.
+
+    \item \textit{STK11 and KEAP1}: Mutations produce diffuse morphological
+    changes across multiple pattern types.
+    For STK11 ($+$0.011) and KEAP1 ($+$0.013), the explicit pattern
+    probabilities provide a modest but consistent advantage over
+    embedding-only ABMIL.
+    Notably, for KEAP1, neither Fuzzy Choquet (0.589, $-$0.008 vs B2) nor
+    ablation one-hot (0.594) matches the proposed soft-probability
+    concatenation, suggesting that the continuous fuzzy representation
+    captures inter-pattern gradients that crisp labels and Choquet
+    aggregation do not.
+
+    \item \textit{KRAS and RBM10}: The Choquet integral's capacity to model
+    multiplicative interactions between pattern memberships provides
+    a small but consistent advantage.
+    The learned interaction indices reveal that the co-presence of
+    lepidic and solid patterns within the same slide is synergistic
+    for KRAS prediction ($I = +0.032$)---not because KRAS is
+    clinically associated with lepidic (it is not; KRAS correlates
+    with solid and mucinous/IMA morphology~\cite{shim2015krasmucinous}), but because the
+    model has learned that the simultaneous presence of these
+    minority patterns within a micropapillary-dominant slide
+    carries discriminative signal that singleton pattern
+    contributions miss.
+\end{itemize}
+
+\subsection{Finding 3: Fuzzy Versus Crisp Pattern Representations}
+\label{sec:eval:mutation:finding3}
+
+The comparison between the proposed condition P (soft fuzzy probabilities)
+and the ablation A (hard one-hot labels) tests whether the continuous fuzzy
+representation is more informative than its discrete counterpart.
+
+\begin{table}[htbp]
+\centering
+\caption{Fuzzy (P) versus crisp (A) pattern representations.}
+\label{tab:fuzzy_vs_crisp}
+\begin{tabular}{l c c c l}
+\hline
+\textbf{Gene} & \textbf{P (fuzzy)} & \textbf{A (crisp)} &
+\textbf{$\Delta$} & \textbf{Better} \\
+\hline
+TP53  & 0.717 & 0.716 & $+$0.001 & Fuzzy \\
+EGFR  & 0.694 & 0.695 & $-$0.001 & Crisp \\
+STK11 & 0.695 & 0.691 & $+$0.004 & Fuzzy \\
+KEAP1 & 0.610 & 0.594 & $+$0.016 & Fuzzy \\
+KRAS  & 0.590 & 0.594 & $-$0.004 & Crisp \\
+RBM10 & 0.640 & 0.623 & $+$0.017 & Fuzzy \\
+\hline
+\end{tabular}
+\end{table}
+
+The fuzzy representation wins on four of six genes.
+The most pronounced difference occurs for KEAP1 ($+$0.016) and RBM10
+($+$0.017), both genes associated with diffuse or heterogeneous morphological
+changes spanning multiple pattern types where inter-pattern boundary
+uncertainty carries diagnostic information that hard labels discard.
+
+For EGFR the difference is negligible ($-$0.001), consistent with its
+well-defined morphological correlates (lepidic, papillary) that are
+adequately captured by crisp classification.
+For KRAS the difference is also negligible ($-$0.004); however, this
+does \emph{not} imply that patterns are unimportant for KRAS---Finding~2
+showed that the Fuzzy Choquet MIL (FC) leads all conditions for KRAS,
+exploiting \emph{inter-pattern interactions} via the Choquet integral
+rather than individual pattern membership softness.
+KRAS benefits from the Choquet aggregation mechanism
+(Finding~2) but not from fuzzy-versus-crisp softness (this finding),
+because its primary morphological correlate (mucinous/IMA) is absent
+from the 6-class taxonomy and the discriminative signal comes from
+pattern \emph{co-occurrence} rather than boundary uncertainty.
+
+The gene-specific finding---that the utility of fuzzy versus crisp pattern
+representations is largest for genes with diffuse or heterogeneous
+mutation--morphology associations---is an original analytical contribution
+of this thesis.
+
+\subsection{Finding 4: Patterns Alone Are Insufficient}
+\label{sec:eval:mutation:finding4}
+
+Condition B3 (ABMIL on pattern probabilities only, 6 dimensions) provides a
+direct test of whether the six histological patterns carry sufficient
+information for mutation prediction without the visual embeddings.
+
+B3 achieves AUROCs of 0.545--0.653 across genes, consistently below B2
+(0.597--0.718).
+The KRAS result (0.545) is particularly striking: pattern probabilities
+alone are nearly random for KRAS prediction.
+This is explained by the absence of a Mucinous invasive (IMA) class in the ANORAK
+taxonomy---the primary morphological correlate of KRAS mutations is
+IMA morphology, which is not represented among the six ANORAK
+classes.
+The spatial and textural information encoded in the embeddings is
+essential for KRAS prediction.
+
+Two exceptions are worth noting.
+B3 outperforms B2 for RBM10 (0.653 vs 0.642), the lowest-prevalence gene
+(5.4\%), where the reduced dimensionality of B3 may act as implicit
+regularisation.
+B3 also approaches B2 for EGFR (0.625 vs 0.701), consistent with EGFR's
+well-defined pattern correlates.
+Nevertheless, the systematic underperformance of B3 relative to B2 confirms
+that pattern probabilities alone cannot substitute for visual embeddings.
+
+B3 outperforms B1 (XGBoost on slide-level pattern aggregates) for five of
+six genes, with EGFR as the exception (B1~$= 0.634$ vs.\ B3~$= 0.625$).
+The EGFR exception is notable: XGBoost on slide-level pattern aggregates
+captures the EGFR--lepidic association via simple feature engineering,
+while the ABMIL attention mechanism on tile-level patterns does not
+improve upon this for EGFR.
+For all other genes, the ABMIL attention mechanism extracts more
+information from tile-level pattern distributions than simple
+slide-level averaging does.
+
+\subsection{Finding 5: The XGBoost Baseline Is Not Near-Random}
+\label{sec:eval:mutation:finding5}
+
+Condition B1 achieves AUROCs of 0.474--0.634 across genes.
+The results are more heterogeneous than initially anticipated.
+EGFR at 0.634 is the strongest B1 result---unexpectedly competitive---
+reflecting the fact that EGFR mutations are tightly associated with
+lepidic-predominant morphology~\cite{yoshizawa2013egfrmorph}, whose slide-level frequency is directly
+captured by the XGBoost feature vector.
+At the other extreme, RBM10 (0.474, below random) and KEAP1 (0.489) confirm
+that for genes with diffuse or complex morphological correlates, naive
+pattern-frequency aggregation fails entirely.
+The overall mean of 0.530 validates the necessity of attention-based deep
+learning for this task; however, the EGFR result suggests that for select
+genes with strong single-pattern correlates, a lightweight XGBoost
+classifier may be a practical clinical approximation.
+
+\subsection{Finding 6: Fuzzy Choquet MIL---Competitive Performance on
+Gene-Specific Tasks}
+\label{sec:eval:mutation:finding6}
+
+The Fuzzy Choquet MIL (FC) achieves a mean AUROC of 0.653, comparable
+to the proposed concat (0.658) and embedding-only ABMIL (0.658), and
+is the sole top performer for KRAS (0.609) and RBM10 (0.661).
+This is a notable result.
+FC is a hybrid dual-pathway model ($\sim$266{,}000 trainable parameters)
+that combines the same ABMIL encoder and attention mechanism as B2
+(operating on 512-d CTransPath embeddings) with a parallel Choquet
+integral branch that aggregates the 6-d pattern probabilities via a
+21-parameter fuzzy measure.
+The comparison FC~vs.~B2 is therefore not ``Choquet-only vs.\ ABMIL''
+but rather ``ABMIL~$+$~Choquet branch vs.\ ABMIL-only'': when
+FC~$\approx$~B2 in AUROC, the interpretation is that the Choquet branch
+does not significantly improve discriminative accuracy but provides
+intrinsic interpretability through its Shapley values and interaction
+indices.
+Specifically, when the learned Shapley values are near-uniform ($\phi_k \approx 1/6$ for all $k$) and interaction indices are small ($|I_{jk}| \ll 0.1$), the fuzzy measure is approximately additive and the Choquet integral reduces to a simple weighted average of pattern scores---meaning the model has not found meaningful pattern-level preferences for that gene, and the predictive signal originates from the shared embedding pathway.
+
+FC's advantage for KRAS ($+$0.002 over B2) and RBM10 ($+$0.019 over B2)
+is consistent with the hypothesis that, for these genes, the Choquet
+branch's capacity to model superadditive interactions between pattern
+types adds a small discriminative contribution beyond what the shared
+ABMIL encoder alone captures.
+The interaction between lepidic and solid patterns for KRAS ($I = +0.032$),
+and between solid and acinar patterns ($I = +0.025$), are plausible
+candidates for such synergistic effects.
+
+For KEAP1---the gene most commonly cited as a candidate for interaction-based
+modelling given its diffuse morphological signature---FC (0.589) is
+outperformed by both B2 (0.597) and the proposed method (0.610).
+This negative result is instructive: KEAP1's diffuseness manifests as
+a \emph{spread of probability mass across all six patterns} rather than
+as a superadditive interaction between any two specific patterns.
+The Choquet integral, which models multiplicative co-occurrence of high-scoring
+patterns, is not the right inductive bias for a gene whose discriminative
+signal lies in low-confidence, multi-pattern uncertainty.
+The proposed soft concatenation, which preserves the full probability vector
+without imposing any interaction structure, is better suited to this
+diffuse regime.
+
+FC's higher fold-to-fold variance (std 0.037--0.080) compared to the ABMIL
+conditions (std 0.023--0.082) reflects the sensitivity of the 21-parameter
+fuzzy measure in the Choquet branch, whose small parameter count makes it
+more responsive to the specific composition of each fold.
+
+\subsection{Preliminary LUAD+LUSC Results}
+\label{sec:eval:mutation:mixed}
+
+An initial benchmark on the mixed LUAD+LUSC cohort ($N = 351$) was conducted
+before the decision to restrict to LUAD-only
+(Section~\ref{sec:uc:tcga:luad_only}).
+Table~\ref{tab:mutation_mixed} reports these results for the four genes
+evaluated.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Mutation prediction AUROC on the mixed LUAD+LUSC cohort ($N = 351$,
+5-fold CV). These results are presented for completeness; the LUAD-only
+analysis (Table~\ref{tab:mutation_luad}) is the primary evaluation.}
+\label{tab:mutation_mixed}
+\begin{tabular}{l c c c c c}
+\hline
+\textbf{Cond.} & \textbf{TP53} & \textbf{EGFR} & \textbf{KRAS} &
+\textbf{KEAP1} & \textbf{Mean} \\
+\hline
+B1  & .559$\pm$.04 & .634$\pm$.18 & .529$\pm$.04 & .588$\pm$.06 & .577 \\
+B2  & .704$\pm$.09 & .698$\pm$.09 & .658$\pm$.05 & .599$\pm$.06 & .665 \\
+B3  & .566$\pm$.04 & .520$\pm$.10 & .441$\pm$.08 & .546$\pm$.05 & .518 \\
+P   & \textbf{.712}$\pm$.09 & .706$\pm$.09 & .672$\pm$.04 &
+      .587$\pm$.06 & \textbf{.669} \\
+A   & .702$\pm$.09 & \textbf{.710}$\pm$.08 & \textbf{.691}$\pm$.03 &
+      .590$\pm$.07 & .673 \\
+FC  & .678$\pm$.10 & .653$\pm$.07 & .655$\pm$.05 & \textbf{.613}$\pm$.07
+      & .650 \\
+\hline
+\end{tabular}
+\end{table}
+
+The mixed-cohort results show inflated AUROCs for EGFR and KRAS relative
+to the LUAD-only analysis, as predicted by the LUSC-as-easy-negatives
+confound identified in Section~\ref{sec:uc:tcga:luad_only}.
+The gene-specific pattern of AUROC change upon restricting to LUAD-only
+(Table~\ref{tab:luad_only_change}) provides direct evidence for this confound.
+
+\begin{table}[htbp]
+\centering
+\caption{AUROC change when restricting from LUAD+LUSC ($N=351$) to
+LUAD-only ($N=687$) for the proposed condition (P). Genes with near-zero
+LUSC mutation prevalence show the largest drops.}
+\label{tab:luad_only_change}
+\begin{tabular}{l c c c l}
+\hline
+\textbf{Gene} & \textbf{Mixed} & \textbf{LUAD-only} & \textbf{$\Delta$} &
+\textbf{LUSC prevalence} \\
+\hline
+KRAS  & 0.672 & 0.590 & $-$0.082 & $\sim$3\% (near zero) \\
+EGFR  & 0.706 & 0.694 & $-$0.012 & $\sim$0\% (near zero) \\
+TP53  & 0.712 & 0.717 & $+$0.005 & $\sim$80\% (high in both) \\
+KEAP1 & 0.587 & 0.610 & $+$0.023 & $\sim$12\% (similar to LUAD) \\
+\hline
+\end{tabular}
+\end{table}
+
+KRAS shows the largest drop ($-8.2$ pp), consistent with KRAS being
+virtually absent in LUSC.
+TP53, mutated in both subtypes, remains stable and modestly improves
+($+$0.005), reflecting the increased statistical power of the larger
+LUAD-only cohort.
+KEAP1 improves by $+$0.023, indicating that the cleaner LUAD-only cohort
+removes noise from morphologically dissimilar LUSC slides.
+This analysis validates the LUAD-only decision and demonstrates rigorous
+handling of a confound that many published studies do not address.
+
+
+% ============================================================================
+\section{Comparison with the Published Literature}
+\label{sec:eval:literature}
+% ============================================================================
+
+Table~\ref{tab:lit_comparison_full} positions the results of this thesis
+within the published mutation prediction literature.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{AUROC comparison with the published literature.
+Best results per comparable method category in \textbf{bold}.
+Daggers ($\dagger$) indicate approximate values from published figures.}
+\label{tab:lit_comparison_full}
+\begin{tabular}{p{3cm} c r l c c c}
+\hline
+\textbf{Study} & \textbf{Year} & \textbf{$N$} & \textbf{Method} &
+\textbf{TP53} & \textbf{EGFR} & \textbf{KRAS} \\
+\hline
+\multicolumn{7}{l}{\textit{Comparable scale (public data, $N < 1{,}000$):}} \\
+Coudray et al.    & 2018 & 382   & Inception e2e     & 0.73--0.86\textsuperscript{*} & 0.826 & 0.733 \\
+Saldanha et al.   & 2023 & 676   & RetCCL+attMIL     & $\sim$0.65$^\dagger$ & $\sim$0.67$^\dagger$ & $\sim$0.61$^\dagger$ \\
+Logan et al.      & 2022 & 747   & CNN+subtypes      & 0.692 & 0.681 & --- \\
+\textbf{This thesis (B2)} & 2026 & 687 & CTransPath+ABMIL
+  & \textbf{0.718} & \textbf{0.701} & 0.607 \\
+\textbf{This thesis (P)}  & 2026 & 687 & Pattern-ABMIL
+  & 0.717 & 0.694 & 0.590 \\
+\textbf{This thesis (FC)} & 2026 & 687 & Fuzzy Choquet
+  & 0.716 & 0.684 & \textbf{0.609} \\
+\hline
+\multicolumn{7}{l}{\textit{Large-scale (proprietary data, $N > 1{,}000$):}} \\
+DeepGEM & 2025 & 3{,}637   & Co-supervised MIL    & 0.82--0.96 & 0.82--0.96 & 0.82--0.96 \\
+EAGLE   & 2025 & 8{,}461   & Foundation model     & ---        & 0.890      & --- \\
+CHIEF   & 2024 & 60{,}530  & Foundation model     & $>$0.70    & $>$0.70    & --- \\
+\hline
+\end{tabular}
+\begin{flushleft}
+\footnotesize
+\textsuperscript{*}Range across six genes.
+$^\dagger$Approximate values from published figures.
+\end{flushleft}
+\end{table}
+
+\textbf{Key comparisons at matched scale:}
+
+\begin{itemize}
+    \item \textbf{vs.\ Coudray et al.\ (2018):} Coudray's EGFR AUROC (0.826)
+    and KRAS (0.733) exceed this thesis's results.
+    However, Coudray used a single held-out test split of 62 slides (not
+    cross-validation), an end-to-end Inception-v3 trained directly with
+    mutation labels (no MIL), and a smaller LUAD-only cohort of 382 slides.
+    Single-split evaluation on 62 slides is known to produce optimistic
+    estimates.
+    The methodological contribution of this thesis---pattern-informed
+    interpretability with rigorous cross-validation---trades some apparent
+    discriminative performance for reproducibility and clinical verifiability.
+
+    \item \textbf{vs.\ Saldanha et al.\ (2023):} This thesis outperforms
+    Saldanha for TP53 (0.718 vs $\sim$0.65), EGFR (0.701 vs $\sim$0.67),
+    and matches for KRAS (0.607 vs $\sim$0.61), despite using 512-dimensional
+    CTransPath embeddings versus Saldanha's 2048-dimensional RetCCL features
+    on a larger cohort (676 slides).
+    This suggests that domain-specific fine-tuning via pattern classification
+    (FuzzyArcLoss V2) produces more discriminative per-tile representations
+    than generic self-supervised pretraining for LUAD-specific mutation tasks.
+
+    \item \textbf{vs.\ Logan et al.\ (2022):} This thesis's TP53 (0.718)
+    and EGFR (0.701) surpass Logan's results (0.692 and 0.681, respectively),
+    on a comparable cohort size.
+    Logan's use of subtype distribution features is conceptually related to
+    this thesis's pattern-informed approach, providing additional methodological
+    validation.
+\end{itemize}
+
+\textbf{Regarding large-scale studies:}
+The AUROCs of 0.82--0.96 achieved by DeepGEM (3,637 patients from 16
+hospitals) and 0.890 by EAGLE (8,461 slides) represent a different data
+regime entirely.
+These results reflect the advantage of massive proprietary clinical data
+rather than a methodological superiority.
+No publicly available dataset exceeds $\sim$897 LUAD cases
+(Section~\ref{sec:uc:data_scarcity}); the performance gap is therefore
+structural and not closable within the scope of any thesis relying on
+public data.
+
+
+% ============================================================================
+% REWRITTEN SECTION — Chapter 6: sec:eval:interpretability
+% Replaces the placeholder/hypothetical text with real observations
+% from the 36 trained attention map figures (6 genes × 3 TP + 3 TN)
+% generated using real ABMIL checkpoints from the patched benchmark run.
+%
+% Figures referenced (place in figures/attention_maps_v2/{GENE}/):
+%   TP53:  TP_rank1_TCGA-99-8025-01A-01-.png
+%          TN_rank1_TCGA-49-4510-01Z-00-.png
+%   EGFR:  TP_rank1_TCGA-86-8280-01A-01-.png
+%   KRAS:  TP_rank1_TCGA-55-7815-01A-01-.png
+%   STK11: TP_rank1_TCGA-49-AAR0-11A-01-.png
+%   KEAP1: TP_rank1_TCGA-49-AAR9-01Z-00-.png
+%
+% Also updated: sec:eval:lchai (36 slides, real checkpoints)
+% ============================================================================
+
+
+% ============================================================================
+\section{Interpretability Analysis}
+\label{sec:eval:interpretability}
+% ============================================================================
+
+This section presents the qualitative interpretability evidence for the
+proposed pattern-informed ABMIL approach (RQ4), based on attention maps
+generated from the trained model checkpoints.
+Table~\ref{tab:viz_folds} reports the AUROC values used by LCHAI~v2.0
+for Conclusive/Inconclusive labelling.
+By design, LCHAI uses the \emph{5-fold mean AUROC} rather than the
+best single-fold AUROC.
+This is a deliberate conservative choice grounded in statistical
+generalisability: the mean of five held-out test folds is an estimator
+of the \emph{expected performance on any unseen patient from the
+same population}.
+Each fold evaluates a different 20\% of patients that the model never
+saw during training; averaging these five estimates converges toward
+the true population-level AUROC.
+In contrast, the best fold AUROC reflects a single favourable data
+partition---it indicates what the model \emph{can} achieve under
+ideal conditions but may overestimate performance for the next
+patient, who may resemble the worst fold rather than the best.
+For a clinical decision-support tool, conservative estimates are
+preferable: a clinician who trusts a label based on inflated AUROC
+may forgo molecular testing that would have been warranted.
+For transparency, the best fold AUROC is reported alongside the mean
+to show the performance ceiling and to motivate future work with
+larger cohorts where the gap between mean and best narrows.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{AUROC values for the six target genes.
+LCHAI~v2.0 uses the \emph{Mean AUROC} (5-fold average, bold) for
+Conclusive/Inconclusive labelling ($\geq 0.70$ = Conclusive,
+following the Hosmer--Lemeshow criterion~\cite{hosmer2000applied}).
+The best single-fold AUROC is shown for reference.}
+\label{tab:viz_folds}
+\begin{tabular}{l c c l}
+\hline
+\textbf{Gene} & \textbf{Mean AUROC (used)} & \textbf{Best fold AUROC} & \textbf{Label} \\
+\hline
+TP53  & \textbf{0.718} & 0.793 & Conclusive \\
+EGFR  & \textbf{0.701} & 0.758 & Conclusive \\
+KRAS  & \textbf{0.609} & 0.684 & Inconclusive \\
+STK11 & \textbf{0.695} & 0.727 & Inconclusive \\
+KEAP1 & \textbf{0.610} & 0.737 & Inconclusive \\
+RBM10 & \textbf{0.661} & 0.733 & Inconclusive \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\subsection{Attention Maps with Pattern Overlay}
+\label{sec:eval:interp:attention}
+
+The LCHAI~v2.0 six-level interpretability framework provides, for each
+slide, complementary visualisations presented
+in Figures~\ref{fig:attn_tp53_tp}--\ref{fig:attn_rbm10_tp}:
+
+\begin{itemize}
+    \item \textbf{Pattern overlay} (left panel in each figure): maps
+    every extracted tile to one of the six ANORAK-annotated growth patterns using a
+    categorical colour code consistent with LCHAI~v2.0 (green~= micropapillary,
+    red~= acinar, dark red~= solid, cyan~= cribriform, yellow~= papillary,
+    blue~= lepidic), providing a spatial view of tumour heterogeneity.\footnote{Pattern names and colours follow the Zenodo--ANORAK scheme (Section~\ref{sec:uc:zenodo}). A preliminary expert review of TCGA slides by a board-certified pathologist from SOLCA Ecuador is reported in Section~\ref{sec:eval:pattern:confusion}; a formal multi-rater concordance study remains as future work (Section~\ref{sec:disc:lim:data}).}
+
+    \item \textbf{ABMIL attention map} (right panel): shows the
+    continuous attention weights assigned by the gene-specific ABMIL
+    model, with cyan semi-transparent regions and white contours
+    delineating the tiles that contribute most to the mutation
+    prediction.
+\end{itemize}
+
+Each figure is arranged in a $2 \times 2$ grid with four
+complementary panels:
+
+\begin{itemize}
+    \item \textbf{Top left --- Pattern overlay}: spatial map of the six
+    growth patterns.
+    \item \textbf{Top right --- Attention map}: ABMIL attention weights
+    showing which tiles drive the prediction.
+    \item \textbf{Bottom left --- SHAP decomposition}: stacked bar
+    showing the embedding/pattern attribution split (Level~3,
+    Section~\ref{sec:meth:interp:shap}).
+    \item \textbf{Bottom right --- Ablation comparison}: per-slide
+    feature channel ablation (Level~5,
+    Section~\ref{sec:meth:interp:ablation}), comparing the mutation
+    probability produced by three separately trained models---Combined
+    ($P_{\text{comb}}$), Embeddings-only ($P_{\text{emb}}$), and
+    Patterns-only ($P_{\text{pat}}$)---on the same tile set.
+    The ablation delta $\Delta_{\text{pat}} = P_{\text{comb}} -
+    P_{\text{emb}}$ (Equation~\ref{eq:delta_pattern}) reveals whether
+    adding pattern features helps ($\Delta > 0$) or hurts
+    ($\Delta < 0$) the prediction on this specific slide.
+\end{itemize}
+
+The top panels reveal \emph{where} the model attends and \emph{what}
+it finds there.
+The bottom panels address a deeper question: SHAP (bottom left) shows
+how the model \emph{distributes its internal attribution} between
+embeddings and patterns, while ablation (bottom right) shows whether
+patterns \emph{actually help or harm} the prediction
+(cf.\ Section~\ref{sec:bg:channel_ablation}).
+As the per-gene analyses below demonstrate, these two signals can
+diverge dramatically.
+
+All visualisations in this section were generated by LCHAI~v2.0
+running locally on the trained checkpoints (Table~\ref{tab:viz_folds}),
+using the same CTransPath tile embeddings and pattern probabilities
+as the deployed system at \texttt{https://lchai.gptfy.biz}.
+
+\textbf{SHAP reproducibility note:} Because DeepSHAP is a
+gradient-based approximation, the exact embedding/pattern percentages
+may vary by $\pm$5--10 percentage points across different analysis
+runs on the same slide.
+The \emph{directional interpretation}---whether a gene is
+embedding-dominated, pattern-dominated, or balanced---is robust
+and consistent across runs.
+The percentages reported below and in
+Table~\ref{tab:enrichment_summary} correspond to a single
+deterministic run with fixed seed (\texttt{seed=42}).
+
+
+\subsubsection{TP53: High-Confidence Detection in a
+Micropapillary-Classified Dominant Tumour}
+
+Figure~\ref{fig:attn_tp53_tp} shows the LCHAI~v2.0 output for slide
+TCGA-99-8025, a TP53-mutant case predicted with high confidence
+(P(mut)~$= 0.951$, method: B2 embeddings, label: Conclusive).
+The pattern overlay reveals a slide dominated by micropapillary-classified morphology
+(91.5\%), with minor acinar (6.27\%), cribriform (1.6\%), and solid
+(0.56\%) components.
+The ablation analysis shows that the embedding-only model outperforms
+the combined model for TP53 (emb~$= 0.951$ vs.\ combined~$= 0.778$),
+confirming that the CTransPath embeddings carry the dominant TP53
+signal.
+TP53 mutations are associated with solid and micropapillary
+patterns in the literature~\cite{leighl2002tp53morphology}; on this slide, solid is present at only 0.56\%
+while micropapillary is the dominant class at 91.5\%.
+The model detects TP53 via sub-cellular texture (61\% embedding SHAP;
+fuzzy classification: \emph{Balanced}), consistent with TP53-driven
+nuclear instability visible at the embedding level.
+The ablation comparison (bottom right of Figure~\ref{fig:attn_tp53_tp})
+confirms this: the embeddings-only model (95.1\%) outperforms the combined
+model (79.0\%), indicating that adding pattern features introduces
+interference rather than complementary signal for TP53.
+
+\begin{figure}[ht!]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_TP53_TCGA-99-8025_pattern_overlay.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_TP53_TCGA-99-8025_attention_map.png}
+\end{minipage}\\[6pt]
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/shap_decomp_TP53_99_8025_bar.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/ablation_TP53_99_8025.png}
+\end{minipage}
+\caption[LCHAI~v2.0 interpretability: TP53 (TCGA-99-8025)]{%
+    LCHAI~v2.0 interpretability for TP53-mutant slide TCGA-99-8025
+    (P(mut)~$= 0.951$, B2 embeddings, Conclusive).
+    \textbf{Top left}: Pattern overlay (green~= micropapillary 91.5\%).
+    \textbf{Top right}: ABMIL attention map.
+    \textbf{Bottom left}: SHAP decomposition---61\% embedding / 39\% pattern.
+    \textbf{Bottom right}: Ablation comparison---Emb-only (95.1\%) outperforms
+    Combined (79.0\%), confirming that patterns introduce interference for TP53.}
+\label{fig:attn_tp53_tp}
+\end{figure}
+
+\textbf{Interpretation.}
+TP53 is the most commonly mutated gene in LUAD, and its mutations
+are known to cause visible changes in cell nuclei---larger, irregular
+nuclei with abnormal shapes~\cite{leighl2002tp53morphology}.
+The model successfully detects this mutation (P~$= 0.951$, true
+positive) even though the expected tissue patterns (solid,
+micropapillary) are not prominently present: solid accounts for only
+0.56\% of the slide.
+Instead, the model relies on \emph{sub-cellular texture}---fine-grained
+visual features invisible to the naked eye but captured by the
+CTransPath encoder---as confirmed by the SHAP decomposition
+attributing 61\% to embeddings.
+
+The ablation comparison reveals an important nuance: the
+embeddings-only model achieves 95.1\% while adding pattern
+information drops the prediction to 79.0\% ($-16.1$\,pp).
+In plain terms, \textbf{the model would predict TP53 even better
+if it ignored the tissue pattern classification entirely}.
+The 39\% pattern attribution in SHAP does not mean patterns
+help---it means the model pays attention to them, but that
+attention is counterproductive on this particular slide.
+This distinction between \emph{what the model looks at} (SHAP) and
+\emph{what actually helps} (ablation) is a recurring theme across
+genes.
+
+
+\subsubsection{EGFR: Papillary-Dominant Morphology in a
+Low-Probability Prediction}
+
+Figure~\ref{fig:attn_egfr_tp} shows the LCHAI~v2.0 output for slide
+TCGA-86-8280, an EGFR-mutant case predicted with low mutation
+probability (P(mut)~$= 0.076$, method: B2 embeddings, Conclusive).
+The slide exhibits a strongly micropapillary-dominant morphological profile:
+micropapillary (94.94\%), solid (3.16\%), acinar (1.39\%),
+lepidic (0.3\%), and cribriform (0.16\%).
+Despite the homogeneous pattern composition, the model assigns a low
+EGFR probability---a false negative.
+
+\begin{figure}[ht!]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_EGFR_TCGA-86-8280_pattern_overlay.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_EGFR_TCGA-86-8280_attention_map.png}
+\end{minipage}\\[6pt]
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/shap_decomp_EGFR_86_8280_bar.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/ablation_EGFR_86_8280.png}
+\end{minipage}
+\caption[LCHAI~v2.0 interpretability: EGFR (TCGA-86-8280)]{%
+    LCHAI~v2.0 interpretability for EGFR case TCGA-86-8280
+    (P(mut)~$= 0.076$, B2 embeddings, Conclusive).
+    \textbf{Top left}: Pattern overlay---micropapillary-dominant (94.94\%, green).
+    \textbf{Top right}: ABMIL attention map.
+    \textbf{Bottom left}: SHAP decomposition---76\% embedding / 24\% pattern.
+    \textbf{Bottom right}: Ablation---all three models produce similarly low
+    probabilities (7.1\%, 7.6\%, 10.3\%), confirming absent morphological signal.}
+\label{fig:attn_egfr_tp}
+\end{figure}
+
+\textbf{Interpretation.}
+This case illustrates a fundamental limitation: \textbf{not every
+mutation leaves a visible trace in the tissue}.
+DNA sequencing confirms that this patient carries an EGFR mutation,
+yet the model assigns only P(mut)~$= 0.076$---a \textbf{false
+negative}.
+Three factors explain why:
+
+\begin{enumerate}
+    \item \textbf{The expected tissue patterns are absent.}
+    EGFR mutations typically produce lepidic and papillary growth
+    patterns~\cite{yoshizawa2013egfrmorph}---orderly, gland-like
+    structures.
+    However, this slide is 94.94\% micropapillary (a different,
+    more aggressive pattern) with virtually no lepidic (0.3\%) or
+    papillary (0.05\%) content.
+    The visual ``fingerprint'' the model learned to associate with
+    EGFR is simply not present.
+
+    \item \textbf{Different EGFR variants produce different tissue
+    changes.}
+    The best-known EGFR mutations (exon~19 deletions and L858R)
+    produce strong morphological changes, but other EGFR variant
+    types may alter tissue architecture less prominently, making
+    them harder to detect from images alone.
+
+    \item \textbf{The model's overall EGFR performance is marginal.}
+    With an AUROC of 0.701---barely above the 0.70 threshold for
+    ``acceptable discrimination''~\cite{hosmer2000applied}---false
+    negatives like this one are statistically expected for cases
+    whose tissue appearance does not match the typical EGFR pattern.
+\end{enumerate}
+
+The ablation comparison confirms the absence of signal: all three
+models (Combined 7.1\%, Emb-only 7.6\%, Pat-only 10.3\%) produce
+near-zero probabilities, meaning that neither the visual texture
+nor the pattern classification captures EGFR evidence on this
+slide.
+
+\textbf{Why this failure is informative, not just wrong.}
+A clinician viewing this LCHAI output would see: (i)~a very low
+EGFR probability, (ii)~the absence of EGFR-associated
+lepidic/papillary patterns in the overlay, and (iii)~a
+``Conclusive'' label indicating that the model is generally
+reliable for EGFR.
+This combination naturally prompts a molecular test to resolve
+the ambiguity---which is exactly the intended clinical workflow.
+Without the explanation, a clinician seeing only ``7.6\%'' might
+assume wild-type and skip testing; with it, the clinician
+understands that the low probability reflects a morphological
+mismatch, not a reliable negative.
+
+
+\subsubsection{KRAS: Micropapillary-Classified Predominant Tumour with High
+Fuzzy Choquet Prediction}
+
+Figure~\ref{fig:attn_kras_tp} shows the LCHAI~v2.0 output for slide
+TCGA-55-7815, a KRAS-mutant case predicted with very high confidence
+via the Fuzzy Choquet MIL (P(mut)~$= 0.965$, method: FC,
+label: Inconclusive).
+The slide is 79.44\% micropapillary-classified with 17.14\% acinar content and minor
+cribriform (2.5\%) and solid (0.64\%) components.
+The SHAP balance is 59\% embedding / 41\% pattern (fuzzy
+classification: \emph{Balanced}).
+The Choquet Shapley values (fuzzy profile: \emph{Near-Uniform}) show
+cribriform as the most influential pattern ($\phi = 0.170$, $+0.36\%$),
+followed by solid ($\phi = 0.168$) and acinar ($\phi = 0.167$), with
+positive interaction indices for lepidic$\times$solid
+(\emph{Moderate Synergy}: $+0.032$) and solid$\times$acinar ($+0.025$).
+
+\begin{figure}[ht!]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_KRAS_TCGA-55-7815_pattern_overlay.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_KRAS_TCGA-55-7815_attention_map.png}
+\end{minipage}\\[6pt]
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/shap_decomp_KRAS_55_7815_bar.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/ablation_KRAS_55_7815.png}
+\end{minipage}
+\caption[LCHAI~v2.0 interpretability: KRAS (TCGA-55-7815)]{%
+    LCHAI~v2.0 interpretability for KRAS-mutant slide TCGA-55-7815
+    (P(mut)~$= 0.965$, FC Fuzzy Choquet, Inconclusive).
+    \textbf{Top left}: Pattern overlay---micropapillary-dominant (79.44\%, green)
+    with acinar clusters (17.14\%, red).
+    \textbf{Top right}: ABMIL attention map.
+    \textbf{Bottom left}: SHAP decomposition---59\% embedding / 41\% pattern.
+    \textbf{Bottom right}: Ablation---Combined (85.8\%) outperforms Emb-only
+    (78.2\%), the \emph{only gene where patterns measurably improve prediction}
+    ($+7.6$\,pp).}
+\label{fig:attn_kras_tp}
+\end{figure}
+
+\textbf{Interpretation.}
+In the medical literature, KRAS mutations are typically associated
+with solid tumour areas and a subtype called Mucinous invasive
+adenocarcinoma (IMA)~\cite{shim2015krasmucinous}.
+The ANORAK dataset does not include an IMA category, and solid
+tissue accounts for only 0.64\% of this slide---yet the model
+predicts KRAS with 96.5\% confidence.
+How?
+
+The Choquet Shapley decomposition provides the answer: instead of
+relying on a single pattern, the model detects KRAS through
+\emph{combinations} of minority patterns.
+The lepidic$\times$solid synergy ($I = +0.032$; fuzzy classification:
+\emph{Moderate Synergy}) indicates that the \emph{simultaneous presence}
+of these two rare patterns within the same slide is more informative
+than either pattern alone---a signal that standard attention mechanisms
+would miss.
+Although $I = +0.032$ may appear small in absolute terms, this is the expected scale for interaction indices under the $L_1$ regulariser ($\lambda_I = 0.01$, Equation~\ref{eq:interaction_reg}): the regulariser penalises large interactions to prevent overfitting, so surviving non-zero values represent genuine learned structure.
+The interaction index does not directly add 3.2 percentage points to $P(\text{mut})$; rather, it modifies the fuzzy measure so that subsets containing \emph{both} lepidic and solid receive higher measure values, altering the Choquet aggregation of pattern scores before the classification head produces the final probability.
+
+The ablation comparison (bottom right of
+Figure~\ref{fig:attn_kras_tp}) provides direct confirmation:
+the Combined model (85.8\%) outperforms the Embeddings-only model
+(78.2\%) by $+7.6$\,pp.
+\textbf{KRAS is the only gene among the six where adding pattern
+information measurably improves the prediction.}
+This demonstrates the practical value of the Fuzzy Choquet MIL
+(Artefact~3): it can exploit subtle inter-pattern interactions
+that neither visual texture alone nor any single pattern can
+capture.
+
+
+\subsubsection{STK11: Low Prediction in a Micropapillary-Classified Dominant Slide}
+
+Figure~\ref{fig:attn_stk11_tp} shows the LCHAI~v2.0 output for slide
+TCGA-49-AAR0, an STK11-mutant case predicted with low mutation
+probability (P(mut)~$= 0.046$, method: P proposed concat,
+label: Inconclusive).
+The slide is overwhelmingly micropapillary-classified (98.68\%) with negligible
+representation of other patterns (acinar 0.89\%, solid 0.41\%).
+The SHAP decomposition shows 90\% embedding / 10\% pattern
+contribution (fuzzy classification: \emph{Embedding-Dominated}),
+indicating that the pattern channel provides
+minimal signal for STK11 on this near-homogeneous slide---consistent with
+the observation that condition~P outperforms B2 for this gene
+in the cross-validation benchmark on more heterogeneous slides.
+
+\begin{figure}[ht!]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_STK11_TCGA-49-AAR0_pattern_overlay.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_STK11_TCGA-49-AAR0_attention_map.png}
+\end{minipage}\\[6pt]
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/shap_decomp_STK11_49_AAR0_bar.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/ablation_STK11_49_AAR0.png}
+\end{minipage}
+\caption[LCHAI~v2.0 interpretability: STK11 (TCGA-49-AAR0)]{%
+    LCHAI~v2.0 interpretability for STK11-mutant slide TCGA-49-AAR0
+    (P(mut)~$= 0.046$, P proposed concat, Inconclusive).
+    \textbf{Top left}: Pattern overlay---near-homogeneous micropapillary (98.68\%).
+    \textbf{Top right}: ABMIL attention map---sparse and diffuse.
+    \textbf{Bottom left}: SHAP decomposition---90\% embedding / 10\% pattern.
+    \textbf{Bottom right}: Ablation---Combined (4.6\%) $<$ Emb-only (10.1\%):
+    patterns degrade prediction on this homogeneous slide.}
+\label{fig:attn_stk11_tp}
+\end{figure}
+
+\textbf{Interpretation.}
+STK11 mutations do not reorganise tissue into recognisable growth
+patterns the way TP53 or EGFR mutations do.
+Instead, STK11 alters the tumour \emph{microenvironment}---it
+reduces the presence of immune cells and changes the texture of the
+supporting tissue~\cite{skoulidis2018stk11immune}.
+These changes are subtle and do not correspond to any of the six
+growth patterns the classifier was trained to recognise.
+
+This explains the strongly embedding-dominated SHAP (90\%/10\%):
+whatever faint STK11 signal exists, it lives in the fine-grained
+visual texture (embeddings), not in the growth pattern
+classification.
+The ablation comparison confirms that patterns are
+counterproductive on this slide: the Embeddings-only model (10.1\%)
+outperforms the Combined model (4.6\%) by $5.5$\,pp.
+Because this slide is 98.68\% micropapillary, the pattern vector
+is nearly uniform and adds only noise.
+
+The system correctly flags this prediction as \textbf{Inconclusive},
+communicating to the clinician that molecular testing is
+required---the model cannot reliably detect STK11 from tissue images
+alone.
+
+
+\subsubsection{KEAP1: Diffuse Signal in a Solid-Classified Dominant Slide}
+
+Figure~\ref{fig:attn_keap1_tp} presents the KEAP1 analysis for slide
+TCGA-49-AAR9, a KEAP1-mutant case predicted with low mutation
+probability (P(mut)~$= 0.247$, method: P proposed concat,
+label: Inconclusive).
+The slide exhibits a solid-classified dominant profile (64.14\%) with
+micropapillary (20.68\%), acinar (14.18\%), and minor lepidic (0.28\%) content.
+The SHAP decomposition is striking: 40\% embedding / 60\% pattern,
+indicating that the explicit pattern probabilities carry the
+\emph{majority} of the KEAP1 attribution on this morphologically
+heterogeneous slide---the only representative case where patterns
+outweigh embeddings.
+
+\begin{figure}[ht!]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_KEAP1_TCGA-49-AAR9_pattern_overlay.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_KEAP1_TCGA-49-AAR9_attention_map.png}
+\end{minipage}\\[6pt]
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/shap_decomp_KEAP1_49_AAR9_bar.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/ablation_KEAP1_49_AAR9.png}
+\end{minipage}
+\caption[LCHAI~v2.0 interpretability: KEAP1 (TCGA-49-AAR9)]{%
+    LCHAI~v2.0 interpretability for KEAP1-mutant slide TCGA-49-AAR9
+    (P(mut)~$= 0.247$, P proposed concat, Inconclusive).
+    \textbf{Top left}: Pattern overlay---solid-dominant (64.14\%, dark red)
+    with micropapillary (20.68\%, green) and acinar (14.18\%, red).
+    \textbf{Top right}: ABMIL attention map---broad and diffuse.
+    \textbf{Bottom left}: SHAP decomposition---40\% embedding / 60\% pattern.
+    \textbf{Bottom right}: Ablation---Combined (24.7\%) drops sharply from
+    Emb-only (69.4\%): the heterogeneous pattern composition introduces
+    strong interference ($-44.7$\,pp).}
+\label{fig:attn_keap1_tp}
+\end{figure}
+
+\textbf{Interpretation.}
+KEAP1 mutations affect the NRF2 oxidative stress pathway---a
+molecular mechanism that does not produce a distinctive, recognisable
+tissue pattern~\cite{tcga2014luad}.
+This is reflected in KEAP1's low overall performance (AUROC~$= 0.610$,
+the weakest of the six genes).
+
+The SHAP decomposition shows an unusual result: 60\% of the signal
+is attributed to patterns (fuzzy classification: \emph{Pattern-Led}),
+making this the only case where patterns outweigh visual texture.
+However, \textbf{the ablation comparison reveals that this high
+pattern attention is actually harmful}: the Embeddings-only model
+reaches 69.4\% while the Combined model drops to just 24.7\%---a
+severe $-44.7$\,pp penalty.
+In plain terms, the model would predict KEAP1 \emph{much better}
+if it ignored the growth patterns entirely.
+
+Why does this happen?
+This slide has a heterogeneous mix of patterns (solid 64\%,
+micropapillary 21\%, acinar 14\%), and none of these patterns are
+documented KEAP1 indicators in the literature.
+The model pays heavy attention to this pattern diversity, but the
+resulting signal is misleading rather than helpful.
+
+This case illustrates a key insight of the interpretability
+framework: \textbf{a model can pay strong attention to a feature and
+still be harmed by it}.
+SHAP reveals \emph{what the model looks at}; ablation reveals
+\emph{whether looking at it actually helps}.
+
+
+\subsubsection{RBM10: RNA Splicing Factor with Minimal Morphological
+Footprint}
+
+Figure~\ref{fig:attn_rbm10_tp} presents the RBM10 analysis for slide
+TCGA-78-7148, predicted with very low mutation probability
+(P(mut)~$= 0.017$, method: FC Fuzzy Choquet, label: Inconclusive).
+The slide is 88.69\% micropapillary-classified with minor acinar (8.15\%) and solid
+(2.57\%) content.
+The SHAP decomposition shows 79\% embedding / 21\% pattern
+(fuzzy classification: \emph{Embedding-Led}),
+and the Choquet Shapley values are nearly uniform across all six
+patterns (range: 0.1664--0.1671; fuzzy profile: \emph{Uniform}),
+indicating no single pattern carries discriminative signal for RBM10.
+
+\begin{figure}[ht!]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_RBM10_TCGA-78-7148_pattern_overlay.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_RBM10_TCGA-78-7148_attention_map.png}
+\end{minipage}\\[6pt]
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/shap_decomp_RBM10_78_7148_bar.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/ablation_RBM10_78_7148.png}
+\end{minipage}
+\caption[LCHAI~v2.0 interpretability: RBM10 (TCGA-78-7148)]{%
+    LCHAI~v2.0 interpretability for RBM10-mutant slide TCGA-78-7148
+    (P(mut)~$= 0.017$, FC Fuzzy Choquet, Inconclusive).
+    \textbf{Top left}: Pattern overlay---micropapillary-dominant (88.69\%, green)
+    with acinar foci (8.15\%, red).
+    \textbf{Top right}: ABMIL attention map---scattered, no clear focus.
+    \textbf{Bottom left}: SHAP decomposition---79\% embedding / 21\% pattern.
+    \textbf{Bottom right}: Ablation---all three models produce near-zero
+    probabilities (2.9\%, 2.6\%, 5.5\%), consistent with no morphological
+    correlate for RBM10.}
+\label{fig:attn_rbm10_tp}
+\end{figure}
+
+\textbf{Interpretation.}
+RBM10 is fundamentally different from genes like TP53 or KRAS: it
+encodes a protein that regulates RNA splicing---a molecular process
+that occurs \emph{inside} the cell machinery without visibly
+reorganising tissue architecture~\cite{bechara2013rbm10}.
+There is no known tissue pattern that signals ``this tumour has an
+RBM10 mutation.''
+
+The analysis confirms this biological expectation:
+\begin{itemize}
+    \item The Choquet Shapley values are nearly identical across all
+    six patterns (range: 0.1664--0.1671, where uniform $= 1/6 \approx 0.1667$;
+    fuzzy profile classification: \emph{Uniform}).
+    This near-uniform profile means the learned fuzzy measure is essentially additive: the Choquet integral reduces to a simple average of pattern scores, indicating the model found no pattern preference for RBM10.
+    The Shapley values are weights that shape the aggregation, not direct contributions to $P(\text{mut})$; their uniformity means the Choquet branch contributes a pattern-averaged signal, and what discriminative power exists comes from the shared embedding pathway.
+    \item The ablation comparison shows all three models producing
+    near-zero probabilities (Combined 2.9\%, Emb-only 2.6\%,
+    Pat-only 5.5\%)---neither visual texture nor pattern
+    classification detects RBM10 on this slide.
+\end{itemize}
+
+The system correctly assigns a very low probability (1.7\%) and an
+\textbf{Inconclusive} label, transparently communicating that
+RBM10 mutation status cannot be reliably inferred from tissue images
+and molecular testing is required.
+This is the system working as designed: rather than producing a
+false sense of certainty, it honestly reports its inability to
+detect this particular mutation type.
+
+
+\subsection{Pattern Attribution: LCHAI~v2.0 SHAP and Choquet Summary}
+\label{sec:eval:interp:enrichment}
+
+Table~\ref{tab:enrichment_summary} summarises the LCHAI~v2.0 outputs
+across the six representative slides, reporting the dominant slide
+pattern, SHAP decomposition (embedding vs.\ pattern contribution),
+and the prediction method selected by the gene-dependent optimal
+strategy (thesis Finding~2).
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{LCHAI~v2.0 interpretability summary across the six
+representative slides.
+Each slide carries a confirmed mutation in the target gene (MAF ground
+truth).
+Out.\ = TP (true positive, $\text{P(mut)} > 0.5$) or FN (false
+negative).
+B2 = embeddings-only ABMIL, FC = Fuzzy Choquet, P = proposed concat.
+Co-mut.\ = other genes mutated in the same slide (from MAF).}
+\label{tab:enrichment_summary}
+\begin{tabular}{@{}l l l c c l c c l@{}}
+\hline
+\textbf{Gene} & \textbf{Slide} & \textbf{Variant} &
+\textbf{P} & \textbf{SHAP} & \textbf{Dom.\ pat.} &
+\textbf{Meth.} & \textbf{Out.} & \textbf{Co-mut.} \\
+\hline
+TP53  & 99-8025 & Missense       & .951 & 61/39 & Micropap.\ (91.5\%) & B2 & TP & KRAS \\
+EGFR  & 86-8280 & Mutation       & .076 & 76/24 & Micropap.\ (94.94\%) & B2 & FN & TP53 \\
+KRAS  & 55-7815 & Missense       & .965 & 59/41 & Micropap.\ (79.44\%) & FC & TP & KEAP1, RBM10 \\
+STK11 & 49-AAR0 & Missense       & .046 & 90/10 & Micropap.\ (98.68\%) & P  & FN & TP53, KEAP1 \\
+KEAP1 & 49-AAR9 & Missense       & .247 & 40/60 & Solid (64.14\%) & P  & FN & TP53 \\
+RBM10 & 78-7148 & Splice\_Site   & .017 & 79/21 & Micropap.\ (88.69\%) & FC & FN & KRAS, STK11 \\
+\hline
+\end{tabular}
+\end{table}
+
+\paragraph{Why only 2 of 6 mutations are detected.}
+A striking observation from Table~\ref{tab:enrichment_summary} is that
+\textbf{only 2 of 6 representative slides are correctly identified as
+mutant} (TP53 and KRAS), while the remaining four are false negatives.
+All six slides carry confirmed mutations (verified by DNA sequencing),
+yet the model assigns $\text{P(mut)} < 0.5$ for EGFR, STK11, KEAP1,
+and RBM10.
+This is not a model failure---it reflects a fundamental biological
+reality: \textbf{not every DNA mutation produces a visible change in
+tissue architecture}.
+Some mutations alter cell shape and growth patterns (TP53, KRAS),
+making them detectable under a microscope; others operate at the
+molecular level (STK11's immune effects, KEAP1's stress pathway,
+RBM10's RNA processing) without reorganising tissue in ways that a
+pattern classifier can recognise.
+This \emph{genotype--phenotype mismatch} is inherent in all
+histology-based mutation prediction and is discussed further in
+Section~\ref{sec:disc:genotype_phenotype}.
+The per-gene breakdown explains why each mutation was detected or
+missed:
+
+\begin{itemize}
+    \item \textbf{TP53 (Missense, P = 0.951, True Positive):}
+    TP53 is the gene most likely to leave a visible mark on tissue,
+    causing enlarged, irregularly shaped cell nuclei and aggressive
+    growth patterns~\cite{leighl2002tp53morphology}.
+    The model detects this mutation correctly (95.1\% confidence).
+    SHAP shows the model relies mostly on fine-grained visual
+    texture (61\%) rather than named growth patterns (39\%), and
+    ablation confirms that patterns actually interfere ($-16.1$\,pp)
+    ---the model would perform even better without them.
+
+    \item \textbf{KRAS (Missense, P = 0.965, True Positive):}
+    KRAS mutations are typically linked to a specific tumour subtype
+    called Mucinous invasive adenocarcinoma
+    (IMA)~\cite{shim2015krasmucinous}, which is not among the six
+    patterns the classifier recognises.
+    Despite this, the model predicts KRAS with 96.5\% confidence by
+    detecting \emph{combinations} of minority patterns
+    (lepidic and solid together) rather than any single dominant one.
+
+    \item \textbf{EGFR (Mutation, P = 0.076, False Negative):}
+    EGFR mutations are associated with orderly, gland-forming
+    patterns (lepidic and papillary)~\cite{yoshizawa2013egfrmorph},
+    but this slide is 94.94\% micropapillary---a different, more
+    aggressive pattern.
+    The tissue simply does not show the visual ``fingerprint'' the
+    model learned to associate with EGFR, so it misses the mutation.
+
+    \item \textbf{STK11 (Missense, P = 0.046, False Negative):}
+    STK11 mutations change the tumour's immune environment (fewer
+    immune cells, altered supporting tissue) rather than
+    reorganising the tumour's growth
+    pattern~\cite{skoulidis2018stk11immune}.
+    Since the six pattern categories do not capture immune features,
+    the pattern channel provides no useful signal---and ablation
+    confirms it is counterproductive ($-5.5$\,pp).
+
+    \item \textbf{KEAP1 (Missense, P = 0.247, False Negative):}
+    KEAP1 mutations affect a molecular stress-response pathway
+    (NRF2) inside cells~\cite{tcga2014luad} without producing a
+    distinctive tissue pattern.
+    Although SHAP attributes 60\% of the signal to patterns, ablation
+    reveals this attention is \emph{harmful}: removing patterns
+    would raise the prediction from 24.7\% to 69.4\%
+    ($-44.7$\,pp interference).
+
+    \item \textbf{RBM10 (Splice\_Site, P = 0.017, False Negative):}
+    RBM10 controls how genes are read inside cells (RNA splicing), a
+    process invisible under a microscope~\cite{bechara2013rbm10}.
+    There is no known tissue pattern associated with RBM10, and the
+    model correctly reports near-zero confidence.
+    The Choquet Shapley values are nearly identical for all six
+    patterns ($\phi \approx 0.167$), confirming that no pattern
+    carries any RBM10-related information.
+\end{itemize}
+
+\paragraph{The complication of multiple simultaneous mutations.}
+The ``Co-mutations'' column in Table~\ref{tab:enrichment_summary}
+reveals an important complication: \textbf{all 6 slides carry
+multiple mutations at the same time}---a common phenomenon in lung
+cancer~\cite{tcga2014luad}.
+For example, TCGA-55-7815 carries KRAS + KEAP1 + RBM10
+simultaneously; TCGA-49-AAR0 carries TP53 + STK11 + KEAP1.
+
+This matters for two reasons:
+
+First, when a tumour has multiple mutations, \textbf{the tissue
+appearance is a mixture of all their effects}, not the signature of
+any single gene.
+When the model tries to predict STK11 on slide TCGA-49-AAR0 (which
+also carries TP53 and KEAP1), the tissue it sees reflects TP53's
+nuclear changes, STK11's immune effects, and KEAP1's stress-response
+alterations all at once---none of which can be cleanly separated.
+
+Second, the model is trained with \textbf{one separate predictor per
+gene}: it predicts TP53~=~yes/no and KRAS~=~yes/no independently,
+without knowing that certain mutations frequently co-occur.
+A future model that jointly predicts all six genes could potentially
+exploit known co-mutation patterns (e.g., KRAS and STK11 often
+co-occur and produce a distinctive tissue phenotype), but this is
+left as future work (Section~\ref{sec:disc:future:long}).
+
+TCGA-86-8280 (EGFR) also carries a TP53 co-mutation, yet
+the model fails to detect EGFR (P = 0.076), likely because the
+slide's 94.94\% micropapillary morphology lacks the
+lepidic/papillary patterns canonically associated with EGFR,
+reinforcing the conclusion that not all mutations
+within a gene produce equivalent tissue phenotypes.
+
+\paragraph{Summary: why explainability is most valuable when predictions fail.}
+The 2/6 true-positive rate on these representative slides should not
+be interpreted as the model's overall sensitivity; these slides were
+selected as representative cases for each gene, not as a random sample.
+The cross-validation AUROCs (0.610--0.718) provide the proper
+aggregate performance measure.
+
+The per-case analysis above illustrates a central thesis argument:
+\textbf{the multi-layered interpretability framework is most valuable
+precisely for the four false negatives, not for the two true positives.}
+For TP53 (P~$= 0.951$, true positive), the explanation is confirmatory:
+the clinician would have requested molecular testing regardless.
+For EGFR (P~$= 0.076$, false negative), however, the explanation is
+\emph{critical}: the SHAP decomposition (76\% embedding / 24\% pattern),
+the absence of EGFR-associated lepidic/papillary patterns in the overlay,
+and the ``Conclusive'' label all tell the clinician that the model had
+adequate population-level discriminative power but this particular slide
+lacks the expected morphological signal---prompting molecular confirmation
+rather than dismissal.
+Without this explanation, a clinician seeing only ``7.6\%'' might assume
+wild-type and forgo testing.
+With it, the clinician understands that the low probability reflects a
+morphological mismatch, not a reliable negative.
+
+The Conclusive/Inconclusive system further validates the framework:
+all four false negatives are genes labelled \textbf{Inconclusive}
+(AUROC~$< 0.70$), meaning the system \emph{correctly warned the
+clinician} before the prediction was even viewed that molecular testing
+is required.
+This is the design working as intended---not a failure.
+
+The SHAP decompositions of the four false negatives also reveal genuine
+biological insights:
+STK11 (90\% embedding, 10\% pattern) indicates the mutation signal
+resides in sub-cellular texture consistent with its known effect on
+tumour-infiltrating lymphocytes~\cite{skoulidis2018stk11immune},
+not in growth pattern architecture.
+KEAP1 (40\% embedding, 60\% pattern) shows the model attending
+heavily to the heterogeneous pattern composition, but the ablation
+comparison reveals this attention is destructive ($-44.7$\,pp):
+the pattern channel confuses rather than aids KEAP1 prediction,
+likely because the solid/micropapillary/acinar mix lacks any
+documented KEAP1 morphological correlate.
+RBM10 (79\% embedding, uniform Choquet Shapley $\phi \approx 0.167$)
+quantitatively confirms that no growth pattern carries discriminative
+signal---expected for an RNA splicing factor without known morphological
+correlates.
+No prior mutation prediction system provides this level of
+\emph{quantitative failure explanation}.
+
+\paragraph{SHAP decomposition by gene.}
+The SHAP embedding/pattern split varies substantially by gene:
+TP53 (61/39\%), KRAS (59/41\%), KEAP1 (40/60\%), EGFR (76/24\%),
+STK11 (90/10\%), and RBM10 (79/21\%).
+Critically, high SHAP pattern attribution does \emph{not} equate
+to positive contribution: the ablation comparison shows patterns
+measurably help only KRAS ($+7.6$\,pp), while actively degrading
+TP53 ($-16.1$\,pp), STK11 ($-5.5$\,pp), and especially KEAP1
+($-44.7$\,pp).
+For EGFR and RBM10, all models produce near-zero probabilities,
+rendering the SHAP split largely inconsequential.
+The pattern channel's primary value is therefore
+\emph{interpretive}---enabling the system to explain \emph{why}
+predictions succeed or fail---rather than consistently
+improving predictive accuracy.
+
+
+\subsection{Choquet Shapley Values and Interaction Indices}
+\label{sec:eval:interp:choquet}
+
+The Fuzzy Choquet MIL (Artefact~3) provides intrinsic
+interpretability through its learned 2-additive fuzzy measure:
+the Shapley values ($\phi_k$) and pairwise interaction indices
+($I_{kl}$) are built-in model parameters, not post-hoc
+attributions (see Table~\ref{tab:shapley_distinction}).
+LCHAI~v2.0 displays these values in the Analysis tab for
+all six genes.
+
+\paragraph{When does Choquet analysis provide meaningful insight?}
+The Choquet integral aggregates pattern-level information.
+Its analysis is therefore most informative for genes where:
+(a)~the Fuzzy Choquet method (FC) is the optimal prediction method,
+and (b)~per-slide ablation confirms that patterns \emph{constructively}
+contribute to the prediction ($\Delta_{\text{pat}} > 0$,
+Section~\ref{sec:meth:interp:ablation}).
+Among the six target genes, only \textbf{KRAS} satisfies both
+criteria: FC is the optimal method (AUROC~$= 0.609$), and ablation
+shows patterns improve the prediction by $+7.6$\,pp.
+\textbf{RBM10} also uses FC as its optimal method (AUROC~$= 0.661$),
+but ablation shows near-zero probabilities across all models,
+making it a useful \emph{negative control}---a case where the
+Choquet analysis transparently confirms the absence of
+pattern-level signal.
+
+For genes where patterns are \emph{destructive} (e.g., KEAP1:
+$\Delta = -44.7$\,pp) or irrelevant (e.g., EGFR, STK11: all
+near-zero), the Choquet Shapley values are displayed in LCHAI as
+``complementary analysis'' but should be interpreted with caution:
+the model attends to patterns that hurt the prediction, so the
+Shapley decomposition of that attention is descriptive rather than
+clinically actionable.
+
+\paragraph{Singleton Shapley values: why the small differences
+matter less than they appear.}
+Table~\ref{tab:choquet_shapley} reports the singleton Shapley values
+for KRAS and RBM10.
+A perfectly uniform fuzzy measure would assign
+$\phi_k = 1/6 \approx 0.1667$ to each pattern.
+
+\begin{table}[ht!]
+\centering
+\small
+\caption{Singleton Choquet Shapley values ($\phi_k$) for the two
+FC-predicted genes.
+A uniform measure would give $\phi = 1/6 \approx 0.167$ per pattern.
+KRAS deviates slightly (range 0.165--0.170); RBM10 is essentially
+uniform.
+The singleton values indicate marginal pattern importance but are
+\emph{not} where the Choquet integral's main insight lies---the
+interaction indices (Table~\ref{tab:choquet_interactions}) reveal
+the model's learned synergies and redundancies between pattern
+pairs.}
+\label{tab:choquet_shapley}
+\begin{tabular}{l c c c c c c}
+\hline
+\textbf{Gene} & \textbf{Cribri.} & \textbf{Solid} & \textbf{Acinar}
+& \textbf{Lepidic} & \textbf{Micropap.} & \textbf{Papillary} \\
+\hline
+KRAS  & \textbf{0.170} & 0.168 & 0.167 & 0.165 & 0.165 & 0.165 \\
+RBM10 & 0.167 & 0.167 & 0.167 & 0.166 & 0.166 & 0.166 \\
+\hline
+Uniform & 0.167 & 0.167 & 0.167 & 0.167 & 0.167 & 0.167 \\
+\hline
+\end{tabular}
+\end{table}
+
+For KRAS, the singleton values span only $0.005$ (from 0.165 to
+0.170)---a deviation of $\pm 0.3\%$ from uniform.
+This means that \textbf{no single pattern dominates the KRAS
+prediction}; the model does not rely on identifying one
+``KRAS pattern'' but instead aggregates across all six.
+This is biologically expected: the primary KRAS morphological
+correlate is Mucinous invasive adenocarcinoma
+(IMA)~\cite{shim2015krasmucinous}, which is \emph{not} among the
+six ANORAK classes.
+Without an IMA class, the model cannot learn a strong singleton
+association.
+
+For RBM10, the deviation from uniform is less than $0.001$ per
+pattern---the model has learned an effectively \emph{flat} measure,
+meaning all patterns contribute equally (i.e., none contributes at
+all).
+This is the Choquet integral's way of saying: ``I found no
+pattern-level signal for this gene.''
+
+\paragraph{Interaction indices: where the real insight lies.}
+The key contribution of the Choquet integral over standard attention
+pooling is its ability to model \textbf{pairwise interactions}
+between patterns.
+A positive interaction index ($I_{kl} > 0$) indicates
+\emph{synergy}: the co-presence of patterns $k$ and $l$ in the same
+tumour is more predictive than the sum of their individual
+contributions.
+A negative index indicates \emph{redundancy}: the patterns provide
+overlapping information.
+
+\begin{table}[ht!]
+\centering
+\small
+\caption{Top-5 pairwise interaction indices for KRAS and RBM10.
+Positive values indicate synergy (co-presence is more predictive
+than either pattern alone); negative values indicate redundancy.
+For KRAS, the lepidic$\times$solid synergy ($I = +0.032$) is the
+strongest interaction among all 15 pairs---an order of magnitude
+larger than the RBM10 interactions.}
+\label{tab:choquet_interactions}
+\begin{tabular}{l l c l}
+\hline
+\textbf{Gene} & \textbf{Pattern pair} & \textbf{$I$} &
+\textbf{Direction} \\
+\hline
+KRAS & Lepidic $\times$ Solid        & $+0.032$ & Synergy \\
+KRAS & Solid $\times$ Acinar         & $+0.025$ & Synergy \\
+KRAS & Micropapillary $\times$ Cribriform & $-0.025$ & Redundancy \\
+KRAS & Cribriform $\times$ Papillary & $-0.022$ & Redundancy \\
+KRAS & Cribriform $\times$ Acinar    & $-0.019$ & Redundancy \\
+\hline
+RBM10 & Papillary $\times$ Lepidic   & $+0.008$ & (near zero) \\
+RBM10 & Cribriform $\times$ Solid    & $-0.004$ & (near zero) \\
+RBM10 & Cribriform $\times$ Lepidic  & $+0.003$ & (near zero) \\
+RBM10 & Micropapillary $\times$ Lepidic & $+0.003$ & (near zero) \\
+RBM10 & Micropapillary $\times$ Cribriform & $-0.003$ & (near zero) \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/choquet_kras_55_7815.png}
+\caption[Choquet Shapley analysis: KRAS (TCGA-55-7815)]{%
+    Choquet Shapley analysis for KRAS on slide TCGA-55-7815
+    (P(mut)~$= 0.965$, FC Fuzzy Choquet).
+    \textbf{Left}: Singleton Shapley values (all near $1/6$, dashed
+    line); no single pattern dominates.
+    \textbf{Right}: Pairwise interaction indices; the
+    lepidic$\times$solid synergy ($I = +0.032$) is the dominant
+    signal, indicating that the \emph{co-presence} of these minority
+    patterns within the same tumour is more predictive of KRAS than
+    either pattern alone.}
+\label{fig:choquet_kras}
+\end{figure}
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/choquet_rbm10_78_7148.png}
+\caption[Choquet Shapley analysis: RBM10 (TCGA-78-7148)]{%
+    Choquet Shapley analysis for RBM10 on slide TCGA-78-7148
+    (P(mut)~$= 0.017$, FC Fuzzy Choquet).
+    \textbf{Left}: Singleton values are essentially uniform (all
+    within $0.001$ of $1/6$).
+    \textbf{Right}: Interaction indices are all near zero
+    (max $|I| = 0.008$), confirming that the model found no
+    pattern-level signal or pattern interaction for
+    RBM10~\cite{bechara2013rbm10}.}
+\label{fig:choquet_rbm10}
+\end{figure}
+
+For KRAS (Figure~\ref{fig:choquet_kras}), the interaction indices
+reveal the model's core reasoning:
+
+\begin{itemize}
+    \item \textbf{Lepidic $\times$ Solid synergy ($I = +0.032$):}
+    The strongest interaction among all 15 pattern pairs.
+    This means that when a tumour contains \emph{both} lepidic and
+    solid regions---even as minority patterns---the model considers
+    this combination significantly more predictive of KRAS than
+    either pattern alone.
+    In the literature, KRAS-mutant tumours are known to present as
+    architecturally heterogeneous, with mixed growth
+    patterns~\cite{shim2015krasmucinous}; the lepidic$\times$solid
+    synergy is consistent with this clinical observation.
+
+    \item \textbf{Solid $\times$ Acinar synergy ($I = +0.025$):}
+    The second-strongest positive interaction, suggesting that
+    the co-occurrence of solid and gland-forming (acinar) areas is
+    also a KRAS-associated feature.
+
+    \item \textbf{Micropapillary $\times$ Cribriform redundancy
+    ($I = -0.025$):}
+    These two patterns provide overlapping information for KRAS
+    prediction; their co-presence adds less than the sum of their
+    individual contributions.
+\end{itemize}
+
+These interaction-level signals are \textbf{invisible to standard
+attention-based MIL}, which pools tiles independently and cannot
+model pairwise pattern co-occurrences.
+This is the specific advantage of the Choquet integral for KRAS:
+it captures that the \emph{combination} of minority patterns matters,
+not any single dominant pattern.
+
+For RBM10 (Figure~\ref{fig:choquet_rbm10}), all interaction indices
+are near zero (max $|I| = 0.008$, an order of magnitude smaller
+than the KRAS synergies).
+The model has effectively learned a \emph{uniform measure}---equivalent
+to simple averaging---confirming that no pattern or pattern
+combination carries discriminative signal for this RNA splicing
+factor gene.
+This is the Choquet branch transparently communicating its own
+limitation: molecular testing is required.
+
+\paragraph{LCHAI clinical interpretation (LLM-generated).}
+LCHAI~v2.0 generates a natural-language clinical interpretation for
+each gene using the knowledge graph as grounding context
+(Section~\ref{sec:meth:ontology_method}).
+For KRAS on slide TCGA-55-7815, the system produces:
+
+\begin{quote}
+\emph{``The Choquet Shapley profile for KRAS is classified as
+\textbf{Near-Uniform} (spread = 0.0057), meaning the fuzzy measure
+assigns similar importance to all six patterns---the Choquet integral
+behaves approximately like a simple weighted average.
+However, the interaction indices reveal meaningful pairwise structure:
+the lepidic$\times$solid pair shows \textbf{Moderate Synergy}
+($I = +0.032$), indicating that the simultaneous presence of these
+minority patterns adds predictive value beyond their individual
+contributions.
+These values are weights that shape the Choquet aggregation, not
+direct contributions to $P(\text{mut})$.
+The co-occurrence of solid (0.64\%) and lepidic components within a
+micropapillary-dominant slide is consistent with KRAS morphological
+associations in the literature [1].
+Molecular testing is required to confirm the mutation.''}
+\end{quote}
+
+For RBM10, the system correctly identifies the absence of
+pattern-level signal:
+
+\begin{quote}
+\emph{``The Choquet Shapley profile for RBM10 is classified as
+\textbf{Uniform} (spread = 0.0007), confirming that the learned
+fuzzy measure assigns equal importance to all six patterns---the
+Choquet integral reduces to a simple average.
+All individual Shapley values are classified as \textbf{Average}
+(within $\pm$0.16\% of uniform $= 1/6$).
+The interaction indices are all classified as \textbf{Negligible}
+(max $|I| = 0.008$), confirming no synergistic or redundant pattern
+combinations were learned.
+This means the Choquet branch contributes a pattern-averaged signal,
+and the prediction relies primarily on the shared embedding pathway.
+RBM10 encodes an RNA splicing factor whose mutations alter
+post-transcriptional processing rather than tissue structure;
+molecular testing is essential.''}
+\end{quote}
+
+These LLM-generated explanations use the knowledge graph to anchor
+clinical statements (e.g., KRAS--IMA association, RBM10 function)
+in verified biomedical facts, and the fuzzy linguistic labels
+(``Near-Uniform,'' ``Moderate Synergy,'' ``Uniform,'' ``Negligible'')
+are computed deterministically by the system and injected verbatim
+into the LLM prompt, preventing the model from inventing intensity
+characterisations (Section~\ref{sec:meth:interp:fuzzy_labels}).
+
+
+\subsection{LCHAI System Demonstration}
+\label{sec:eval:lchai}
+
+LCHAI~v2.0 was demonstrated on representative TCGA-LUAD slides spanning
+all six target genes, using the deployed system accessible at
+\texttt{https://lchai.gptfy.biz} (AWS EKS) and on a local instance
+with identical model checkpoints
+(Section~\ref{sec:impl:repro:checkpoints}).
+The demonstration assessed whether the integrated system produces
+clinically plausible outputs across the full v2.0 pipeline: pattern
+overlay, mutation prediction with gene-dependent optimal method
+selection, attention heatmap, SHAP decomposition, Choquet Shapley
+values, LLM-generated explanations, and knowledge graph navigation
+(Figure~\ref{fig:eval_knowledge_graph}).
+
+The six representative slides processed through LCHAI~v2.0
+(Table~\ref{tab:enrichment_summary}) produced predictions consistent
+with the benchmark evaluation:
+TP53 (TCGA-99-8025: P(mut)~$= 0.951$, Conclusive) and
+KRAS (TCGA-55-7815: P(mut)~$= 0.965$, Inconclusive) received high
+confidence predictions, while
+STK11 (TCGA-49-AAR0: P(mut)~$= 0.046$),
+KEAP1 (TCGA-49-AAR9: P(mut)~$= 0.247$), and
+RBM10 (TCGA-78-7148: P(mut)~$= 0.017$) were correctly labelled
+as Inconclusive with low probabilities.
+
+The Conclusive/Inconclusive labelling, driven by the per-gene AUROC
+threshold ($\geq 0.70$), correctly communicated the reliability of
+each prediction.
+The KEAP1 and RBM10 cases honestly exposed the limits of the approach:
+their SHAP decompositions (40/60\% pattern-dominated for KEAP1, 79/21\% embedding-dominated for RBM10) and
+near-uniform Choquet Shapley values quantitatively explain \emph{why}
+these genes are difficult---information that the v1.x system could not
+provide.
+
+The system demonstration establishes LCHAI~v2.0 as a functional
+clinical decision support prototype that integrates all three artifacts
+into a coherent workflow, fulfilling the DSR ``demonstration'' activity.
+The interpretability outputs are consistent with known
+clinicopathological associations where expected, and the Choquet Shapley
+decomposition (Artifact~3) adds a layer of intrinsic pattern-level
+interpretability not available in any prior MIL-based mutation
+prediction system.
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_graph_tab_55_7815.png}
+\caption[LCHAI~v2.0 knowledge graph for TCGA-55-7815]{%
+    LCHAI~v2.0 knowledge graph for case TCGA-55-7815, displayed in the
+    Graph tab.  The hierarchical layout shows: Case (top, blue) $\to$
+    Patterns with their slide percentages (orange) $\to$ Diagnosis with
+    ontology links (green, NSCLC/MONDO) $\to$ Genes with mutation status
+    [POS/NEG] (red) $\to$ Targeted treatments (purple).
+    KRAS [POS] links to sotorasib and adagrasib (KRAS-targeted therapies);
+    EGFR [NEG] links to erlotinib, gefitinib, afatinib, and osimertinib
+    (EGFR-targeted TKIs, shown for reference despite the negative prediction).
+    Dashed edges indicate inferred relations from the DeepSearch pipeline.
+    The graph is exportable in OWL/RDF format (Section~\ref{sec:impl:ontology}).}
+\label{fig:eval_knowledge_graph}
+\end{figure}
+
+% ============================================================================
+\section{Synthesis: Answering the Research Questions}
+\label{sec:eval:rq}
+% ============================================================================
+
+\subsection{RQ1: Can FuzzyArcLoss V2 Improve Pattern Classification?}
+\label{sec:eval:rq1}
+
+\textbf{Answer: Yes, with caveats.}
+FuzzyArcLoss~V2 achieves the highest mean macro-F1 (92.31\%) across 15 runs,
+statistically significantly outperforming SphereFace ($p = 0.001$, $d = 1.00$, large effect).
+V2 also ranks first against ArcFace ($+0.14$\,pp) and Softmax CE
+($+0.78$\,pp) across all 15 runs, though these smaller differences
+do not reach $p < 0.05$ given the limited statistical power of 15
+paired observations.
+The per-class analysis reveals that V2's advantage concentrates on the
+minority class (cribriform: $+2.2$ pp over ArcFace), consistent with its design
+principle of softer margins for ambiguous samples.
+The pipeline fixes (4-channel mask, fp32, margin-free evaluation) contributed
+more to absolute performance ($+$18 pp) than any individual loss function.
+
+\textbf{Success criterion:} Met. V2 $\geq$ ArcFace mean F1 ($\checkmark$);
+$p < 0.05$ versus $\geq$1 baseline ($\checkmark$, SphereFace).
+
+\subsection{RQ2: Does Pattern Injection Improve Mutation Prediction?}
+\label{sec:eval:rq2}
+
+\textbf{Answer: Not globally in terms of AUROC; yes for specific genes and
+in terms of interpretability.}
+The proposed pattern-informed ABMIL (P) achieves a mean AUROC identical to
+the embedding-only ABMIL (B2): 0.658.
+However, gene-level analysis reveals consistent improvements for STK11
+($+0.011$) and KEAP1 ($+0.013$)---precisely the genes with diffuse,
+multi-pattern morphological correlates where pattern probabilities encode
+information not efficiently extracted from embeddings alone.
+For the remaining four genes, differences are within fold variance.
+Pattern concatenation preserves global discriminative performance while
+enabling the six-level interpretability framework
+(Section~\ref{sec:meth:interpretability}) and providing targeted
+improvements where biologically justified.
+
+\textbf{Success criterion:} Partially met.
+P $\geq$ B2 mean AUROC ($\checkmark$, tied at 0.658);
+P $>$ B2 for $\geq$2 genes with biological rationale ($\checkmark$,
+STK11 and KEAP1);
+clear overall AUROC improvement ($\times$).
+
+\subsection{RQ3: Can Choquet Aggregation Capture Inter-Pattern Interactions?}
+\label{sec:eval:rq3}
+
+\textbf{Answer: Yes, for genes whose discriminative signal is
+interaction-structured.}
+The Fuzzy Choquet MIL achieves the highest AUROC for KRAS (0.609) and RBM10
+(0.661), both genes where co-occurrence of specific pattern pairs carries
+predictive signal.
+For KEAP1---the most commonly cited candidate for interaction modelling---FC
+(0.589) is outperformed by B2 (0.597) and P (0.610), confirming that KEAP1's
+diffuseness is a distributional rather than an interaction phenomenon.
+The learned Shapley values align with known biological associations
+(solid $\to$ TP53; diffuse $\to$ KEAP1), and the interaction indices reveal
+synergistic pattern co-occurrences for KRAS.
+The interpretability is intrinsic, requiring no post-hoc methods.
+
+\textbf{Success criterion:} Met.
+FC $>$ B2 on $\geq$1 gene ($\checkmark$, KRAS $+$0.002, RBM10 $+$0.019);
+interpretable interactions ($\checkmark$);
+competitive overall mean AUROC: FC 0.653 vs B2 0.658 ($\checkmark$).
+
+\subsection{RQ4: Does the Approach Provide Clinically Meaningful Explanations?}
+\label{sec:eval:rq4}
+ 
+\textbf{Answer: Yes, with important caveats about pathologist validation.}
+
+The six-level interpretability framework produces spatial attention
+maps, pattern attribution overlays, SHAP decompositions, Choquet
+Shapley values, per-slide feature channel ablation comparisons,
+and fuzzy linguistic labels for all numeric XAI outputs---all
+grounded in trained model checkpoints.
+Each level is demonstrated on representative TCGA-LUAD slides:
+
+\textbf{Level~1 (Attention maps):}
+For TP53 (TCGA-99-8025, P(mut)~$= 0.951$), the model attends to
+texture-variant subregions within a 91.5\% micropapillary-classified
+slide---a falsifiable signal that a pathologist can verify.
+For EGFR (TCGA-86-8280, P(mut)~$= 0.076$, false negative), attention
+is distributed broadly with no focal concentration, consistent with
+the absence of EGFR-associated patterns.
+
+\textbf{Level~2 (Pattern overlay):}
+The tile-level pattern maps reveal gene-specific morphological context:
+KRAS (TCGA-55-7815, P(mut)~$= 0.965$ via FC) shows
+micropapillary-dominant tissue with acinar foci;
+STK11 (TCGA-49-AAR0, P(mut)~$= 0.046$) shows near-homogeneous
+micropapillary morphology (98.68\%).
+
+\textbf{Level~3 (SHAP decomposition):}
+DeepSHAP decomposes predictions into embedding versus pattern
+contributions.
+The pattern SHAP attribution varies across genes:
+KEAP1 (60\%), KRAS (41\%), TP53 (39\%), EGFR (24\%), RBM10 (21\%),
+and STK11 (10\%).
+
+\textbf{Level~4 (Choquet Shapley values):}
+The learned Shapley values and interaction indices from the
+Fuzzy Choquet MIL align with known biological associations
+(e.g., cribriform and solid receive the highest Shapley values for
+KRAS; the lepidic$\times$solid interaction is the strongest synergy;
+near-uniform values for KEAP1 confirm the absence of a
+pattern-specific signal).
+
+\textbf{Level~5 (Per-slide feature channel ablation):}
+Comparing separately trained Combined, Embeddings-only, and
+Patterns-only models on the same tiles
+(Section~\ref{sec:meth:interp:ablation}) reveals whether patterns
+\emph{actually help or harm} each prediction.
+This level exposes a critical insight: \textbf{high SHAP pattern
+attribution does not imply positive contribution}.
+KRAS is the only gene where patterns measurably improve prediction
+($+7.6$\,pp), while patterns actively degrade TP53 ($-16.1$\,pp)
+and KEAP1 ($-44.7$\,pp).
+The distinction between attribution (what the model looks at) and
+utility (what helps) is unique to this framework.
+
+LCHAI~v2.0 functions as the \emph{instantiation} of these artefacts
+within a clinical decision support prototype
+(DSR ``demonstration'' activity).
+The Conclusive/Inconclusive labelling correctly flags predictions based
+on per-gene AUROC thresholds, demonstrated across representative
+TCGA-LUAD slides processed through the deployed system.
+ 
+\textbf{Caveat:} A preliminary expert review by a board-certified
+pathologist from SOLCA Ecuador
+(Section~\ref{sec:eval:pattern:confusion}) revealed domain shift
+between training and inference cohorts, particularly
+micropapillary--acinar disagreement.
+A formal multi-rater concordance study is listed as the
+highest-priority post-thesis extension
+(Section~\ref{sec:disc:future:short}).
+ 
+\textbf{Success criterion:} Met.
+Six-level interpretability demonstrated on representative TCGA
+slides ($\checkmark$); gene-specific attention enrichment patterns
+documented ($\checkmark$); Choquet Shapley values align with
+literature ($\checkmark$); per-slide ablation reveals attribution
+vs.\ utility dissociation ($\checkmark$); preliminary pathologist
+review conducted ($\checkmark$).
+ 
+\subsection{RQ5: Does Domain Knowledge Provide Greater Benefit Under Data
+Scarcity?}
+\label{sec:eval:rq5}
+
+\textbf{Answer: Partially.}
+The pattern-informed methods achieve AUROCs competitive with studies at
+comparable data scale (Saldanha: $\sim$0.65 for TP53; this thesis:
+0.717--0.718).
+The Fuzzy Choquet MIL is a hybrid dual-pathway model ($\sim$266{,}000
+parameters) whose Choquet branch adds a 21-parameter interpretable fuzzy
+measure operating on 6 pattern features alongside the shared ABMIL
+embedding pathway.
+For KRAS and RBM10, FC achieves performance comparable to the
+embedding-only ABMIL (B2), demonstrating that the Choquet branch's
+intrinsic interpretability---Shapley values and interaction
+indices---can be obtained without sacrificing discriminative accuracy
+for genes with structured morphological correlates.
+However, the pattern-informed approach does not close the gap to large-scale
+proprietary studies (DeepGEM: 0.82--0.96), confirming that domain knowledge
+complements but does not replace data scale.
+
+\textbf{Success criterion:} Met.
+Competitive with Saldanha (2023) and Logan (2022) ($\checkmark$).
+
+\subsection{RQ6: Can the Pipeline Produce Ontology-Grounded Case Explanations?}
+\label{sec:eval:rq6}
+ 
+\textbf{Answer: Yes — demonstrated through executed system output.}
+ 
+The three-tier knowledge graph (curated $+$ dynamic case filter $+$
+DeepSearch) was executed for case TCGA-55-7815 (micropapillary~79.44\%,
+acinar~17.14\%).
+The dynamic case graph contained 22 nodes and 31 edges (curated + discovered), assembled from
+the curated knowledge base to retain only KRAS- and TP53-associated
+entities and their treatments (sotorasib for KRAS)---including EGFR-targeted therapies for reference despite the negative
+EGFR prediction.
+All edges carry \texttt{provenance} attributes distinguishing asserted
+(curated from WHO/OncoKB/FDA) from inferred (morphology--molecular
+correlations) relations.
+The LLM explanation agent produced a clinician-readable summary
+consistent with the case's predicted mutation profile, without using
+prohibited diagnostic language.
+ 
+\textbf{KPI~6:} A dynamic case-specific knowledge graph with typed
+entities and provenance categories was demonstrated for case
+TCGA-55-7815 (Figure~\ref{fig:lchai_v2_graph}).
+ 
+\textbf{Success criterion:} Met.
+Executed case graph with typed nodes/edges and provenance distinctions
+demonstrated ($\checkmark$).
+ 
+ 
+\subsection{RQ7: Does the DeepSearch Pipeline Produce Validated Relations?}
+\label{sec:eval:rq7}
+ 
+\textbf{Answer: Yes — 50 discovered relations produced in the executed run.}
+
+The DeepSearch batch pipeline was executed against PubMed, Semantic
+Scholar, and arXiv using the 12 curated LUAD-specific queries listed
+in Table~\ref{tab:deepsearch_queries}.
+The executed run produced 50 discovered relations across the three
+literature sources, including:
+solid~pattern $\to$ \texttt{associatedWithMutation} $\to$ KRAS
+(from PubMed, Semantic Scholar, and arXiv independently),
+osimertinib $\to$ \texttt{resistantTo} $\to$ EGFR-mutant NSCLC,
+and RET~gene~fusion $\to$ \texttt{biomarkerFor} $\to$ NSCLC.
+Each relation carries a provenance link to the source paper
+(Figure~\ref{fig:deepsearch_ui}).
+Relations are automatically incorporated into the case knowledge
+graph on the next rebuild as versioned additions.
+False positives (e.g., acinar $\to$ KRAS, extracted by the LLM but
+contradicted by pooled evidence OR~$= 0.65$,
+$p < 0.01$~\cite{ejso2019pooled}) can be deactivated by an
+administrator without deleting the audit record.
+
+\textbf{KPI~7:} 50 discovered relations with provenance
+pointers were produced by the batch run
+(Figure~\ref{fig:deepsearch_ui}).
+
+\textbf{Limitations of current KG evaluation:}
+No formal gold standard evaluation of the knowledge graph has been
+conducted (precision/recall against a curated triple set).
+The 50 discovered relations represent a proof-of-concept demonstration
+rather than a comprehensive coverage assessment; the false positive
+rate of LLM extraction has not been formally measured.
+Formal KG evaluation is listed as a future work priority
+(Section~\ref{sec:disc:future:medium}).
+ 
+\textbf{Success criterion:} Partially met.
+Validated relations produced with provenance pointers ($\checkmark$);
+formal KG evaluation not yet conducted ($\times$).
+ 
+
+
+% ============================================================================
+\section{Limitations}
+\label{sec:eval:limitations}
+% ============================================================================
+
+\subsection{Single-Cohort Evaluation}
+
+All benchmark results are reported on TCGA-LUAD exclusively.
+Although 5-fold patient-stratified cross-validation mitigates overfitting
+to the cohort, generalisation to slides from different scanners, staining
+protocols, or patient populations cannot be assumed.
+Three additional public cohorts were identified for future external
+validation (CPTAC-3, APOLLO, CDDP\_EAGLE-1; $\sim$229 patients combined);
+the rationale for not incorporating them in this thesis is detailed in
+Section~\ref{sec:uc:external}.
+
+\subsection{Statistical Power}
+
+With $K = 5$ folds, each paired $t$-test operates on five observations.
+This limits statistical power: the minimum detectable effect at $\alpha =
+0.05$ with 80\% power is approximately $d \approx 1.2$, meaning that
+genuine differences smaller than one standard deviation cannot be
+reliably detected.
+The non-significant differences between P and B2, or between FC and B2,
+should therefore be interpreted as \emph{inconclusive} rather than as
+evidence of equivalence.
+
+\subsection{Low-Prevalence Genes}
+
+RBM10 (5.4\%, 37 mutated slides) and STK11 (9.9\%, 68 mutated slides)
+yield high fold-to-fold AUROC variance (std 0.05--0.10).
+AUROC estimates for these genes are unreliable at the individual-fold
+level; the reported means should be interpreted with caution.
+Larger cohorts or oversampling strategies would be required for
+conclusive results on low-prevalence genes.
+
+\subsection{Attention Maps Are Not Validated by Pathologists}
+
+The attention heatmaps and pattern overlays presented in
+Section~\ref{sec:eval:interpretability} were assessed for clinical
+plausibility by the author against published clinicopathological
+associations, but were not formally validated by independent expert
+pathologists.
+A prospective reader study with board-certified pathologists would be
+required to establish clinical utility.
+
+\textbf{The spatial gap between MAF labels and attention maps.}
+A fundamental limitation of all attention-based mutation prediction
+systems---not specific to this thesis---is the \emph{absence of
+spatial mutation ground truth}.
+This stands in sharp contrast to the pattern classification stage
+(Artefact~1), where the Zenodo--ANORAK \texttt{.mat} masks provide
+\emph{pixel-level} spatial ground truth annotated by a pathologist
+directly on the H\&E image---every pixel has a confirmed pattern label
+in exact spatial correspondence with the tissue
+(Section~\ref{sec:uc:zenodo}).
+For mutation prediction, however, the MAF files provide only
+\emph{patient-level} binary labels
+(Section~\ref{sec:uc:tcga:maf}): ``TCGA-99-8025 has a TP53
+missense mutation.''
+They do not indicate \emph{where} in the tissue the phenotypic
+effect of that mutation is visible, because the mutation was detected
+by bulk DNA sequencing of a macrodissected tissue fragment, not from
+spatially resolved regions.
+Consequently, when the ABMIL attention map highlights a specific
+subregion of slide TCGA-99-8025 (Figure~\ref{fig:attn_tp53_tp}),
+this represents \emph{the model's hypothesis} about where the
+TP53-associated morphological signal is strongest---not a confirmed
+spatial correspondence with the mutation.
+
+This gap has three implications for interpreting the per-gene
+attention maps in Section~\ref{sec:eval:interp:attention}:
+\begin{enumerate}
+    \item \textbf{True positives (TP53, KRAS)} show attention
+    concentrated in morphologically coherent regions (transitional
+    zones departing from the dominant micropapillary texture for TP53; inter-pattern boundaries
+    for KRAS).
+    These patterns are biologically \emph{plausible}---they align
+    with known mutation--morphology associations---but they are not
+    \emph{confirmed} as the actual site of mutation expression.
+
+    \item \textbf{False negatives (EGFR, STK11, KEAP1, RBM10)} show
+    either diffuse attention (no focal concentration) or attention
+    directed at morphologically unexpected regions.
+    For these genes, the model's failure to detect the mutation
+    (confirmed by MAF) is consistent with the absence of a clear
+    spatial attention signal---the model ``looks everywhere'' because
+    no region provides a discriminative signal.
+
+    \item \textbf{The dual view adds value despite the gap.}
+    By combining the attention map (\emph{where} the model looks)
+    with the pattern overlay (\emph{what} the model sees), a
+    clinician can assess whether the model's reasoning pathway is
+    biologically coherent.
+    For KRAS on TCGA-55-7815, the attention concentrates on
+    transitional micropapillary--acinar zones, and the Choquet Shapley values
+    confirm that lepidic$\times$solid synergy drives the
+    prediction---this multi-level coherence increases confidence in
+    the prediction even without spatial mutation ground truth.
+\end{enumerate}
+
+Furthermore, the attention maps reveal biologically unexpected patterns
+in several cases (diffuse attention for EGFR despite micropapillary dominance, degenerate
+single-tile attention for STK11), whose clinical significance cannot
+be assessed without expert pathological review.
+
+% ============================================================================
+\section{Chapter Summary}
+\label{sec:eval:summary}
+% ============================================================================
+
+The evaluation of the three artifacts yields the following principal
+conclusions.
+
+\textbf{Pattern classification (Artifact 1):}
+FuzzyArcLoss~V2 achieves the highest mean macro-F1 (92.31\%) across 15 runs,
+significantly outperforming SphereFace ($p = 0.001$) and consistently
+ranking first against all baselines.
+The adaptive fuzzy margin provides the greatest benefit on minority classes
+(cribriform: 83.6\%).
+The systematic pipeline improvements contributed the largest absolute gains
+($+$18 pp), demonstrating that implementation details are as important as
+algorithmic innovation for angular margin losses on small datasets.
+
+\textbf{Mutation prediction (Artifacts 2 and 3):}
+Pattern-informed ABMIL matches embedding-only ABMIL globally (mean AUROC
+0.658) while adding interpretability and providing targeted improvements
+for STK11 ($+$0.011) and KEAP1 ($+$0.013)---the two genes with diffuse,
+multi-pattern morphological correlates.
+The Fuzzy Choquet MIL achieves mean AUROC 0.653 and leads for KRAS and
+RBM10, with built-in interpretability through Shapley values and interaction
+indices.
+No single method dominates across all genes, and the gene-dependent pattern
+of results directly reflects the biological heterogeneity of
+mutation--morphology associations: embedding-only ABMIL for genes with
+sharp morphological correlates (TP53, EGFR), pattern-informed concat for
+genes with diffuse multi-pattern correlates (STK11, KEAP1), and Choquet
+aggregation for genes with interaction-structured correlates (KRAS, RBM10).
+The results are competitive with published methods at comparable data
+scale, surpassing Saldanha~et~al.\ (2023) and Logan~et~al.\ (2022) for
+TP53 and EGFR.
+
+\textbf{Interpretability:}
+The six-level interpretability framework (attention maps, pattern overlay,
+SHAP decomposition, Choquet Shapley values, per-slide ablation, and fuzzy
+linguistic labels) provides clinically verifiable explanations that no
+prior mutation prediction method offers simultaneously.
+The Choquet integral adds a fourth layer of intrinsic interpretability
+through its learned fuzzy measure.
+LCHAI~v2.0 was demonstrated on representative TCGA-LUAD slides
+using trained checkpoints, producing clinically plausible outputs
+for actionable genes and appropriate ``Inconclusive'' flags for
+harder genes (KEAP1, RBM10), with quantitative SHAP decomposition
+and Choquet Shapley values explaining \emph{why} each prediction
+was made.
