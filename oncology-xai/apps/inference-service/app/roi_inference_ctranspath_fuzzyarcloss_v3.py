@@ -139,6 +139,8 @@ class InferenceResult:
     shap_artifacts: dict[str, bytes] = field(default_factory=dict)
     # Attention map
     attention_top_k_indices: list[int] = field(default_factory=list)
+    # Per-tile attention weights for interactive hover (same order as pattern_region_map)
+    attention_region_map: list[dict] = field(default_factory=list)
     # Ablation comparison (proposed vs emb-only vs pat-only)
     ablation_results: list[Any] = field(default_factory=list)
     # Permutation importance
@@ -1156,6 +1158,26 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
                 abmil_output.attention_map, abmil_output.top_k_indices,
                 use_tile_sz, pattern_alpha=comb_alpha,
             )
+
+            attn = abmil_output.attention_map
+            n_tiles = len(use_coords)
+            if n_tiles > 0 and len(attn) >= n_tiles:
+                percentiles = (np.argsort(np.argsort(attn[:n_tiles])) / max(n_tiles - 1, 1)) * 100.0
+                ranks = np.argsort(-attn[:n_tiles])
+                rank_lookup = np.empty_like(ranks)
+                rank_lookup[ranks] = np.arange(len(ranks))
+                tw, th = img.size
+                result.attention_region_map = [
+                    {
+                        "x": int(tx), "y": int(ty), "w": use_tile_sz, "h": use_tile_sz,
+                        "xn": round(tx / tw, 4), "yn": round(ty / th, 4),
+                        "wn": round(use_tile_sz / tw, 4), "hn": round(use_tile_sz / th, 4),
+                        "attention": round(float(attn[i]), 6),
+                        "attention_rank": int(rank_lookup[i]) + 1,
+                        "attention_percentile": round(float(percentiles[i]), 1),
+                    }
+                    for i, (tx, ty) in enumerate(use_coords) if i < n_tiles
+                ]
 
     except Exception as e:
         logger.warning("v2 ABMIL pathway failed: %s — falling back to v1 XGBoost", e)

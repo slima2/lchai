@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from './auth/AuthProvider';
-import ImagePanel from './panels/ImagePanel';
+import AnalysisPanel from './panels/AnalysisPanel';
 import ViewerPanel from './panels/ViewerPanel';
 import GraphPanel from './panels/GraphPanel';
-import ShapPanel from './panels/ShapPanel';
 import AdminPanel from './panels/AdminPanel';
 import { getPatients, getCases, getImages, getLatestResults } from './api';
 
-type Tab = 'images' | 'viewer' | 'graph' | 'shap' | 'admin';
+type Tab = 'analysis' | 'viewer' | 'graph' | 'admin';
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -27,7 +26,7 @@ interface CaseEntry {
 
 export default function App() {
   const { user, isAdmin, isClinician, isAuditor, logout, preferredLanguage, setPreferredLanguage } = useAuth();
-  const [tab, setTab] = useState<Tab>('images');
+  const [tab, setTab] = useState<Tab>('analysis');
   const [caseId, setCaseId] = useState<string | null>(null);
   const [imageId, setImageId] = useState<string | null>(null);
   const [resultBundleId, setResultBundleId] = useState<string | null>(null);
@@ -103,10 +102,9 @@ export default function App() {
   const currentCase = allCases.find(c => c.caseId === caseId);
 
   const tabs: { key: Tab; label: string; roles?: string[] }[] = [
-    { key: 'images', label: 'Images' },
+    { key: 'analysis', label: 'Analysis' },
     { key: 'viewer', label: 'Viewer' },
     { key: 'graph', label: 'Graph' },
-    { key: 'shap', label: 'Explainability' },
     ...(isAdmin ? [{ key: 'admin' as Tab, label: 'Admin' }] : []),
   ];
 
@@ -221,10 +219,11 @@ export default function App() {
       </div>
 
       <main className="p-6">
-        {tab === 'images' && (
-          <ImagePanel
+        {tab === 'analysis' && (
+          <AnalysisPanel
             caseId={caseId || '__new__'}
             imageId={imageId}
+            resultBundleId={resultBundleId}
             onImageSelected={setImageId}
             onResultsReady={setResultBundleId}
             onCaseChanged={(id) => {
@@ -244,10 +243,6 @@ export default function App() {
         {tab === 'graph' && caseId && <GraphPanel caseId={caseId} resultBundleId={resultBundleId} />}
         {tab === 'graph' && !caseId && (
           <p className="text-gray-500">Upload and process an image first.</p>
-        )}
-        {tab === 'shap' && resultBundleId && <ShapPanel resultBundleId={resultBundleId} />}
-        {tab === 'shap' && !resultBundleId && (
-          <p className="text-gray-500">Process an image first to view explainability results.</p>
         )}
         {tab === 'admin' && isAdmin && <AdminPanel />}
         {tab === 'admin' && !isAdmin && (

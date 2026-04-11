@@ -207,6 +207,20 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
             )
             db.add(region_art)
 
+        # Upload attention region map (JSON) for interactive hover
+        if result.attention_region_map:
+            attn_json = json.dumps(result.attention_region_map).encode()
+            attn_key = f"{prefix}/attention_region_map.json"
+            storage.upload_bytes(attn_key, attn_json, "application/json")
+            attn_art = XAIArtifactDB(
+                result_bundle_id=rb_id,
+                artifact_type="attention_region_map",
+                gene=None,
+                uri=f"s3://{settings.s3_bucket}/{attn_key}",
+                hash=hashlib.sha256(attn_json).hexdigest(),
+            )
+            db.add(attn_art)
+
         # Persist ResultBundle to DB (v2)
         bundle = ResultBundleDB(
             id=rb_id,

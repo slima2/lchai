@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { GENE_CLINICAL_ASSOC_ROWS, GENE_CLINICAL_ASSOC_THESIS_REF } from '../data/geneClinicalAssociations';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getScales, saveConfig, resetConfig, ALL_DEFAULT_SCALES, type FuzzyScale, type TrapezoidalMF } from '../fuzzyLabels';
 import {
   getOntologies, createProposal, getAuditEvents,
   runDeepSearch, runBatchDeepSearch, getDeepSearchJobs, getDiscoveredRelations,
   getKGSnapshots, createKGSnapshot, getKGChangelog, api,
 } from '../api';
 
-type Tab = 'parameters' | 'reference' | 'pipeline' | 'versions' | 'ontologies' | 'audit';
+type Tab = 'parameters' | 'reference' | 'pipeline' | 'versions' | 'ontologies' | 'audit' | 'fuzzy';
 
 const METHODS: Record<string, string> = {
   TP53: 'B2 (embeddings)', EGFR: 'B2 (embeddings)', RBM10: 'FC (Fuzzy Choquet)',
@@ -282,6 +283,7 @@ export default function AdminPanel() {
     { key: 'versions', label: 'KG Versions', icon: '📦' },
     { key: 'ontologies', label: 'Ontology Management', icon: '🧬' },
     { key: 'audit', label: 'Audit Log', icon: '📋' },
+    { key: 'fuzzy', label: 'Fuzzy Labels', icon: '🎛' },
   ];
 
   return (
@@ -767,6 +769,149 @@ Linear(256→1) → sigmoid → P(mut)`}</pre>
           </div>
         </div>
       )}
+
+      {/* ──── Fuzzy Labels ──── */}
+      {tab === 'fuzzy' && <FuzzyLabelsPanel />}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Fuzzy Labels Admin Panel
+   ═══════════════════════════════════════════════════════════════ */
+
+function FuzzyLabelsPanel() {
+  const [scales, setScales] = useState<FuzzyScale[]>(() => getScales());
+  const [dirty, setDirty] = useState(false);
+
+  const handleSave = () => {
+    saveConfig(scales);
+    setDirty(false);
+    alert('Fuzzy label thresholds saved. Reload the Analysis tab to see changes.');
+  };
+
+  const handleReset = () => {
+    if (!confirm('Reset all fuzzy label scales to defaults?')) return;
+    resetConfig();
+    setScales(ALL_DEFAULT_SCALES);
+    setDirty(false);
+  };
+
+  const updateSet = (scaleIdx: number, setIdx: number, field: keyof TrapezoidalMF, value: any) => {
+    const next = scales.map((s, si) => si !== scaleIdx ? s : {
+      ...s,
+      sets: s.sets.map((st, sti) => sti !== setIdx ? st : { ...st, [field]: value }),
+    });
+    setScales(next);
+    setDirty(true);
+  };
+
+  const updateCorner = (scaleIdx: number, setIdx: number, cornerIdx: number, value: number) => {
+    const next = scales.map((s, si) => si !== scaleIdx ? s : {
+      ...s,
+      sets: s.sets.map((st, sti) => {
+        if (sti !== setIdx) return st;
+        const abcd = [...st.abcd] as [number, number, number, number];
+        abcd[cornerIdx] = value;
+        return { ...st, abcd };
+      }),
+    });
+    setScales(next);
+    setDirty(true);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="font-semibold text-lg">Fuzzy Linguistic Labels — Membership Function Editor</h3>
+          <p className="text-xs text-gray-500 mt-1">
+            Trapezoidal membership functions map numeric XAI values to human-readable labels.
+            These labels are injected into LLM prompts to prevent hallucination of intensity terms.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={handleReset} className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">
+            Reset to Defaults
+          </button>
+          <button onClick={handleSave} disabled={!dirty}
+            className={`px-4 py-1.5 rounded text-sm font-medium ${dirty ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+            Save Changes
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {scales.map((scale, si) => (
+          <div key={scale.id} className="border rounded-lg overflow-hidden">
+            <div className="bg-indigo-50 border-b border-indigo-200 px-4 py-2">
+              <h4 className="font-bold text-indigo-900 text-sm">{scale.name}</h4>
+              <p className="text-[10px] text-indigo-700">{scale.description}</p>
+            </div>
+            <div className="p-4">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border px-2 py-1.5 text-left w-40">Label</th>
+                    <th className="border px-2 py-1.5 text-center">Color</th>
+                    <th className="border px-2 py-1.5 text-center">a (µ=0 start)</th>
+                    <th className="border px-2 py-1.5 text-center">b (µ=1 start)</th>
+                    <th className="border px-2 py-1.5 text-center">c (µ=1 end)</th>
+                    <th className="border px-2 py-1.5 text-center">d (µ=0 end)</th>
+                    <th className="border px-2 py-1.5 text-center w-32">Preview</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scale.sets.map((s, sti) => (
+                    <tr key={sti} className="hover:bg-gray-50">
+                      <td className="border px-2 py-1">
+                        <input type="text" value={s.label}
+                          onChange={(e) => updateSet(si, sti, 'label', e.target.value)}
+                          className="w-full text-xs border rounded px-1.5 py-0.5" />
+                      </td>
+                      <td className="border px-2 py-1 text-center">
+                        <input type="color" value={s.color}
+                          onChange={(e) => updateSet(si, sti, 'color', e.target.value)}
+                          className="w-8 h-6 cursor-pointer" />
+                      </td>
+                      {s.abcd.map((v, ci) => (
+                        <td key={ci} className="border px-2 py-1 text-center">
+                          <input type="number" step="0.001" value={v}
+                            onChange={(e) => updateCorner(si, sti, ci, parseFloat(e.target.value) || 0)}
+                            className="w-16 text-xs text-center border rounded px-1 py-0.5 font-mono" />
+                        </td>
+                      ))}
+                      <td className="border px-2 py-1 text-center">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: s.color + '25', color: s.color }}>
+                          {s.label}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Visual MF preview */}
+              <div className="mt-3 h-16 bg-gray-50 rounded border relative overflow-hidden">
+                {scale.sets.map((s, sti) => {
+                  const maxD = Math.max(...scale.sets.map((ss) => ss.abcd[3]), 0.1);
+                  const toX = (v: number) => Math.min((v / maxD) * 100, 100);
+                  const points = `${toX(s.abcd[0])},100 ${toX(s.abcd[1])},10 ${toX(s.abcd[2])},10 ${toX(s.abcd[3])},100`;
+                  return (
+                    <svg key={sti} className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                      <polygon points={points} fill={s.color} fillOpacity="0.2" stroke={s.color} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                    </svg>
+                  );
+                })}
+                <div className="absolute bottom-0 left-0 right-0 flex justify-between px-1 text-[8px] text-gray-400">
+                  <span>0</span>
+                  <span>{Math.max(...scale.sets.map((s) => s.abcd[3]), 0.1)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

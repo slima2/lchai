@@ -130,12 +130,11 @@ CURATED_EDGES: list[dict] = [
     {"s": _ncit("C128847"), "t": _ncit("C17757"), "label": "associatedWithMutation", "prov": "PMID:27738759", "type": "inferred"},
     # Papillary → EGFR: PMID:21252858 (Yoshizawa et al.; papillary = intermediate, EGFR-enriched)
     {"s": _ncit("C128849"), "t": _ncit("C17757"), "label": "associatedWithMutation", "prov": "PMID:21252858", "type": "inferred"},
-    # Micropapillary → TP53: PMID:35977379 (TP53 + ALK enriched in micropapillary; Front Oncol 2022)
+    # Micropapillary → TP53: PMID:36457500 (TP53 57.4% in micropapillary LUAD; Front Oncol 2022)
     #                         + thesis gene_unified: TP53 = solid + micropapillary
-    {"s": _ncit("C128850"), "t": _ncit("C17387"), "label": "associatedWithMutation", "prov": "PMID:35977379", "type": "inferred"},
-    # Micropapillary → ALK: PMID:22722855 (ALK+ enriched in micropapillary; Mod Pathol 2012)
-    #                        + PMID:35977379 (ALK fusions more frequent in micropapillary; Front Oncol 2022)
-    {"s": _ncit("C128850"), "t": _ncit("C20316"), "label": "associatedWithMutation", "prov": "PMID:22722855", "type": "inferred"},
+    {"s": _ncit("C128850"), "t": _ncit("C17387"), "label": "associatedWithMutation", "prov": "PMID:36457500", "type": "inferred"},
+    # Micropapillary → ALK: PMID:21753699 (Yoshida et al.; comprehensive histologic analysis of ALK-rearranged LUAD; Am J Surg Pathol 2011)
+    {"s": _ncit("C128850"), "t": _ncit("C20316"), "label": "associatedWithMutation", "prov": "PMID:21753699", "type": "inferred"},
     # Solid → KRAS: PMID:23619604 (solid 27% in KRAS+ vs 3% in EGFR+, p<0.001; Mod Pathol 2013)
     {"s": _ncit("C128851"), "t": _ncit("C17383"), "label": "associatedWithMutation", "prov": "PMID:23619604", "type": "inferred"},
     # Solid → TP53: PMID:25079552 (TCGA 2014 Nature; TP53 most mutated gene, associated with high-grade)
