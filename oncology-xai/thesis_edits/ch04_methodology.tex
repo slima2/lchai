@@ -75,9 +75,26 @@ whether the model relies on interpretable domain knowledge or on
 opaque visual features for each gene.
 
 \textbf{Rationale for 512 dimensions.}
-The projection from 768 to 512 dimensions was optimised jointly with the FuzzyArcLoss~V2 objective during fine-tuning on the six LUAD histological patterns.
-The resulting embedding space is therefore \emph{pattern-oriented}: its geometry reflects the angular separation of the six histological classes rather than the generic histopathological features of the pretrained CTransPath model.
-While the literature uses embedding dimensions ranging from 512 (CTransPath) to 2048 (RetCCL~\cite{wang2023retccl}), lower dimensionality is advantageous under data scarcity because it reduces the risk of overfitting in downstream models operating on $\sim$687 slides.
+The projection from 768 to 512 dimensions is not merely a
+dimensionality reduction: the projection head
+$(\mathbf{W}_{\text{proj}}, \mathbf{b}_{\text{proj}})$ was trained
+\emph{jointly} with the FuzzyArcLoss~V2 classifier on the Zenodo
+dataset, meaning the 512 output dimensions were optimised specifically
+to separate the six LUAD histological patterns on the angular
+hypersphere.
+The resulting embedding space is therefore \emph{pattern-oriented}:
+its geometry reflects the angular separation of the six histological
+classes rather than the generic histopathological features of the
+pretrained CTransPath backbone.
+Consequently, the 512-d projected embedding is more informative
+for the downstream mutation prediction task than the raw 768-d
+CTransPath output, because it concentrates representational capacity
+on the morphological distinctions most relevant to lung adenocarcinoma.
+While the literature uses embedding dimensions ranging from 512
+(CTransPath) to 2048 (RetCCL~\cite{wang2023retccl}), the lower
+dimensionality is additionally advantageous under data scarcity
+because it reduces the risk of overfitting in downstream models
+operating on $\sim$687 slides.
 
 \subsection{4-Channel Input with Tissue Mask}
 \label{sec:meth:mask_channel}
