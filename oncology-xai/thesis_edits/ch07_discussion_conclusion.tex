@@ -187,7 +187,7 @@ Within the Fuzzy Choquet MIL, the 21-parameter fuzzy measure branch
 benefits substantially from the explicit pattern prior because it
 operates exclusively on 6-d pattern features---a space where domain
 knowledge is the \emph{only} source of information.
-The shared embedding pathway (present in both ABMIL and FC), with its
+The shared embedding pathway (present in both ABMIL and FC-MIL), with its
 access to 512-dimensional pretrained features, can approximate much
 of the same morphological information from raw features alone.
 For settings with even fewer slides ($< 200$), or with weaker
@@ -303,7 +303,7 @@ A novel analytical finding of this thesis is that the relative utility
 of fuzzy pattern representations is \emph{gene-dependent}: embedding-only
 ABMIL (B2) is optimal for TP53 and EGFR, whose morphological correlates
 manifest as sub-cellular texture captured by CTransPath; the Fuzzy
-Choquet MIL (FC) is optimal for KRAS and RBM10, where inter-pattern
+FC-MIL is optimal for KRAS and RBM10, where inter-pattern
 interactions carry the discriminative signal; and PI-ABMIL (ours) is optimal for STK11 and KEAP1, whose diffuse multi-pattern
 correlates benefit from explicit pattern injection alongside embeddings.
 DeepGEM applies a single architecture uniformly to all genes, forgoing
@@ -706,7 +706,7 @@ Replacing CTransPath with more recent foundation model encoders (UNI, CONCH, Gig
 If the Fuzzy Choquet branch still provides gene-specific advantages (as observed for KRAS and RBM10 with CTransPath) when paired with stronger foundation model encoders, this would be strong evidence that the fuzzy aggregation mechanism captures complementary inter-pattern information independent of the specific visual encoder.
 
 \textbf{Dedicated Choquet-only ablation.}
-The current Fuzzy Choquet MIL (condition~FC) is a hybrid dual-pathway
+The current Fuzzy Choquet MIL (FC-MIL) is a hybrid dual-pathway
 model that uses both 512-d CTransPath embeddings (via a shared ABMIL
 encoder) and a parallel Choquet branch on 6-d pattern memberships.
 A valuable ablation would evaluate a \emph{pure} Choquet model
