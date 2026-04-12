@@ -217,54 +217,90 @@ The principal contributions of this thesis are:
 \section{Thesis as a Continuation of Prior Work}
 \label{sec:continuation_prior_work}
 
-This dissertation is a direct continuation of three peer-reviewed research
-threads developed by the author, each of which contributes a foundational
-component to the LCHAI~v2.0 artifact.
+The research findings of this dissertation have been articulated in
+the following peer-reviewed publications by the author.
+Each publication contributes a foundational component to the
+LCHAI~v2.0 artefact developed in this thesis.
 
-\textbf{Fuzzy angular margin losses.}
-The Expert Systems with Applications paper~\cite{lima2025fuzzy} formalised
-\emph{FuzzyArcLoss} as a dynamic, sample-wise margin control mechanism for
-robust recognition under intra-class ambiguity across multiple domains.
-The present thesis operationalises this mechanism specifically for
-lung adenocarcinoma histological pattern classification, introducing
-FuzzyArcLoss~V2 with a piecewise membership function, Optuna-based
-hyperparameter optimisation, and a 4-channel mask input---extensions
-not present in the original formulation.
-The ESWA paper therefore constitutes the algorithmic foundation of
-Artifact~1 (Chapter~\ref{ch:methodology}).
+\subsection*{Journal Publication}
 
-\textbf{Explainable fuzzy deep learning for oncology.}
-An earlier IEEE ICEDEG study~\cite{lima2020skin} proposed an explainable
-fuzzy-based deep learning system for skin cancer prediction, establishing
-the design logic of combining fuzzy supervision with post-hoc explanation
-as first-class requirements for clinical AI artifacts.
-The present thesis transfers this paradigm from skin to lung pathology,
-replacing the earlier rule-based explanation layer with a dual
-interpretability framework (spatial attention maps + pattern attribution)
-and a Choquet integral aggregation that provides intrinsic Shapley values.
+\begin{quote}
+\textbf{Servio F.\ Lima}, Edy Portmann, and Luis Ter\'{a}n.
+\emph{FuzzyArcLoss: Dynamic margin adjustment for robust recognition
+across domains.}
+Expert Systems with Applications, 281:127477, 2025.
+DOI: \url{https://doi.org/10.1016/j.eswa.2025.127477}
+\end{quote}
 
-\textbf{Cancer ontology-based query retrieval.}
-A more recent IEEE ICEDEG study~\cite{lima2025enhancing} combined transformer
-representations with adaptive angular-margin objectives for cancer
-ontology-grounded retrieval, demonstrating that geometry-shaping losses
-improve the alignment between visual representations and structured
-biomedical knowledge.
-The present thesis extends this alignment from the retrieval setting to
-the mutation prediction setting, linking predicted mutation states to a
-curated knowledge graph (NCIt + MONDO ontology layers) that grounds
-explanations in canonical biomedical entities and provenance-tagged
-relations (RQ6, RQ7).
+\begin{itemize}
+    \item \textbf{Quality indicators:} Journal H-Index: 214.
+    Impact Factor: 7.5 (2024). CiteScore: 13.8.
+    Ranked Q1 in Computer Science Applications (12/232, 95th percentile)
+    and Q1 in Engineering (11/305, 96th percentile) on SCImago.
+    \item \textbf{Core contribution:} FuzzyArcLoss---a dynamic,
+    sample-wise angular margin modulation mechanism for robust
+    recognition under intra-class ambiguity across multiple domains.
+    \item \textbf{Extension in this thesis:} FuzzyArcLoss~V2 with
+    piecewise membership function, Optuna-based hyperparameter
+    optimisation, and 4-channel mask input; applied to 6-class LUAD
+    histological pattern classification (Artefact~1,
+    Chapter~\ref{ch:methodology}).
+\end{itemize}
 
-Together, these three contributions form a research trajectory that moves
-from domain-general fuzzy representation learning, through explainable
-clinical AI design, to the integrated LCHAI~v2.0 prototype that couples
-ambiguity-aware morphological encoding, aggregation-based genotype
-inference, and ontology-grounded clinical explanations.
-The artifact and all experimental scripts are publicly available at
+\subsection*{Conference Publications}
+
+\begin{quote}
+\textbf{Servio F.\ Lima}, Edy Portmann, and Luis Ter\'{a}n.
+\emph{A proposal for an explainable fuzzy-based deep learning system
+for skin cancer prediction.}
+In 2020 7th International Conference on eDemocracy \& eGovernment
+(ICEDEG), pages 29--35. IEEE, 2020.
+DOI: \url{https://doi.org/10.1109/ICEDEG48599.2020.9096799}
+\end{quote}
+
+\begin{itemize}
+    \item \textbf{Quality indicators:} IEEE indexed.
+    ICEDEG is an international conference on digital government and
+    e-democracy with proceedings indexed by IEEE Xplore, Scopus,
+    and Web of Science.
+    \item \textbf{Core contribution:} Established the design logic of
+    combining fuzzy supervision with post-hoc explanation as
+    first-class requirements for clinical AI artefacts.
+    \item \textbf{Extension in this thesis:} Re-instantiated from skin
+    to lung pathology; dual interpretability framework (spatial
+    attention maps + pattern attribution); Choquet integral as intrinsic
+    explainer with Shapley values (Artefacts~2 and~3).
+\end{itemize}
+
+\begin{quote}
+\textbf{Servio F.\ Lima}, Edy Portmann, and Luis Ter\'{a}n.
+\emph{Enhancing cancer ontology-based query retrieval with transformer
+models and adaptive angular loss functions.}
+In 2025 12th International Conference on eDemocracy \& eGovernment
+(ICEDEG). IEEE, 2025.
+DOI: \url{https://doi.org/10.1109/ICEDEG65568.2025.11081564}
+\end{quote}
+
+\begin{itemize}
+    \item \textbf{Quality indicators:} IEEE indexed.
+    Proceedings indexed by IEEE Xplore, Scopus, and Web of Science.
+    \item \textbf{Core contribution:} Combined transformer
+    representations with adaptive angular-margin objectives for cancer
+    ontology-grounded retrieval, demonstrating that geometry-shaping
+    losses improve alignment between visual representations and
+    structured biomedical knowledge.
+    \item \textbf{Extension in this thesis:} Extended from retrieval
+    to mutation prediction; knowledge graph links predicted mutations
+    to therapeutic targets with PMID provenance tags
+    (RQ6, RQ7, Chapter~\ref{ch:implementation}).
+\end{itemize}
+
+Together, these three publications form a research trajectory from
+domain-general fuzzy representation learning, through explainable
+clinical AI design, to the integrated LCHAI~v2.0 prototype.
+Table~\ref{tab:prior_work_extensions} summarises the extensions.
+The artefact and all experimental scripts are publicly available at
 \url{https://github.com/slima2/lchai}~\cite{lchai_repo}.
-
-Table~\ref{tab:prior_work_extensions} summarises how each prior
-publication is extended in this thesis.
 
 \begin{table}[ht!]
 \centering
