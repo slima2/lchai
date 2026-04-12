@@ -48,7 +48,7 @@ macro-F1 $= 92.31\% \pm 2.04$, ranking first among 18~compared loss
 functions and significantly outperforming the strongest baseline
 ($p = 0.001$, Cohen's $d = 1.00$).
 
-\textbf{Artefact~2 (Pattern-Informed ABMIL).}
+\textbf{Artefact~2 (PI-ABMIL: Pattern-Informed ABMIL).}
 Standard attention-based multiple-instance learning (MIL) treats
 each tile as an opaque feature vector and must discover
 morphological structure from mutation labels alone.
@@ -60,7 +60,7 @@ clinically validated terms.
 A gated attention mechanism then learns which tiles contribute most
 to the slide-level mutation prediction.
 
-\textbf{Artefact~3 (Fuzzy Choquet MIL).}
+\textbf{Artefact~3 (FC-MIL: Fuzzy Choquet MIL).}
 Standard attention pooling aggregates tiles independently, ignoring
 potential interactions between morphological categories.
 The Choquet integral, operating on a learned fuzzy measure, captures
@@ -76,18 +76,18 @@ without requiring any post-hoc explanation method.
 All artefacts are evaluated on the largest public LUAD cohort
 (687~slides, 668~patients, 6~target genes) using stratified
 5-fold cross-validation with patient-level splits.
-The pattern-informed ABMIL attains AUROCs of $0.717 \pm 0.058$
+PI-ABMIL attains AUROCs of $0.717 \pm 0.058$
 (TP53), $0.694 \pm 0.051$ (EGFR), $0.695 \pm 0.023$ (STK11),
 and $0.610 \pm 0.071$ (KEAP1)---competitive with similarly-scaled
 studies.
-The Fuzzy Choquet MIL emerges as the optimal method for KRAS
+FC-MIL emerges as the optimal method for KRAS
 ($0.609 \pm 0.059$) and RBM10 ($0.661 \pm 0.063$), confirming
 that the Choquet branch adds gene-specific discriminative value.
 
 A novel analytical finding is that the utility of pattern knowledge
 is gene-dependent: embedding-only models suffice for genes with
-strong visual correlates (TP53, EGFR), while pattern-informed and
-Choquet models benefit genes whose mutation signal is distributed
+strong visual correlates (TP53, EGFR), while PI-ABMIL and
+FC-MIL benefit genes whose mutation signal is distributed
 across multiple morphological categories (KRAS, RBM10).
 Per-slide feature channel ablation---comparing separately trained
 combined, embeddings-only, and patterns-only models on the same
@@ -138,7 +138,7 @@ The central hypothesis is \emph{partially supported}: pattern
 knowledge achieves competitive performance and enables
 interpretability absent from all prior work, but the benefit is
 gene-dependent---embedding-only models suffice for TP53 and EGFR,
-while pattern-informed and Choquet models are optimal for KRAS,
+while PI-ABMIL and FC-MIL are optimal for KRAS,
 RBM10, STK11, and KEAP1.
 This gene-dependent nuance is itself an original analytical finding.
 While the system is not intended to replace molecular testing,
