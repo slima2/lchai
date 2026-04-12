@@ -2363,6 +2363,16 @@ However, the pattern-informed approach does not close the gap to large-scale
 proprietary studies (DeepGEM: 0.82--0.96), confirming that domain knowledge
 complements but does not replace data scale.
 
+The AUPRC analysis (Figure~\ref{fig:auprc_by_gene}) confirms that
+genes with low mutation prevalence are disproportionately affected by
+data scarcity: RBM10 (5.4\% prevalence) and STK11 (9.9\%) show
+AUPRC values substantially lower than their corresponding AUROC,
+indicating that while the models achieve acceptable ranking ability,
+their precision at clinically relevant thresholds remains limited
+for rare mutations.
+This gap between AUROC and AUPRC reinforces the need for larger
+cohorts---or targeted oversampling strategies---for low-prevalence genes.
+
 \textbf{Success criterion:} Met.
 Competitive with Saldanha (2023) and Logan (2022) ($\checkmark$).
 
