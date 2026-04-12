@@ -1,0 +1,976 @@
+Device: cuda  GPU: 2  Genes: ['KRAS']
+[GPU 2] Using slide_list: 505 slides from /home/rapids/notebooks/slima/TGCA MAF/luad_slide_ids_available.txt
+[GPU 2] Slides found: 505
+[GPU 2] Slides loaded: 505
+[GPU 2] Active conditions: ['baseline1_xgboost', 'baseline2_abmil_embeddings', 'baseline3_abmil_patterns', 'proposed_abmil_concat', 'ablation_abmil_onehot', 'proposed_fuzzy_choquet']
+
+
+[GPU 2] ============================================================
+[GPU 2] Gene: KRAS  slides=505  pos=27.3%
+[GPU 2] ============================================================
+
+[GPU 2] ── Fold 1/5 (train=404, val=101) ──
+[GPU 2]   Loading fold 1 slides...
+[GPU 2]   Fold loaded (505 slides)
+  [GPU 2]   ┌─ baseline1_xgboost | KRAS fold1
+  [GPU 2]   └─ AUROC=0.5200  F1=0.2308  (1s)
+  [GPU 2]   ┌─ baseline2_abmil_embeddings | KRAS fold1 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.6287  AUROC=0.5310  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5469  AUROC=0.5951  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.5136  AUROC=0.5876  F1=0.0000  lr=9.91e-05
+  [GPU 2]   │  ep   4/50  loss=1.4753  AUROC=0.5931  F1=0.0000  lr=9.84e-05
+  [GPU 2]   │  ep   5/50  loss=1.4623  AUROC=0.5951  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.4502  AUROC=0.6151  F1=0.0000  lr=9.65e-05 ★
+  [GPU 2]   │  ep   7/50  loss=1.4148  AUROC=0.6216  F1=0.0000  lr=9.53e-05 ★
+  [GPU 2]   │  ep   8/50  loss=1.3349  AUROC=0.6156  F1=0.0000  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.4208  AUROC=0.6191  F1=0.0000  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.3153  AUROC=0.6406  F1=0.0000  lr=9.05e-05 ★
+  [GPU 2]   │  ep  11/50  loss=1.3608  AUROC=0.6021  F1=0.2286  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.2669  AUROC=0.6151  F1=0.3500  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.2615  AUROC=0.6547  F1=0.1250  lr=8.44e-05 ★
+  [GPU 2]   │  ep  14/50  loss=1.2290  AUROC=0.6547  F1=0.1250  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.2139  AUROC=0.6552  F1=0.1765  lr=7.96e-05 ★
+  [GPU 2]   │  ep  16/50  loss=1.2225  AUROC=0.6401  F1=0.1765  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.1164  AUROC=0.6371  F1=0.2927  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.1267  AUROC=0.6416  F1=0.1667  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.1569  AUROC=0.6542  F1=0.4000  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.0730  AUROC=0.6471  F1=0.3000  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=1.0744  AUROC=0.6867  F1=0.4000  lr=6.28e-05 ★
+  [GPU 2]   │  ep  22/50  loss=1.0195  AUROC=0.6627  F1=0.3182  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=0.9697  AUROC=0.6456  F1=0.2927  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=0.9981  AUROC=0.6732  F1=0.4000  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=1.0116  AUROC=0.6021  F1=0.2500  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=0.9636  AUROC=0.6171  F1=0.3256  lr=4.74e-05
+  [GPU 2]   │  ep  27/50  loss=0.9094  AUROC=0.6446  F1=0.3333  lr=4.43e-05
+  [GPU 2]   │  ep  28/50  loss=0.9410  AUROC=0.6081  F1=0.3600  lr=4.12e-05
+  [GPU 2]   │  ep  29/50  loss=0.8916  AUROC=0.6301  F1=0.3333  lr=3.82e-05
+  [GPU 2]   │  ep  30/50  loss=0.8309  AUROC=0.6291  F1=0.3673  lr=3.52e-05
+  [GPU 2]   │  ep  31/50  loss=0.9581  AUROC=0.6076  F1=0.3913  lr=3.23e-05
+  [GPU 2]   │  ep  32/50  loss=0.8313  AUROC=0.6211  F1=0.3922  lr=2.94e-05
+  [GPU 2]   │  ep  33/50  loss=0.7746  AUROC=0.6131  F1=0.4000  lr=2.67e-05
+  [GPU 2]   │  ep  34/50  loss=0.9360  AUROC=0.5981  F1=0.3913  lr=2.40e-05
+  [GPU 2]   │  ep  35/50  loss=0.7605  AUROC=0.6076  F1=0.4000  lr=2.14e-05
+  [GPU 2]   │  ep  36/50  loss=0.7659  AUROC=0.6281  F1=0.4286  lr=1.89e-05
+  [GPU 2]   │  Early stop at epoch 36
+  [GPU 2]   └─ Best AUROC=0.6867  (210s)
+  [GPU 2]   ✓ checkpoint → ckpt_baseline2_abmil_embeddings_KRAS_fold0.pth
+  [GPU 2]   ┌─ baseline3_abmil_patterns | KRAS fold1 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.1367  AUROC=0.4129  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.3891  AUROC=0.4194  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.4464  AUROC=0.4234  F1=0.0000  lr=9.91e-05 ★
+  [GPU 2]   │  ep   4/50  loss=1.4649  AUROC=0.4214  F1=0.0000  lr=9.84e-05
+  [GPU 2]   │  ep   5/50  loss=1.4600  AUROC=0.4194  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.4344  AUROC=0.4194  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.4414  AUROC=0.4189  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.4606  AUROC=0.4129  F1=0.0000  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.4868  AUROC=0.4059  F1=0.0000  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.4377  AUROC=0.4109  F1=0.0000  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.4802  AUROC=0.4084  F1=0.0000  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.4454  AUROC=0.4114  F1=0.0000  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.4513  AUROC=0.4219  F1=0.0000  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.4237  AUROC=0.4329  F1=0.0000  lr=8.21e-05 ★
+  [GPU 2]   │  ep  15/50  loss=1.4861  AUROC=0.4449  F1=0.0000  lr=7.96e-05 ★
+  [GPU 2]   │  ep  16/50  loss=1.4224  AUROC=0.4595  F1=0.0000  lr=7.70e-05 ★
+  [GPU 2]   │  ep  17/50  loss=1.4793  AUROC=0.4865  F1=0.0000  lr=7.43e-05 ★
+  [GPU 2]   │  ep  18/50  loss=1.4387  AUROC=0.4830  F1=0.0000  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.4362  AUROC=0.4960  F1=0.0000  lr=6.87e-05 ★
+  [GPU 2]   │  ep  20/50  loss=1.4787  AUROC=0.5100  F1=0.0000  lr=6.58e-05 ★
+  [GPU 2]   │  ep  21/50  loss=1.4153  AUROC=0.5175  F1=0.0000  lr=6.28e-05 ★
+  [GPU 2]   │  ep  22/50  loss=1.4101  AUROC=0.5185  F1=0.0000  lr=5.98e-05 ★
+  [GPU 2]   │  ep  23/50  loss=1.4713  AUROC=0.5280  F1=0.0000  lr=5.67e-05 ★
+  [GPU 2]   │  ep  24/50  loss=1.4134  AUROC=0.5355  F1=0.0000  lr=5.36e-05 ★
+  [GPU 2]   │  ep  25/50  loss=1.4513  AUROC=0.5490  F1=0.0000  lr=5.05e-05 ★
+  [GPU 2]   │  ep  26/50  loss=1.4299  AUROC=0.5480  F1=0.0000  lr=4.74e-05
+  [GPU 2]   │  ep  27/50  loss=1.4017  AUROC=0.5551  F1=0.0000  lr=4.43e-05 ★
+  [GPU 2]   │  ep  28/50  loss=1.4182  AUROC=0.5541  F1=0.0000  lr=4.12e-05
+  [GPU 2]   │  ep  29/50  loss=1.4206  AUROC=0.5541  F1=0.0000  lr=3.82e-05
+  [GPU 2]   │  ep  30/50  loss=1.4034  AUROC=0.5556  F1=0.0000  lr=3.52e-05 ★
+  [GPU 2]   │  ep  31/50  loss=1.4266  AUROC=0.5556  F1=0.0000  lr=3.23e-05
+  [GPU 2]   │  ep  32/50  loss=1.4037  AUROC=0.5581  F1=0.0000  lr=2.94e-05 ★
+  [GPU 2]   │  ep  33/50  loss=1.4255  AUROC=0.5596  F1=0.0000  lr=2.67e-05 ★
+  [GPU 2]   │  ep  34/50  loss=1.4154  AUROC=0.5596  F1=0.0000  lr=2.40e-05 ★
+  [GPU 2]   │  ep  35/50  loss=1.4159  AUROC=0.5601  F1=0.0000  lr=2.14e-05 ★
+  [GPU 2]   │  ep  36/50  loss=1.4040  AUROC=0.5611  F1=0.0000  lr=1.89e-05 ★
+  [GPU 2]   │  ep  37/50  loss=1.4027  AUROC=0.5606  F1=0.0000  lr=1.66e-05
+  [GPU 2]   │  ep  38/50  loss=1.4017  AUROC=0.5611  F1=0.0000  lr=1.44e-05 ★
+  [GPU 2]   │  ep  39/50  loss=1.4012  AUROC=0.5611  F1=0.0000  lr=1.24e-05
+  [GPU 2]   │  ep  40/50  loss=1.4002  AUROC=0.5616  F1=0.0000  lr=1.05e-05 ★
+  [GPU 2]   │  ep  41/50  loss=1.4011  AUROC=0.5616  F1=0.0000  lr=8.71e-06
+  [GPU 2]   │  ep  42/50  loss=1.4006  AUROC=0.5611  F1=0.0000  lr=7.12e-06
+  [GPU 2]   │  ep  43/50  loss=1.4012  AUROC=0.5616  F1=0.0000  lr=5.71e-06
+  [GPU 2]   │  ep  44/50  loss=1.4027  AUROC=0.5616  F1=0.0000  lr=4.48e-06
+  [GPU 2]   │  ep  45/50  loss=1.4037  AUROC=0.5616  F1=0.0000  lr=3.42e-06
+  [GPU 2]   │  ep  46/50  loss=1.4034  AUROC=0.5611  F1=0.0000  lr=2.56e-06
+  [GPU 2]   │  ep  47/50  loss=1.4004  AUROC=0.5616  F1=0.0000  lr=1.88e-06
+  [GPU 2]   │  ep  48/50  loss=1.4023  AUROC=0.5611  F1=0.0000  lr=1.39e-06
+  [GPU 2]   │  ep  49/50  loss=1.4014  AUROC=0.5606  F1=0.0000  lr=1.10e-06
+  [GPU 2]   │  ep  50/50  loss=1.4022  AUROC=0.5606  F1=0.0000  lr=1.00e-06
+  [GPU 2]   └─ Best AUROC=0.5616  (1172s)
+  [GPU 2]   ✓ checkpoint → ckpt_baseline3_abmil_patterns_KRAS_fold0.pth
+  [GPU 2]   ┌─ proposed_abmil_concat | KRAS fold1 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.6154  AUROC=0.5706  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5341  AUROC=0.5666  F1=0.0000  lr=9.96e-05
+  [GPU 2]   │  ep   3/50  loss=1.5011  AUROC=0.5931  F1=0.0000  lr=9.91e-05 ★
+  [GPU 2]   │  ep   4/50  loss=1.4832  AUROC=0.5966  F1=0.0000  lr=9.84e-05 ★
+  [GPU 2]   │  ep   5/50  loss=1.4421  AUROC=0.5841  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.4173  AUROC=0.6206  F1=0.0000  lr=9.65e-05 ★
+  [GPU 2]   │  ep   7/50  loss=1.4394  AUROC=0.6106  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.4399  AUROC=0.6116  F1=0.1765  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.3289  AUROC=0.5801  F1=0.1714  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.3503  AUROC=0.6366  F1=0.3077  lr=9.05e-05 ★
+  [GPU 2]   │  ep  11/50  loss=1.3060  AUROC=0.6311  F1=0.2162  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.2544  AUROC=0.6627  F1=0.1250  lr=8.66e-05 ★
+  [GPU 2]   │  ep  13/50  loss=1.2676  AUROC=0.6582  F1=0.2286  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.2493  AUROC=0.6507  F1=0.2778  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.2034  AUROC=0.6672  F1=0.1250  lr=7.96e-05 ★
+  [GPU 2]   │  ep  16/50  loss=1.1834  AUROC=0.6662  F1=0.3243  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.1125  AUROC=0.6326  F1=0.3556  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.1028  AUROC=0.6622  F1=0.3077  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.1013  AUROC=0.6266  F1=0.3478  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.0443  AUROC=0.6572  F1=0.2564  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=1.0118  AUROC=0.6431  F1=0.2927  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=0.9814  AUROC=0.6331  F1=0.3000  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=1.0326  AUROC=0.6476  F1=0.4000  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=0.9573  AUROC=0.6291  F1=0.2564  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=0.9837  AUROC=0.6502  F1=0.3000  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=0.8980  AUROC=0.6582  F1=0.3256  lr=4.74e-05
+  [GPU 2]   │  ep  27/50  loss=0.9417  AUROC=0.6451  F1=0.3256  lr=4.43e-05
+  [GPU 2]   │  ep  28/50  loss=0.8996  AUROC=0.6266  F1=0.3256  lr=4.12e-05
+  [GPU 2]   │  ep  29/50  loss=0.8388  AUROC=0.6391  F1=0.4444  lr=3.82e-05
+  [GPU 2]   │  ep  30/50  loss=0.8350  AUROC=0.6326  F1=0.3182  lr=3.52e-05
+  [GPU 2]   │  Early stop at epoch 30
+  [GPU 2]   └─ Best AUROC=0.6672  (7301s)
+  [GPU 2]   ✓ checkpoint → ckpt_proposed_abmil_concat_KRAS_fold0.pth
+  [GPU 2]   ┌─ ablation_abmil_onehot | KRAS fold1 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.5776  AUROC=0.5265  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5665  AUROC=0.5811  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.4801  AUROC=0.5961  F1=0.0000  lr=9.91e-05 ★
+  [GPU 2]   │  ep   4/50  loss=1.4849  AUROC=0.5871  F1=0.0000  lr=9.84e-05
+  [GPU 2]   │  ep   5/50  loss=1.4508  AUROC=0.5911  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.4509  AUROC=0.5931  F1=0.0645  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.3437  AUROC=0.6116  F1=0.0000  lr=9.53e-05 ★
+  [GPU 2]   │  ep   8/50  loss=1.4099  AUROC=0.6371  F1=0.0690  lr=9.39e-05 ★
+  [GPU 2]   │  ep   9/50  loss=1.3715  AUROC=0.6251  F1=0.1250  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.3366  AUROC=0.6236  F1=0.0000  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.3353  AUROC=0.6126  F1=0.1212  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.2782  AUROC=0.6301  F1=0.3158  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.2380  AUROC=0.6396  F1=0.2353  lr=8.44e-05 ★
+  [GPU 2]   │  ep  14/50  loss=1.2439  AUROC=0.6436  F1=0.2778  lr=8.21e-05 ★
+  [GPU 2]   │  ep  15/50  loss=1.1754  AUROC=0.6522  F1=0.1818  lr=7.96e-05 ★
+  [GPU 2]   │  ep  16/50  loss=1.1727  AUROC=0.6396  F1=0.1818  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.0529  AUROC=0.6381  F1=0.2778  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.0872  AUROC=0.6476  F1=0.3590  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.0484  AUROC=0.6131  F1=0.2857  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.0456  AUROC=0.6141  F1=0.3000  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=1.0181  AUROC=0.6396  F1=0.3721  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=0.9235  AUROC=0.6111  F1=0.3000  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=1.0177  AUROC=0.5951  F1=0.4000  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=0.9662  AUROC=0.5781  F1=0.2778  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=0.9346  AUROC=0.6251  F1=0.3111  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=0.9184  AUROC=0.6131  F1=0.3478  lr=4.74e-05
+  [GPU 2]   │  ep  27/50  loss=0.9253  AUROC=0.5936  F1=0.3404  lr=4.43e-05
+  [GPU 2]   │  ep  28/50  loss=0.8981  AUROC=0.5961  F1=0.4000  lr=4.12e-05
+  [GPU 2]   │  ep  29/50  loss=0.8680  AUROC=0.5816  F1=0.3043  lr=3.82e-05
+  [GPU 2]   │  ep  30/50  loss=0.8330  AUROC=0.5816  F1=0.3182  lr=3.52e-05
+  [GPU 2]   │  Early stop at epoch 30
+  [GPU 2]   └─ Best AUROC=0.6522  (5571s)
+  [GPU 2]   ✓ checkpoint → ckpt_ablation_abmil_onehot_KRAS_fold0.pth
+  [GPU 2]   ┌─ proposed_fuzzy_choquet | KRAS fold1 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.8025  AUROC=0.5516  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.7492  AUROC=0.5410  F1=0.0000  lr=9.96e-05
+  [GPU 2]   │  ep   3/50  loss=1.6966  AUROC=0.5811  F1=0.0000  lr=9.91e-05 ★
+  [GPU 2]   │  ep   4/50  loss=1.6474  AUROC=0.5881  F1=0.0000  lr=9.84e-05 ★
+  [GPU 2]   │  ep   5/50  loss=1.6752  AUROC=0.5701  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.6526  AUROC=0.5946  F1=0.0000  lr=9.65e-05 ★
+  [GPU 2]   │  ep   7/50  loss=1.6242  AUROC=0.5841  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.5871  AUROC=0.6191  F1=0.0000  lr=9.39e-05 ★
+  [GPU 2]   │  ep   9/50  loss=1.5946  AUROC=0.6311  F1=0.0000  lr=9.23e-05 ★
+  [GPU 2]   │  ep  10/50  loss=1.6303  AUROC=0.6336  F1=0.0000  lr=9.05e-05 ★
+  [GPU 2]   │  ep  11/50  loss=1.5105  AUROC=0.6431  F1=0.0000  lr=8.86e-05 ★
+  [GPU 2]   │  ep  12/50  loss=1.4944  AUROC=0.6291  F1=0.1818  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.5177  AUROC=0.6306  F1=0.4127  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.3864  AUROC=0.6151  F1=0.3333  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.4798  AUROC=0.6837  F1=0.3500  lr=7.96e-05 ★
+  [GPU 2]   │  ep  16/50  loss=1.3306  AUROC=0.6652  F1=0.2353  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.3011  AUROC=0.6491  F1=0.3404  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.2976  AUROC=0.6672  F1=0.2778  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.3392  AUROC=0.6351  F1=0.3415  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.2494  AUROC=0.6817  F1=0.2778  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=1.2551  AUROC=0.6792  F1=0.3556  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=1.0689  AUROC=0.6622  F1=0.3830  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=1.1149  AUROC=0.6802  F1=0.3913  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=1.0879  AUROC=0.6236  F1=0.2778  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=1.1146  AUROC=0.6792  F1=0.3556  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=1.0176  AUROC=0.6386  F1=0.3000  lr=4.74e-05
+  [GPU 2]   │  ep  27/50  loss=1.0105  AUROC=0.6481  F1=0.2857  lr=4.43e-05
+  [GPU 2]   │  ep  28/50  loss=0.9204  AUROC=0.6251  F1=0.2927  lr=4.12e-05
+  [GPU 2]   │  ep  29/50  loss=0.8942  AUROC=0.5911  F1=0.2703  lr=3.82e-05
+  [GPU 2]   │  ep  30/50  loss=0.8646  AUROC=0.6241  F1=0.3333  lr=3.52e-05
+  [GPU 2]   │  Early stop at epoch 30
+  [GPU 2]   └─ Best AUROC=0.6837  (359s)
+  [GPU 2]   ✓ checkpoint → ckpt_proposed_fuzzy_choquet_KRAS_fold0.pth
+
+[GPU 2] ── Fold 1 summary for KRAS:
+  [GPU 2]   baseline1_xgboost                    AUROC=0.5200  F1=0.2308
+  [GPU 2]   baseline2_abmil_embeddings           AUROC=0.6867  F1=0.4000
+  [GPU 2]   baseline3_abmil_patterns             AUROC=0.5616  F1=0.0000
+  [GPU 2]   proposed_abmil_concat                AUROC=0.6672  F1=0.1250
+  [GPU 2]   ablation_abmil_onehot                AUROC=0.6522  F1=0.1818
+  [GPU 2]   proposed_fuzzy_choquet               AUROC=0.6837  F1=0.3500
+
+[GPU 2] ── Fold 2/5 (train=404, val=101) ──
+[GPU 2]   Loading fold 2 slides...
+[GPU 2]   Fold loaded (505 slides)
+  [GPU 2]   ┌─ baseline1_xgboost | KRAS fold2
+  [GPU 2]   └─ AUROC=0.4469  F1=0.2642  (1s)
+  [GPU 2]   ┌─ baseline2_abmil_embeddings | KRAS fold2 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.5613  AUROC=0.5350  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5559  AUROC=0.4775  F1=0.0000  lr=9.96e-05
+  [GPU 2]   │  ep   3/50  loss=1.4671  AUROC=0.5040  F1=0.0000  lr=9.91e-05
+  [GPU 2]   │  ep   4/50  loss=1.4606  AUROC=0.5115  F1=0.0000  lr=9.84e-05
+  [GPU 2]   │  ep   5/50  loss=1.4300  AUROC=0.5205  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.4495  AUROC=0.5185  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.4384  AUROC=0.5250  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.3700  AUROC=0.5040  F1=0.0690  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.3550  AUROC=0.5255  F1=0.1250  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.3130  AUROC=0.4950  F1=0.0690  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.2795  AUROC=0.4935  F1=0.1250  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.2649  AUROC=0.4870  F1=0.1667  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.2739  AUROC=0.4935  F1=0.0667  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.1946  AUROC=0.5010  F1=0.1250  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.1619  AUROC=0.5010  F1=0.1765  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.1902  AUROC=0.4740  F1=0.2273  lr=7.70e-05
+  [GPU 2]   │  Early stop at epoch 16
+  [GPU 2]   └─ Best AUROC=0.5350  (461s)
+  [GPU 2]   ✓ checkpoint → ckpt_baseline2_abmil_embeddings_KRAS_fold1.pth
+  [GPU 2]   ┌─ baseline3_abmil_patterns | KRAS fold2 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.1715  AUROC=0.4565  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.4022  AUROC=0.4590  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.4726  AUROC=0.4489  F1=0.0000  lr=9.91e-05
+  [GPU 2]   │  ep   4/50  loss=1.4270  AUROC=0.4489  F1=0.0000  lr=9.84e-05
+  [GPU 2]   │  ep   5/50  loss=1.4938  AUROC=0.4775  F1=0.0000  lr=9.76e-05 ★
+  [GPU 2]   │  ep   6/50  loss=1.4411  AUROC=0.4660  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.4351  AUROC=0.4735  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.4443  AUROC=0.4725  F1=0.0000  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.4483  AUROC=0.4725  F1=0.0000  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.4194  AUROC=0.4640  F1=0.0000  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.4611  AUROC=0.4680  F1=0.0000  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.3723  AUROC=0.4580  F1=0.0000  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.3881  AUROC=0.4154  F1=0.0000  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.3814  AUROC=0.4114  F1=0.0000  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.3356  AUROC=0.4114  F1=0.0000  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.3697  AUROC=0.4099  F1=0.0000  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.3997  AUROC=0.4119  F1=0.0000  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.3415  AUROC=0.4109  F1=0.0000  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.3704  AUROC=0.4054  F1=0.0000  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.3963  AUROC=0.4074  F1=0.0000  lr=6.58e-05
+  [GPU 2]   │  Early stop at epoch 20
+  [GPU 2]   └─ Best AUROC=0.4775  (479s)
+  [GPU 2]   ✓ checkpoint → ckpt_baseline3_abmil_patterns_KRAS_fold1.pth
+  [GPU 2]   ┌─ proposed_abmil_concat | KRAS fold2 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.6199  AUROC=0.5105  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5488  AUROC=0.5085  F1=0.0000  lr=9.96e-05
+  [GPU 2]   │  ep   3/50  loss=1.4933  AUROC=0.5015  F1=0.0000  lr=9.91e-05
+  [GPU 2]   │  ep   4/50  loss=1.4653  AUROC=0.4875  F1=0.0000  lr=9.84e-05
+  [GPU 2]   │  ep   5/50  loss=1.4637  AUROC=0.5160  F1=0.0000  lr=9.76e-05 ★
+  [GPU 2]   │  ep   6/50  loss=1.4334  AUROC=0.5045  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.3870  AUROC=0.5130  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.3726  AUROC=0.5130  F1=0.0000  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.3527  AUROC=0.5005  F1=0.1212  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.2961  AUROC=0.5130  F1=0.0690  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.3206  AUROC=0.4855  F1=0.1905  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.2261  AUROC=0.4880  F1=0.2791  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.2278  AUROC=0.4855  F1=0.1111  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.2244  AUROC=0.4765  F1=0.1176  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.1440  AUROC=0.4615  F1=0.1538  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.1305  AUROC=0.5035  F1=0.1333  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.2215  AUROC=0.4835  F1=0.1667  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.1512  AUROC=0.4880  F1=0.2000  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.0762  AUROC=0.4785  F1=0.2000  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=0.9987  AUROC=0.4900  F1=0.2162  lr=6.58e-05
+  [GPU 2]   │  Early stop at epoch 20
+  [GPU 2]   └─ Best AUROC=0.5160  (4504s)
+  [GPU 2]   ✓ checkpoint → ckpt_proposed_abmil_concat_KRAS_fold1.pth
+  [GPU 2]   ┌─ ablation_abmil_onehot | KRAS fold2 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.6099  AUROC=0.4745  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5132  AUROC=0.5015  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.5086  AUROC=0.4930  F1=0.0000  lr=9.91e-05
+  [GPU 2]   │  ep   4/50  loss=1.4419  AUROC=0.5070  F1=0.0000  lr=9.84e-05 ★
+  [GPU 2]   │  ep   5/50  loss=1.4584  AUROC=0.5060  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.4355  AUROC=0.5055  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.3850  AUROC=0.5295  F1=0.0000  lr=9.53e-05 ★
+  [GPU 2]   │  ep   8/50  loss=1.3749  AUROC=0.5385  F1=0.0000  lr=9.39e-05 ★
+  [GPU 2]   │  ep   9/50  loss=1.4019  AUROC=0.5120  F1=0.1714  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.3188  AUROC=0.5175  F1=0.0645  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.2983  AUROC=0.5050  F1=0.1212  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.2718  AUROC=0.4920  F1=0.1290  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.3009  AUROC=0.4850  F1=0.1212  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.2791  AUROC=0.5125  F1=0.0690  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.1755  AUROC=0.4850  F1=0.1212  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.1895  AUROC=0.5285  F1=0.2105  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.1740  AUROC=0.5370  F1=0.1290  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.1002  AUROC=0.5280  F1=0.2000  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.0632  AUROC=0.5145  F1=0.2105  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.1462  AUROC=0.5055  F1=0.2326  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=1.0039  AUROC=0.5100  F1=0.2381  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=0.9980  AUROC=0.5155  F1=0.2162  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=1.0617  AUROC=0.5235  F1=0.2500  lr=5.67e-05
+  [GPU 2]   │  Early stop at epoch 23
+  [GPU 2]   └─ Best AUROC=0.5385  (5119s)
+  [GPU 2]   ✓ checkpoint → ckpt_ablation_abmil_onehot_KRAS_fold1.pth
+  [GPU 2]   ┌─ proposed_fuzzy_choquet | KRAS fold2 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.7698  AUROC=0.4645  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.6852  AUROC=0.4855  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.6618  AUROC=0.4795  F1=0.0000  lr=9.91e-05
+  [GPU 2]   │  ep   4/50  loss=1.6399  AUROC=0.4720  F1=0.0000  lr=9.84e-05
+  [GPU 2]   │  ep   5/50  loss=1.6180  AUROC=0.4765  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.6217  AUROC=0.4705  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.5786  AUROC=0.4910  F1=0.0000  lr=9.53e-05 ★
+  [GPU 2]   │  ep   8/50  loss=1.5884  AUROC=0.5215  F1=0.0000  lr=9.39e-05 ★
+  [GPU 2]   │  ep   9/50  loss=1.5796  AUROC=0.5460  F1=0.0000  lr=9.23e-05 ★
+  [GPU 2]   │  ep  10/50  loss=1.5082  AUROC=0.5135  F1=0.1250  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.5035  AUROC=0.5415  F1=0.0645  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.3989  AUROC=0.5285  F1=0.0690  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.4171  AUROC=0.5020  F1=0.2308  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.4054  AUROC=0.5430  F1=0.1250  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.4261  AUROC=0.5531  F1=0.2381  lr=7.96e-05 ★
+  [GPU 2]   │  ep  16/50  loss=1.3771  AUROC=0.5846  F1=0.1333  lr=7.70e-05 ★
+  [GPU 2]   │  ep  17/50  loss=1.3006  AUROC=0.5811  F1=0.1714  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.2069  AUROC=0.5691  F1=0.1905  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.2786  AUROC=0.5470  F1=0.1250  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.2244  AUROC=0.5065  F1=0.2800  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=1.1443  AUROC=0.5480  F1=0.1951  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=0.9892  AUROC=0.5746  F1=0.1176  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=1.0472  AUROC=0.5521  F1=0.1667  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=1.0169  AUROC=0.5556  F1=0.3404  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=0.8554  AUROC=0.5420  F1=0.3077  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=0.9921  AUROC=0.5460  F1=0.1579  lr=4.74e-05
+  [GPU 2]   │  ep  27/50  loss=0.8759  AUROC=0.5305  F1=0.2609  lr=4.43e-05
+  [GPU 2]   │  ep  28/50  loss=0.8213  AUROC=0.5601  F1=0.2326  lr=4.12e-05
+  [GPU 2]   │  ep  29/50  loss=0.7355  AUROC=0.5170  F1=0.3137  lr=3.82e-05
+  [GPU 2]   │  ep  30/50  loss=0.6609  AUROC=0.5501  F1=0.2667  lr=3.52e-05
+  [GPU 2]   │  ep  31/50  loss=0.7054  AUROC=0.5536  F1=0.2326  lr=3.23e-05
+  [GPU 2]   │  Early stop at epoch 31
+  [GPU 2]   └─ Best AUROC=0.5846  (1114s)
+  [GPU 2]   ✓ checkpoint → ckpt_proposed_fuzzy_choquet_KRAS_fold1.pth
+
+[GPU 2] ── Fold 2 summary for KRAS:
+  [GPU 2]   baseline1_xgboost                    AUROC=0.4469  F1=0.2642
+  [GPU 2]   baseline2_abmil_embeddings           AUROC=0.5350  F1=0.0000
+  [GPU 2]   baseline3_abmil_patterns             AUROC=0.4775  F1=0.0000
+  [GPU 2]   proposed_abmil_concat                AUROC=0.5160  F1=0.0000
+  [GPU 2]   ablation_abmil_onehot                AUROC=0.5385  F1=0.0000
+  [GPU 2]   proposed_fuzzy_choquet               AUROC=0.5846  F1=0.1333
+
+[GPU 2] ── Fold 3/5 (train=404, val=101) ──
+[GPU 2]   Loading fold 3 slides...
+[GPU 2]   Fold loaded (505 slides)
+  [GPU 2]   ┌─ baseline1_xgboost | KRAS fold3
+  [GPU 2]   └─ AUROC=0.5621  F1=0.3019  (2s)
+  [GPU 2]   ┌─ baseline2_abmil_embeddings | KRAS fold3 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.6637  AUROC=0.3865  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5268  AUROC=0.4398  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.4311  AUROC=0.4643  F1=0.0000  lr=9.91e-05 ★
+  [GPU 2]   │  ep   4/50  loss=1.4832  AUROC=0.4672  F1=0.0000  lr=9.84e-05 ★
+  [GPU 2]   │  ep   5/50  loss=1.4609  AUROC=0.4472  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.4253  AUROC=0.4462  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.3911  AUROC=0.4384  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.3423  AUROC=0.4795  F1=0.1053  lr=9.39e-05 ★
+  [GPU 2]   │  ep   9/50  loss=1.3225  AUROC=0.4843  F1=0.0571  lr=9.23e-05 ★
+  [GPU 2]   │  ep  10/50  loss=1.2238  AUROC=0.5284  F1=0.2273  lr=9.05e-05 ★
+  [GPU 2]   │  ep  11/50  loss=1.2260  AUROC=0.4941  F1=0.0588  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.2335  AUROC=0.4941  F1=0.2174  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.1913  AUROC=0.4883  F1=0.1500  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.0770  AUROC=0.4770  F1=0.1053  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.1179  AUROC=0.5254  F1=0.2222  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.0157  AUROC=0.5264  F1=0.1667  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.0972  AUROC=0.4702  F1=0.1600  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.0084  AUROC=0.5254  F1=0.1905  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=0.9184  AUROC=0.4682  F1=0.2041  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=0.9391  AUROC=0.5235  F1=0.0625  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=0.8569  AUROC=0.4731  F1=0.2456  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=0.8527  AUROC=0.4716  F1=0.1739  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=0.8104  AUROC=0.4697  F1=0.2000  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=0.8514  AUROC=0.4584  F1=0.2000  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=0.7224  AUROC=0.4922  F1=0.1905  lr=5.05e-05
+  [GPU 2]   │  Early stop at epoch 25
+  [GPU 2]   └─ Best AUROC=0.5284  (1144s)
+  [GPU 2]   ✓ checkpoint → ckpt_baseline2_abmil_embeddings_KRAS_fold2.pth
+  [GPU 2]   ┌─ baseline3_abmil_patterns | KRAS fold3 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.1927  AUROC=0.5328  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.4467  AUROC=0.5372  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.4505  AUROC=0.5396  F1=0.0000  lr=9.91e-05 ★
+  [GPU 2]   │  ep   4/50  loss=1.4468  AUROC=0.5431  F1=0.0000  lr=9.84e-05 ★
+  [GPU 2]   │  ep   5/50  loss=1.4513  AUROC=0.5470  F1=0.0000  lr=9.76e-05 ★
+  [GPU 2]   │  ep   6/50  loss=1.4712  AUROC=0.5523  F1=0.0000  lr=9.65e-05 ★
+  [GPU 2]   │  ep   7/50  loss=1.4619  AUROC=0.5528  F1=0.0000  lr=9.53e-05 ★
+  [GPU 2]   │  ep   8/50  loss=1.4612  AUROC=0.5533  F1=0.0000  lr=9.39e-05 ★
+  [GPU 2]   │  ep   9/50  loss=1.4946  AUROC=0.5543  F1=0.0000  lr=9.23e-05 ★
+  [GPU 2]   │  ep  10/50  loss=1.4381  AUROC=0.5582  F1=0.0000  lr=9.05e-05 ★
+  [GPU 2]   │  ep  11/50  loss=1.4534  AUROC=0.5592  F1=0.0000  lr=8.86e-05 ★
+  [GPU 2]   │  ep  12/50  loss=1.4641  AUROC=0.5582  F1=0.0000  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.4931  AUROC=0.5582  F1=0.0000  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.4508  AUROC=0.5616  F1=0.0000  lr=8.21e-05 ★
+  [GPU 2]   │  ep  15/50  loss=1.4474  AUROC=0.5670  F1=0.0000  lr=7.96e-05 ★
+  [GPU 2]   │  ep  16/50  loss=1.4963  AUROC=0.5695  F1=0.0000  lr=7.70e-05 ★
+  [GPU 2]   │  ep  17/50  loss=1.4142  AUROC=0.5753  F1=0.0000  lr=7.43e-05 ★
+  [GPU 2]   │  ep  18/50  loss=1.4488  AUROC=0.5753  F1=0.0000  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.4939  AUROC=0.5778  F1=0.0000  lr=6.87e-05 ★
+  [GPU 2]   │  ep  20/50  loss=1.4502  AUROC=0.5827  F1=0.0000  lr=6.58e-05 ★
+  [GPU 2]   │  ep  21/50  loss=1.4768  AUROC=0.5871  F1=0.0000  lr=6.28e-05 ★
+  [GPU 2]   │  ep  22/50  loss=1.4531  AUROC=0.5871  F1=0.0000  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=1.4116  AUROC=0.5910  F1=0.0000  lr=5.67e-05 ★
+  [GPU 2]   │  ep  24/50  loss=1.4875  AUROC=0.5930  F1=0.0000  lr=5.36e-05 ★
+  [GPU 2]   │  ep  25/50  loss=1.4838  AUROC=0.5934  F1=0.0000  lr=5.05e-05 ★
+  [GPU 2]   │  ep  26/50  loss=1.4524  AUROC=0.5949  F1=0.0000  lr=4.74e-05 ★
+  [GPU 2]   │  ep  27/50  loss=1.4665  AUROC=0.5976  F1=0.0000  lr=4.43e-05 ★
+  [GPU 2]   │  ep  28/50  loss=1.4485  AUROC=0.5988  F1=0.0000  lr=4.12e-05 ★
+  [GPU 2]   │  ep  29/50  loss=1.4633  AUROC=0.5974  F1=0.0000  lr=3.82e-05
+  [GPU 2]   │  ep  30/50  loss=1.4433  AUROC=0.6023  F1=0.0000  lr=3.52e-05 ★
+  [GPU 2]   │  ep  31/50  loss=1.4628  AUROC=0.6042  F1=0.0000  lr=3.23e-05 ★
+  [GPU 2]   │  ep  32/50  loss=1.4816  AUROC=0.6076  F1=0.0000  lr=2.94e-05 ★
+  [GPU 2]   │  ep  33/50  loss=1.4438  AUROC=0.6096  F1=0.0000  lr=2.67e-05 ★
+  [GPU 2]   │  ep  34/50  loss=1.4517  AUROC=0.6115  F1=0.0000  lr=2.40e-05 ★
+  [GPU 2]   │  ep  35/50  loss=1.4530  AUROC=0.6125  F1=0.0000  lr=2.14e-05 ★
+  [GPU 2]   │  ep  36/50  loss=1.4609  AUROC=0.6140  F1=0.0000  lr=1.89e-05 ★
+  [GPU 2]   │  ep  37/50  loss=1.4586  AUROC=0.6159  F1=0.0000  lr=1.66e-05 ★
+  [GPU 2]   │  ep  38/50  loss=1.4454  AUROC=0.6194  F1=0.0000  lr=1.44e-05 ★
+  [GPU 2]   │  ep  39/50  loss=1.4352  AUROC=0.6233  F1=0.0000  lr=1.24e-05 ★
+  [GPU 2]   │  ep  40/50  loss=1.4583  AUROC=0.6243  F1=0.0000  lr=1.05e-05 ★
+  [GPU 2]   │  ep  41/50  loss=1.4558  AUROC=0.6272  F1=0.0000  lr=8.71e-06 ★
+  [GPU 2]   │  ep  42/50  loss=1.4529  AUROC=0.6272  F1=0.0000  lr=7.12e-06 ★
+  [GPU 2]   │  ep  43/50  loss=1.4513  AUROC=0.6272  F1=0.0000  lr=5.71e-06
+  [GPU 2]   │  ep  44/50  loss=1.4578  AUROC=0.6316  F1=0.0000  lr=4.48e-06 ★
+  [GPU 2]   │  ep  45/50  loss=1.4533  AUROC=0.6316  F1=0.0000  lr=3.42e-06
+  [GPU 2]   │  ep  46/50  loss=1.4560  AUROC=0.6316  F1=0.0000  lr=2.56e-06
+  [GPU 2]   │  ep  47/50  loss=1.4537  AUROC=0.6321  F1=0.0000  lr=1.88e-06 ★
+  [GPU 2]   │  ep  48/50  loss=1.4547  AUROC=0.6316  F1=0.0000  lr=1.39e-06
+  [GPU 2]   │  ep  49/50  loss=1.4535  AUROC=0.6311  F1=0.0000  lr=1.10e-06
+  [GPU 2]   │  ep  50/50  loss=1.4543  AUROC=0.6316  F1=0.0000  lr=1.00e-06
+  [GPU 2]   └─ Best AUROC=0.6321  (1055s)
+  [GPU 2]   ✓ checkpoint → ckpt_baseline3_abmil_patterns_KRAS_fold2.pth
+  [GPU 2]   ┌─ proposed_abmil_concat | KRAS fold3 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.6151  AUROC=0.4795  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5626  AUROC=0.4682  F1=0.0000  lr=9.96e-05
+  [GPU 2]   │  ep   3/50  loss=1.4999  AUROC=0.4511  F1=0.0000  lr=9.91e-05
+  [GPU 2]   │  ep   4/50  loss=1.4646  AUROC=0.4795  F1=0.0000  lr=9.84e-05
+  [GPU 2]   │  ep   5/50  loss=1.4494  AUROC=0.4980  F1=0.0000  lr=9.76e-05 ★
+  [GPU 2]   │  ep   6/50  loss=1.4180  AUROC=0.4667  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.3844  AUROC=0.5137  F1=0.0000  lr=9.53e-05 ★
+  [GPU 2]   │  ep   8/50  loss=1.3620  AUROC=0.4667  F1=0.0000  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.3393  AUROC=0.4760  F1=0.0000  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.3024  AUROC=0.4892  F1=0.0000  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.2704  AUROC=0.5166  F1=0.1500  lr=8.86e-05 ★
+  [GPU 2]   │  ep  12/50  loss=1.2638  AUROC=0.4814  F1=0.0000  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.2237  AUROC=0.5029  F1=0.1500  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.1689  AUROC=0.4907  F1=0.0000  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.1729  AUROC=0.5064  F1=0.1951  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.0627  AUROC=0.5161  F1=0.1463  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.1278  AUROC=0.4878  F1=0.1000  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.0572  AUROC=0.4902  F1=0.0500  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.0400  AUROC=0.4917  F1=0.1395  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=0.9928  AUROC=0.4731  F1=0.0930  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=0.9434  AUROC=0.4848  F1=0.1633  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=0.9011  AUROC=0.4985  F1=0.1538  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=0.9090  AUROC=0.4795  F1=0.1333  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=0.8541  AUROC=0.4824  F1=0.2308  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=0.9195  AUROC=0.4858  F1=0.1778  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=0.8446  AUROC=0.4873  F1=0.2545  lr=4.74e-05
+  [GPU 2]   │  Early stop at epoch 26
+  [GPU 2]   └─ Best AUROC=0.5166  (3986s)
+  [GPU 2]   ✓ checkpoint → ckpt_proposed_abmil_concat_KRAS_fold2.pth
+  [GPU 2]   ┌─ ablation_abmil_onehot | KRAS fold3 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.6185  AUROC=0.4183  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.4828  AUROC=0.4941  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.5115  AUROC=0.4393  F1=0.0000  lr=9.91e-05
+  [GPU 2]   │  ep   4/50  loss=1.4714  AUROC=0.4574  F1=0.0000  lr=9.84e-05
+  [GPU 2]   │  ep   5/50  loss=1.4414  AUROC=0.4134  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.4603  AUROC=0.4868  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.3601  AUROC=0.4785  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.3578  AUROC=0.5113  F1=0.0000  lr=9.39e-05 ★
+  [GPU 2]   │  ep   9/50  loss=1.3553  AUROC=0.4799  F1=0.1739  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.2822  AUROC=0.4814  F1=0.0000  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.2855  AUROC=0.5254  F1=0.1500  lr=8.86e-05 ★
+  [GPU 2]   │  ep  12/50  loss=1.2373  AUROC=0.4892  F1=0.0513  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.2146  AUROC=0.5215  F1=0.1579  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.1504  AUROC=0.5245  F1=0.1860  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.0889  AUROC=0.5068  F1=0.1053  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.1450  AUROC=0.5059  F1=0.1860  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.1075  AUROC=0.4971  F1=0.0000  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.1024  AUROC=0.5010  F1=0.1429  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.0879  AUROC=0.4946  F1=0.1500  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=0.9981  AUROC=0.5191  F1=0.1111  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=0.9430  AUROC=0.5108  F1=0.1395  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=0.9864  AUROC=0.4971  F1=0.1500  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=0.9011  AUROC=0.4765  F1=0.1395  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=0.8771  AUROC=0.4829  F1=0.1818  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=1.0117  AUROC=0.5015  F1=0.1538  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=0.7804  AUROC=0.5068  F1=0.2174  lr=4.74e-05
+  [GPU 2]   │  Early stop at epoch 26
+  [GPU 2]   └─ Best AUROC=0.5254  (5108s)
+  [GPU 2]   ✓ checkpoint → ckpt_ablation_abmil_onehot_KRAS_fold2.pth
+  [GPU 2]   ┌─ proposed_fuzzy_choquet | KRAS fold3 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.8017  AUROC=0.4677  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.7311  AUROC=0.4398  F1=0.0000  lr=9.96e-05
+  [GPU 2]   │  ep   3/50  loss=1.7203  AUROC=0.4437  F1=0.0000  lr=9.91e-05
+  [GPU 2]   │  ep   4/50  loss=1.6543  AUROC=0.4658  F1=0.0000  lr=9.84e-05
+  [GPU 2]   │  ep   5/50  loss=1.6469  AUROC=0.4599  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.5730  AUROC=0.4736  F1=0.0000  lr=9.65e-05 ★
+  [GPU 2]   │  ep   7/50  loss=1.6326  AUROC=0.4506  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.5987  AUROC=0.4971  F1=0.0000  lr=9.39e-05 ★
+  [GPU 2]   │  ep   9/50  loss=1.5657  AUROC=0.5294  F1=0.0000  lr=9.23e-05 ★
+  [GPU 2]   │  ep  10/50  loss=1.5932  AUROC=0.5147  F1=0.1053  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.4814  AUROC=0.4755  F1=0.0571  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.3920  AUROC=0.4535  F1=0.0000  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.4454  AUROC=0.4936  F1=0.1081  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.4074  AUROC=0.5044  F1=0.1081  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.2983  AUROC=0.4946  F1=0.1500  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.2684  AUROC=0.4985  F1=0.1905  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.2019  AUROC=0.4858  F1=0.1818  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.1966  AUROC=0.4912  F1=0.1951  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.0951  AUROC=0.4775  F1=0.2041  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.0637  AUROC=0.4868  F1=0.2000  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=1.0711  AUROC=0.4614  F1=0.1852  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=0.9685  AUROC=0.4780  F1=0.2222  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=0.9463  AUROC=0.4819  F1=0.2000  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=0.9283  AUROC=0.4711  F1=0.2128  lr=5.36e-05
+  [GPU 2]   │  Early stop at epoch 24
+  [GPU 2]   └─ Best AUROC=0.5294  (2100s)
+  [GPU 2]   ✓ checkpoint → ckpt_proposed_fuzzy_choquet_KRAS_fold2.pth
+
+[GPU 2] ── Fold 3 summary for KRAS:
+  [GPU 2]   baseline1_xgboost                    AUROC=0.5621  F1=0.3019
+  [GPU 2]   baseline2_abmil_embeddings           AUROC=0.5284  F1=0.2273
+  [GPU 2]   baseline3_abmil_patterns             AUROC=0.6321  F1=0.0000
+  [GPU 2]   proposed_abmil_concat                AUROC=0.5166  F1=0.1500
+  [GPU 2]   ablation_abmil_onehot                AUROC=0.5254  F1=0.1500
+  [GPU 2]   proposed_fuzzy_choquet               AUROC=0.5294  F1=0.0000
+
+[GPU 2] ── Fold 4/5 (train=404, val=101) ──
+[GPU 2]   Loading fold 4 slides...
+[GPU 2]   Fold loaded (505 slides)
+  [GPU 2]   ┌─ baseline1_xgboost | KRAS fold4
+  [GPU 2]   └─ AUROC=0.6047  F1=0.3448  (4s)
+  [GPU 2]   ┌─ baseline2_abmil_embeddings | KRAS fold4 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.5736  AUROC=0.4839  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5920  AUROC=0.5323  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.5325  AUROC=0.5426  F1=0.0000  lr=9.91e-05 ★
+  [GPU 2]   │  ep   4/50  loss=1.5007  AUROC=0.6101  F1=0.0000  lr=9.84e-05 ★
+  [GPU 2]   │  ep   5/50  loss=1.4990  AUROC=0.6365  F1=0.0000  lr=9.76e-05 ★
+  [GPU 2]   │  ep   6/50  loss=1.4809  AUROC=0.6703  F1=0.0000  lr=9.65e-05 ★
+  [GPU 2]   │  ep   7/50  loss=1.4533  AUROC=0.6477  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.4512  AUROC=0.6404  F1=0.0690  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.3942  AUROC=0.6174  F1=0.0690  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.4419  AUROC=0.6336  F1=0.0645  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.2768  AUROC=0.6433  F1=0.0667  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.3959  AUROC=0.6419  F1=0.0606  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.2824  AUROC=0.6115  F1=0.1081  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.2782  AUROC=0.6360  F1=0.0667  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.2304  AUROC=0.7045  F1=0.1053  lr=7.96e-05 ★
+  [GPU 2]   │  ep  16/50  loss=1.2291  AUROC=0.6257  F1=0.1622  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.1657  AUROC=0.6874  F1=0.2000  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.1130  AUROC=0.7148  F1=0.2632  lr=7.16e-05 ★
+  [GPU 2]   │  ep  19/50  loss=1.0950  AUROC=0.6991  F1=0.2632  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.0805  AUROC=0.6747  F1=0.2162  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=1.0344  AUROC=0.6477  F1=0.3256  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=1.0000  AUROC=0.6688  F1=0.3396  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=0.9315  AUROC=0.6492  F1=0.2927  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=0.9317  AUROC=0.6575  F1=0.3810  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=0.9167  AUROC=0.6463  F1=0.3256  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=0.9323  AUROC=0.6864  F1=0.4528  lr=4.74e-05
+  [GPU 2]   │  ep  27/50  loss=0.8428  AUROC=0.6776  F1=0.3750  lr=4.43e-05
+  [GPU 2]   │  ep  28/50  loss=0.8654  AUROC=0.6448  F1=0.3415  lr=4.12e-05
+  [GPU 2]   │  ep  29/50  loss=0.7931  AUROC=0.6194  F1=0.2632  lr=3.82e-05
+  [GPU 2]   │  ep  30/50  loss=0.8582  AUROC=0.6125  F1=0.3810  lr=3.52e-05
+  [GPU 2]   │  ep  31/50  loss=0.8424  AUROC=0.6169  F1=0.2703  lr=3.23e-05
+  [GPU 2]   │  ep  32/50  loss=0.7721  AUROC=0.6071  F1=0.4082  lr=2.94e-05
+  [GPU 2]   │  ep  33/50  loss=0.7076  AUROC=0.6194  F1=0.3000  lr=2.67e-05
+  [GPU 2]   │  Early stop at epoch 33
+  [GPU 2]   └─ Best AUROC=0.7148  (2043s)
+  [GPU 2]   ✓ checkpoint → ckpt_baseline2_abmil_embeddings_KRAS_fold3.pth
+  [GPU 2]   ┌─ baseline3_abmil_patterns | KRAS fold4 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.1873  AUROC=0.5656  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.3754  AUROC=0.6155  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.4860  AUROC=0.6032  F1=0.0000  lr=9.91e-05
+  [GPU 2]   │  ep   4/50  loss=1.4468  AUROC=0.6027  F1=0.0000  lr=9.84e-05
+  [GPU 2]   │  ep   5/50  loss=1.5125  AUROC=0.5910  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.4496  AUROC=0.5837  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.4834  AUROC=0.5890  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.4318  AUROC=0.5719  F1=0.0000  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.5180  AUROC=0.5612  F1=0.0000  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.4697  AUROC=0.5607  F1=0.0000  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.4620  AUROC=0.5700  F1=0.0000  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.4501  AUROC=0.5846  F1=0.0000  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.4700  AUROC=0.5783  F1=0.0000  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.4422  AUROC=0.5768  F1=0.0000  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.4551  AUROC=0.5700  F1=0.0000  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.4875  AUROC=0.5548  F1=0.0000  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.4016  AUROC=0.5523  F1=0.0000  lr=7.43e-05
+  [GPU 2]   │  Early stop at epoch 17
+  [GPU 2]   └─ Best AUROC=0.6155  (477s)
+  [GPU 2]   ✓ checkpoint → ckpt_baseline3_abmil_patterns_KRAS_fold3.pth
+  [GPU 2]   ┌─ proposed_abmil_concat | KRAS fold4 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.5828  AUROC=0.5577  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5741  AUROC=0.5900  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.5398  AUROC=0.5851  F1=0.0000  lr=9.91e-05
+  [GPU 2]   │  ep   4/50  loss=1.5343  AUROC=0.6076  F1=0.0000  lr=9.84e-05 ★
+  [GPU 2]   │  ep   5/50  loss=1.4558  AUROC=0.6081  F1=0.0000  lr=9.76e-05 ★
+  [GPU 2]   │  ep   6/50  loss=1.5063  AUROC=0.5832  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.4568  AUROC=0.6414  F1=0.0000  lr=9.53e-05 ★
+  [GPU 2]   │  ep   8/50  loss=1.4145  AUROC=0.6204  F1=0.0000  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.3897  AUROC=0.6140  F1=0.0000  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.4148  AUROC=0.6649  F1=0.0690  lr=9.05e-05 ★
+  [GPU 2]   │  ep  11/50  loss=1.3512  AUROC=0.6619  F1=0.0690  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.3047  AUROC=0.6614  F1=0.1250  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.2469  AUROC=0.6218  F1=0.1111  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.2853  AUROC=0.6800  F1=0.1250  lr=8.21e-05 ★
+  [GPU 2]   │  ep  15/50  loss=1.2146  AUROC=0.6541  F1=0.1111  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.2342  AUROC=0.5954  F1=0.1212  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.1716  AUROC=0.6776  F1=0.1622  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.0679  AUROC=0.6115  F1=0.2439  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.0718  AUROC=0.5768  F1=0.1579  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.0235  AUROC=0.6507  F1=0.2564  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=1.0420  AUROC=0.6013  F1=0.1951  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=0.9029  AUROC=0.6027  F1=0.3273  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=0.9758  AUROC=0.5670  F1=0.2222  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=0.8348  AUROC=0.5978  F1=0.3600  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=0.8453  AUROC=0.5812  F1=0.1622  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=0.8497  AUROC=0.5978  F1=0.1951  lr=4.74e-05
+  [GPU 2]   │  ep  27/50  loss=1.0014  AUROC=0.6003  F1=0.2979  lr=4.43e-05
+  [GPU 2]   │  ep  28/50  loss=0.7405  AUROC=0.6111  F1=0.1622  lr=4.12e-05
+  [GPU 2]   │  ep  29/50  loss=0.8788  AUROC=0.6023  F1=0.2162  lr=3.82e-05
+  [GPU 2]   │  Early stop at epoch 29
+  [GPU 2]   └─ Best AUROC=0.6800  (5383s)
+  [GPU 2]   ✓ checkpoint → ckpt_proposed_abmil_concat_KRAS_fold3.pth
+  [GPU 2]   ┌─ ablation_abmil_onehot | KRAS fold4 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.5646  AUROC=0.4594  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5468  AUROC=0.5709  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.5053  AUROC=0.6067  F1=0.0000  lr=9.91e-05 ★
+  [GPU 2]   │  ep   4/50  loss=1.4632  AUROC=0.6174  F1=0.0000  lr=9.84e-05 ★
+  [GPU 2]   │  ep   5/50  loss=1.4488  AUROC=0.6037  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.4572  AUROC=0.6497  F1=0.0000  lr=9.65e-05 ★
+  [GPU 2]   │  ep   7/50  loss=1.4481  AUROC=0.6507  F1=0.0000  lr=9.53e-05 ★
+  [GPU 2]   │  ep   8/50  loss=1.3828  AUROC=0.6477  F1=0.0000  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.4415  AUROC=0.7055  F1=0.0690  lr=9.23e-05 ★
+  [GPU 2]   │  ep  10/50  loss=1.3570  AUROC=0.6433  F1=0.0645  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.2992  AUROC=0.6296  F1=0.0645  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.3045  AUROC=0.6864  F1=0.0667  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.2899  AUROC=0.6668  F1=0.0625  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.2027  AUROC=0.6693  F1=0.0606  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.2440  AUROC=0.6272  F1=0.1143  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.1764  AUROC=0.6546  F1=0.0606  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.1845  AUROC=0.6742  F1=0.3590  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.1235  AUROC=0.6712  F1=0.4364  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.0793  AUROC=0.6703  F1=0.2927  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.0448  AUROC=0.6585  F1=0.3636  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=0.9559  AUROC=0.6399  F1=0.2564  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=1.0039  AUROC=0.6252  F1=0.3077  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=0.9221  AUROC=0.6316  F1=0.2632  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=0.9167  AUROC=0.6355  F1=0.3636  lr=5.36e-05
+  [GPU 2]   │  Early stop at epoch 24
+  [GPU 2]   └─ Best AUROC=0.7055  (3740s)
+  [GPU 2]   ✓ checkpoint → ckpt_ablation_abmil_onehot_KRAS_fold3.pth
+  [GPU 2]   ┌─ proposed_fuzzy_choquet | KRAS fold4 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.8320  AUROC=0.4956  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.7117  AUROC=0.4697  F1=0.0000  lr=9.96e-05
+  [GPU 2]   │  ep   3/50  loss=1.6640  AUROC=0.5157  F1=0.0000  lr=9.91e-05 ★
+  [GPU 2]   │  ep   4/50  loss=1.6681  AUROC=0.5367  F1=0.0000  lr=9.84e-05 ★
+  [GPU 2]   │  ep   5/50  loss=1.5909  AUROC=0.5323  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.6432  AUROC=0.5812  F1=0.0000  lr=9.65e-05 ★
+  [GPU 2]   │  ep   7/50  loss=1.6095  AUROC=0.6057  F1=0.0000  lr=9.53e-05 ★
+  [GPU 2]   │  ep   8/50  loss=1.6529  AUROC=0.5851  F1=0.0000  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.6054  AUROC=0.6076  F1=0.0000  lr=9.23e-05 ★
+  [GPU 2]   │  ep  10/50  loss=1.5344  AUROC=0.6311  F1=0.0000  lr=9.05e-05 ★
+  [GPU 2]   │  ep  11/50  loss=1.5902  AUROC=0.6473  F1=0.0690  lr=8.86e-05 ★
+  [GPU 2]   │  ep  12/50  loss=1.5337  AUROC=0.6409  F1=0.0690  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.4982  AUROC=0.6541  F1=0.1081  lr=8.44e-05 ★
+  [GPU 2]   │  ep  14/50  loss=1.4612  AUROC=0.6698  F1=0.2051  lr=8.21e-05 ★
+  [GPU 2]   │  ep  15/50  loss=1.4340  AUROC=0.6600  F1=0.0690  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.4434  AUROC=0.6629  F1=0.0625  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.3263  AUROC=0.6634  F1=0.1176  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.2844  AUROC=0.6370  F1=0.2632  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.2475  AUROC=0.6076  F1=0.2105  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.2297  AUROC=0.5841  F1=0.1250  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=1.1800  AUROC=0.6365  F1=0.3256  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=1.0192  AUROC=0.5421  F1=0.2105  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=1.0823  AUROC=0.5695  F1=0.2381  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=1.0399  AUROC=0.5548  F1=0.2500  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=0.9731  AUROC=0.6086  F1=0.4151  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=0.9672  AUROC=0.5685  F1=0.2917  lr=4.74e-05
+  [GPU 2]   │  ep  27/50  loss=0.8916  AUROC=0.5196  F1=0.2927  lr=4.43e-05
+  [GPU 2]   │  ep  28/50  loss=0.9305  AUROC=0.5553  F1=0.2564  lr=4.12e-05
+  [GPU 2]   │  ep  29/50  loss=0.8237  AUROC=0.5538  F1=0.3721  lr=3.82e-05
+  [GPU 2]   │  Early stop at epoch 29
+  [GPU 2]   └─ Best AUROC=0.6698  (930s)
+  [GPU 2]   ✓ checkpoint → ckpt_proposed_fuzzy_choquet_KRAS_fold3.pth
+
+[GPU 2] ── Fold 4 summary for KRAS:
+  [GPU 2]   baseline1_xgboost                    AUROC=0.6047  F1=0.3448
+  [GPU 2]   baseline2_abmil_embeddings           AUROC=0.7148  F1=0.2632
+  [GPU 2]   baseline3_abmil_patterns             AUROC=0.6155  F1=0.0000
+  [GPU 2]   proposed_abmil_concat                AUROC=0.6800  F1=0.1250
+  [GPU 2]   ablation_abmil_onehot                AUROC=0.7055  F1=0.0690
+  [GPU 2]   proposed_fuzzy_choquet               AUROC=0.6698  F1=0.2051
+
+[GPU 2] ── Fold 5/5 (train=404, val=101) ──
+[GPU 2]   Loading fold 5 slides...
+[GPU 2]   Fold loaded (505 slides)
+  [GPU 2]   ┌─ baseline1_xgboost | KRAS fold5
+  [GPU 2]   └─ AUROC=0.4760  F1=0.2545  (2s)
+  [GPU 2]   ┌─ baseline2_abmil_embeddings | KRAS fold5 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.5900  AUROC=0.5059  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5516  AUROC=0.5015  F1=0.0000  lr=9.96e-05
+  [GPU 2]   │  ep   3/50  loss=1.5148  AUROC=0.5117  F1=0.0000  lr=9.91e-05 ★
+  [GPU 2]   │  ep   4/50  loss=1.5080  AUROC=0.5103  F1=0.0000  lr=9.84e-05
+  [GPU 2]   │  ep   5/50  loss=1.4408  AUROC=0.5137  F1=0.0000  lr=9.76e-05 ★
+  [GPU 2]   │  ep   6/50  loss=1.4645  AUROC=0.5254  F1=0.0000  lr=9.65e-05 ★
+  [GPU 2]   │  ep   7/50  loss=1.4011  AUROC=0.5068  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.3867  AUROC=0.5284  F1=0.2353  lr=9.39e-05 ★
+  [GPU 2]   │  ep   9/50  loss=1.3307  AUROC=0.5220  F1=0.0000  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.2882  AUROC=0.4770  F1=0.0000  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.3328  AUROC=0.5210  F1=0.2286  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.2778  AUROC=0.4985  F1=0.2353  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.1902  AUROC=0.5078  F1=0.1818  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.2069  AUROC=0.4980  F1=0.2286  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.1630  AUROC=0.5235  F1=0.3243  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.1874  AUROC=0.5264  F1=0.2857  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.1137  AUROC=0.4907  F1=0.2162  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.0646  AUROC=0.5122  F1=0.2500  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.0424  AUROC=0.5201  F1=0.2439  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.0791  AUROC=0.5225  F1=0.2051  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=0.9717  AUROC=0.5259  F1=0.1951  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=0.9822  AUROC=0.5367  F1=0.3571  lr=5.98e-05 ★
+  [GPU 2]   │  ep  23/50  loss=1.0127  AUROC=0.5411  F1=0.2273  lr=5.67e-05 ★
+  [GPU 2]   │  ep  24/50  loss=0.9805  AUROC=0.5465  F1=0.2500  lr=5.36e-05 ★
+  [GPU 2]   │  ep  25/50  loss=0.8763  AUROC=0.5489  F1=0.3137  lr=5.05e-05 ★
+  [GPU 2]   │  ep  26/50  loss=1.0038  AUROC=0.5426  F1=0.2800  lr=4.74e-05
+  [GPU 2]   │  ep  27/50  loss=0.9766  AUROC=0.5475  F1=0.2000  lr=4.43e-05
+  [GPU 2]   │  ep  28/50  loss=0.8953  AUROC=0.5445  F1=0.3396  lr=4.12e-05
+  [GPU 2]   │  ep  29/50  loss=0.8365  AUROC=0.5445  F1=0.4308  lr=3.82e-05
+  [GPU 2]   │  ep  30/50  loss=0.8270  AUROC=0.5660  F1=0.3922  lr=3.52e-05 ★
+  [GPU 2]   │  ep  31/50  loss=0.8808  AUROC=0.5445  F1=0.2800  lr=3.23e-05
+  [GPU 2]   │  ep  32/50  loss=0.7332  AUROC=0.5548  F1=0.2727  lr=2.94e-05
+  [GPU 2]   │  ep  33/50  loss=0.7294  AUROC=0.5455  F1=0.3077  lr=2.67e-05
+  [GPU 2]   │  ep  34/50  loss=0.7322  AUROC=0.5685  F1=0.3774  lr=2.40e-05 ★
+  [GPU 2]   │  ep  35/50  loss=0.7371  AUROC=0.5514  F1=0.3860  lr=2.14e-05
+  [GPU 2]   │  ep  36/50  loss=0.7541  AUROC=0.5592  F1=0.4286  lr=1.89e-05
+  [GPU 2]   │  ep  37/50  loss=0.5818  AUROC=0.5602  F1=0.3396  lr=1.66e-05
+  [GPU 2]   │  ep  38/50  loss=0.6153  AUROC=0.5675  F1=0.3704  lr=1.44e-05
+  [GPU 2]   │  ep  39/50  loss=0.5862  AUROC=0.5675  F1=0.3200  lr=1.24e-05
+  [GPU 2]   │  ep  40/50  loss=0.6509  AUROC=0.5612  F1=0.3462  lr=1.05e-05
+  [GPU 2]   │  ep  41/50  loss=0.5977  AUROC=0.5695  F1=0.4074  lr=8.71e-06 ★
+  [GPU 2]   │  ep  42/50  loss=0.6246  AUROC=0.5714  F1=0.3529  lr=7.12e-06 ★
+  [GPU 2]   │  ep  43/50  loss=0.5970  AUROC=0.5680  F1=0.4068  lr=5.71e-06
+  [GPU 2]   │  ep  44/50  loss=0.5594  AUROC=0.5690  F1=0.4000  lr=4.48e-06
+  [GPU 2]   │  ep  45/50  loss=0.7036  AUROC=0.5660  F1=0.4000  lr=3.42e-06
+  [GPU 2]   │  ep  46/50  loss=0.5665  AUROC=0.5695  F1=0.4000  lr=2.56e-06
+  [GPU 2]   │  ep  47/50  loss=0.5087  AUROC=0.5675  F1=0.3929  lr=1.88e-06
+  [GPU 2]   │  ep  48/50  loss=0.4759  AUROC=0.5641  F1=0.3929  lr=1.39e-06
+  [GPU 2]   │  ep  49/50  loss=0.6436  AUROC=0.5660  F1=0.3929  lr=1.10e-06
+  [GPU 2]   │  ep  50/50  loss=0.5860  AUROC=0.5641  F1=0.4211  lr=1.00e-06
+  [GPU 2]   └─ Best AUROC=0.5714  (3270s)
+  [GPU 2]   ✓ checkpoint → ckpt_baseline2_abmil_embeddings_KRAS_fold4.pth
+  [GPU 2]   ┌─ baseline3_abmil_patterns | KRAS fold5 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.1813  AUROC=0.3929  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.4094  AUROC=0.4075  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.4047  AUROC=0.4090  F1=0.0000  lr=9.91e-05 ★
+  [GPU 2]   │  ep   4/50  loss=1.4020  AUROC=0.4119  F1=0.0000  lr=9.84e-05 ★
+  [GPU 2]   │  ep   5/50  loss=1.4286  AUROC=0.4163  F1=0.0000  lr=9.76e-05 ★
+  [GPU 2]   │  ep   6/50  loss=1.3939  AUROC=0.4159  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.3968  AUROC=0.4144  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.3952  AUROC=0.4139  F1=0.0000  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.4140  AUROC=0.4154  F1=0.0000  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.3845  AUROC=0.4149  F1=0.0000  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.3875  AUROC=0.4163  F1=0.0000  lr=8.86e-05 ★
+  [GPU 2]   │  ep  12/50  loss=1.3765  AUROC=0.4188  F1=0.0000  lr=8.66e-05 ★
+  [GPU 2]   │  ep  13/50  loss=1.4127  AUROC=0.4168  F1=0.0000  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.4248  AUROC=0.4178  F1=0.0000  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.3428  AUROC=0.4134  F1=0.0000  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.3899  AUROC=0.4144  F1=0.0000  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.3721  AUROC=0.4168  F1=0.0000  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.4067  AUROC=0.4144  F1=0.0000  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.3749  AUROC=0.4212  F1=0.0000  lr=6.87e-05 ★
+  [GPU 2]   │  ep  20/50  loss=1.4026  AUROC=0.4212  F1=0.0000  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=1.3745  AUROC=0.4222  F1=0.0000  lr=6.28e-05 ★
+  [GPU 2]   │  ep  22/50  loss=1.3941  AUROC=0.4247  F1=0.0000  lr=5.98e-05 ★
+  [GPU 2]   │  ep  23/50  loss=1.3911  AUROC=0.4247  F1=0.0000  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=1.3779  AUROC=0.4242  F1=0.0000  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=1.3907  AUROC=0.4247  F1=0.0000  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=1.3823  AUROC=0.4247  F1=0.0000  lr=4.74e-05
+  [GPU 2]   │  ep  27/50  loss=1.3652  AUROC=0.4212  F1=0.0000  lr=4.43e-05
+  [GPU 2]   │  ep  28/50  loss=1.3545  AUROC=0.4261  F1=0.0000  lr=4.12e-05 ★
+  [GPU 2]   │  ep  29/50  loss=1.3714  AUROC=0.4286  F1=0.0000  lr=3.82e-05 ★
+  [GPU 2]   │  ep  30/50  loss=1.3780  AUROC=0.4281  F1=0.0000  lr=3.52e-05
+  [GPU 2]   │  ep  31/50  loss=1.3840  AUROC=0.4261  F1=0.0000  lr=3.23e-05
+  [GPU 2]   │  ep  32/50  loss=1.3927  AUROC=0.4256  F1=0.0000  lr=2.94e-05
+  [GPU 2]   │  ep  33/50  loss=1.3527  AUROC=0.4305  F1=0.0000  lr=2.67e-05 ★
+  [GPU 2]   │  ep  34/50  loss=1.3811  AUROC=0.4305  F1=0.0000  lr=2.40e-05
+  [GPU 2]   │  ep  35/50  loss=1.3598  AUROC=0.4340  F1=0.0000  lr=2.14e-05 ★
+  [GPU 2]   │  ep  36/50  loss=1.3806  AUROC=0.4330  F1=0.0000  lr=1.89e-05
+  [GPU 2]   │  ep  37/50  loss=1.3690  AUROC=0.4320  F1=0.0000  lr=1.66e-05
+  [GPU 2]   │  ep  38/50  loss=1.3649  AUROC=0.4325  F1=0.0000  lr=1.44e-05
+  [GPU 2]   │  ep  39/50  loss=1.3623  AUROC=0.4349  F1=0.0000  lr=1.24e-05 ★
+  [GPU 2]   │  ep  40/50  loss=1.3568  AUROC=0.4364  F1=0.0000  lr=1.05e-05 ★
+  [GPU 2]   │  ep  41/50  loss=1.3619  AUROC=0.4349  F1=0.0000  lr=8.71e-06
+  [GPU 2]   │  ep  42/50  loss=1.3600  AUROC=0.4354  F1=0.0000  lr=7.12e-06
+  [GPU 2]   │  ep  43/50  loss=1.3597  AUROC=0.4349  F1=0.0000  lr=5.71e-06
+  [GPU 2]   │  ep  44/50  loss=1.3603  AUROC=0.4349  F1=0.0000  lr=4.48e-06
+  [GPU 2]   │  ep  45/50  loss=1.3621  AUROC=0.4344  F1=0.0000  lr=3.42e-06
+  [GPU 2]   │  ep  46/50  loss=1.3611  AUROC=0.4344  F1=0.0000  lr=2.56e-06
+  [GPU 2]   │  ep  47/50  loss=1.3612  AUROC=0.4340  F1=0.0000  lr=1.88e-06
+  [GPU 2]   │  ep  48/50  loss=1.3618  AUROC=0.4340  F1=0.0000  lr=1.39e-06
+  [GPU 2]   │  ep  49/50  loss=1.3640  AUROC=0.4340  F1=0.0000  lr=1.10e-06
+  [GPU 2]   │  ep  50/50  loss=1.3626  AUROC=0.4340  F1=0.0000  lr=1.00e-06
+  [GPU 2]   └─ Best AUROC=0.4364  (1425s)
+  [GPU 2]   ✓ checkpoint → ckpt_baseline3_abmil_patterns_KRAS_fold4.pth
+  [GPU 2]   ┌─ proposed_abmil_concat | KRAS fold5 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.5807  AUROC=0.5289  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5537  AUROC=0.5098  F1=0.0000  lr=9.96e-05
+  [GPU 2]   │  ep   3/50  loss=1.5092  AUROC=0.5147  F1=0.0000  lr=9.91e-05
+  [GPU 2]   │  ep   4/50  loss=1.4983  AUROC=0.5298  F1=0.0000  lr=9.84e-05 ★
+  [GPU 2]   │  ep   5/50  loss=1.4630  AUROC=0.5230  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.4181  AUROC=0.5122  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.4324  AUROC=0.5406  F1=0.0000  lr=9.53e-05 ★
+  [GPU 2]   │  ep   8/50  loss=1.4024  AUROC=0.5274  F1=0.1212  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.3252  AUROC=0.5411  F1=0.0000  lr=9.23e-05 ★
+  [GPU 2]   │  ep  10/50  loss=1.2609  AUROC=0.5010  F1=0.0000  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.2882  AUROC=0.4961  F1=0.1250  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.2201  AUROC=0.5264  F1=0.1290  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.2305  AUROC=0.4790  F1=0.1212  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.1946  AUROC=0.5259  F1=0.2051  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.1509  AUROC=0.5054  F1=0.2162  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.1764  AUROC=0.5059  F1=0.0625  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.0748  AUROC=0.5225  F1=0.0000  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.1045  AUROC=0.5362  F1=0.1714  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=0.9783  AUROC=0.5382  F1=0.3404  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.0908  AUROC=0.5298  F1=0.3934  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=0.9637  AUROC=0.5528  F1=0.4000  lr=6.28e-05 ★
+  [GPU 2]   │  ep  22/50  loss=0.9929  AUROC=0.5607  F1=0.1667  lr=5.98e-05 ★
+  [GPU 2]   │  ep  23/50  loss=0.9337  AUROC=0.5695  F1=0.3111  lr=5.67e-05 ★
+  [GPU 2]   │  ep  24/50  loss=0.9702  AUROC=0.5494  F1=0.2979  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=0.8842  AUROC=0.5362  F1=0.2000  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=0.9276  AUROC=0.5435  F1=0.3571  lr=4.74e-05
+  [GPU 2]   │  ep  27/50  loss=0.9100  AUROC=0.5548  F1=0.2381  lr=4.43e-05
+  [GPU 2]   │  ep  28/50  loss=0.7496  AUROC=0.5367  F1=0.2381  lr=4.12e-05
+  [GPU 2]   │  ep  29/50  loss=0.7678  AUROC=0.5401  F1=0.2449  lr=3.82e-05
+  [GPU 2]   │  ep  30/50  loss=0.7907  AUROC=0.5264  F1=0.1951  lr=3.52e-05
+  [GPU 2]   │  ep  31/50  loss=0.8088  AUROC=0.5406  F1=0.4706  lr=3.23e-05
+  [GPU 2]   │  ep  32/50  loss=0.7419  AUROC=0.5303  F1=0.2222  lr=2.94e-05
+  [GPU 2]   │  ep  33/50  loss=0.8229  AUROC=0.5411  F1=0.2326  lr=2.67e-05
+  [GPU 2]   │  ep  34/50  loss=0.6126  AUROC=0.5416  F1=0.3265  lr=2.40e-05
+  [GPU 2]   │  ep  35/50  loss=0.7731  AUROC=0.5372  F1=0.2917  lr=2.14e-05
+  [GPU 2]   │  ep  36/50  loss=0.6697  AUROC=0.5357  F1=0.3729  lr=1.89e-05
+  [GPU 2]   │  ep  37/50  loss=0.6430  AUROC=0.5445  F1=0.2222  lr=1.66e-05
+  [GPU 2]   │  ep  38/50  loss=0.5881  AUROC=0.5323  F1=0.4068  lr=1.44e-05
+  [GPU 2]   │  Early stop at epoch 38
+  [GPU 2]   └─ Best AUROC=0.5695  (6747s)
+  [GPU 2]   ✓ checkpoint → ckpt_proposed_abmil_concat_KRAS_fold4.pth
+  [GPU 2]   ┌─ ablation_abmil_onehot | KRAS fold5 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.6553  AUROC=0.5083  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.5095  AUROC=0.5015  F1=0.0000  lr=9.96e-05
+  [GPU 2]   │  ep   3/50  loss=1.4961  AUROC=0.5161  F1=0.0000  lr=9.91e-05 ★
+  [GPU 2]   │  ep   4/50  loss=1.4649  AUROC=0.5054  F1=0.0000  lr=9.84e-05
+  [GPU 2]   │  ep   5/50  loss=1.4457  AUROC=0.5132  F1=0.0000  lr=9.76e-05
+  [GPU 2]   │  ep   6/50  loss=1.4335  AUROC=0.5254  F1=0.1290  lr=9.65e-05 ★
+  [GPU 2]   │  ep   7/50  loss=1.3981  AUROC=0.5386  F1=0.0000  lr=9.53e-05 ★
+  [GPU 2]   │  ep   8/50  loss=1.3898  AUROC=0.5357  F1=0.0000  lr=9.39e-05
+  [GPU 2]   │  ep   9/50  loss=1.3278  AUROC=0.5259  F1=0.0000  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.3224  AUROC=0.5201  F1=0.0000  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.2682  AUROC=0.5152  F1=0.0000  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.2829  AUROC=0.5020  F1=0.0667  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.2500  AUROC=0.5470  F1=0.1818  lr=8.44e-05 ★
+  [GPU 2]   │  ep  14/50  loss=1.1608  AUROC=0.5113  F1=0.1290  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.1819  AUROC=0.5342  F1=0.1714  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.1528  AUROC=0.5078  F1=0.0645  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.1592  AUROC=0.5357  F1=0.3077  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.1101  AUROC=0.5269  F1=0.1622  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.0760  AUROC=0.5264  F1=0.3137  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.1039  AUROC=0.5176  F1=0.0625  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=1.0783  AUROC=0.5431  F1=0.3529  lr=6.28e-05
+  [GPU 2]   │  ep  22/50  loss=1.0244  AUROC=0.5377  F1=0.3729  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=0.9278  AUROC=0.5479  F1=0.3077  lr=5.67e-05 ★
+  [GPU 2]   │  ep  24/50  loss=1.0077  AUROC=0.5435  F1=0.3529  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=0.9981  AUROC=0.5303  F1=0.3200  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=0.8629  AUROC=0.5499  F1=0.2917  lr=4.74e-05 ★
+  [GPU 2]   │  ep  27/50  loss=0.9200  AUROC=0.5377  F1=0.3571  lr=4.43e-05
+  [GPU 2]   │  ep  28/50  loss=0.8839  AUROC=0.5382  F1=0.3636  lr=4.12e-05
+  [GPU 2]   │  ep  29/50  loss=0.9206  AUROC=0.5357  F1=0.4333  lr=3.82e-05
+  [GPU 2]   │  ep  30/50  loss=0.8948  AUROC=0.5445  F1=0.3729  lr=3.52e-05
+  [GPU 2]   │  ep  31/50  loss=0.7628  AUROC=0.5489  F1=0.3529  lr=3.23e-05
+  [GPU 2]   │  ep  32/50  loss=0.8170  AUROC=0.5445  F1=0.3673  lr=2.94e-05
+  [GPU 2]   │  ep  33/50  loss=0.7821  AUROC=0.5367  F1=0.3636  lr=2.67e-05
+  [GPU 2]   │  ep  34/50  loss=0.6821  AUROC=0.5254  F1=0.3704  lr=2.40e-05
+  [GPU 2]   │  ep  35/50  loss=0.7578  AUROC=0.5372  F1=0.3860  lr=2.14e-05
+  [GPU 2]   │  ep  36/50  loss=0.7815  AUROC=0.5421  F1=0.3571  lr=1.89e-05
+  [GPU 2]   │  ep  37/50  loss=0.7471  AUROC=0.5411  F1=0.3462  lr=1.66e-05
+  [GPU 2]   │  ep  38/50  loss=0.8174  AUROC=0.5421  F1=0.3396  lr=1.44e-05
+  [GPU 2]   │  ep  39/50  loss=0.6628  AUROC=0.5445  F1=0.3704  lr=1.24e-05
+  [GPU 2]   │  ep  40/50  loss=0.7723  AUROC=0.5411  F1=0.3396  lr=1.05e-05
+  [GPU 2]   │  ep  41/50  loss=0.7030  AUROC=0.5499  F1=0.3860  lr=8.71e-06
+  [GPU 2]   │  Early stop at epoch 41
+  [GPU 2]   └─ Best AUROC=0.5499  (1135s)
+  [GPU 2]   ✓ checkpoint → ckpt_ablation_abmil_onehot_KRAS_fold4.pth
+  [GPU 2]   ┌─ proposed_fuzzy_choquet | KRAS fold5 | 50 epochs
+  [GPU 2]   │  ep   1/50  loss=1.8336  AUROC=0.4799  F1=0.0000  lr=9.99e-05 ★
+  [GPU 2]   │  ep   2/50  loss=1.6840  AUROC=0.4971  F1=0.0000  lr=9.96e-05 ★
+  [GPU 2]   │  ep   3/50  loss=1.7068  AUROC=0.5205  F1=0.0000  lr=9.91e-05 ★
+  [GPU 2]   │  ep   4/50  loss=1.6313  AUROC=0.5254  F1=0.0000  lr=9.84e-05 ★
+  [GPU 2]   │  ep   5/50  loss=1.6563  AUROC=0.5279  F1=0.0000  lr=9.76e-05 ★
+  [GPU 2]   │  ep   6/50  loss=1.5368  AUROC=0.5215  F1=0.0000  lr=9.65e-05
+  [GPU 2]   │  ep   7/50  loss=1.6701  AUROC=0.5274  F1=0.0000  lr=9.53e-05
+  [GPU 2]   │  ep   8/50  loss=1.5831  AUROC=0.5465  F1=0.0000  lr=9.39e-05 ★
+  [GPU 2]   │  ep   9/50  loss=1.6464  AUROC=0.5357  F1=0.0000  lr=9.23e-05
+  [GPU 2]   │  ep  10/50  loss=1.5672  AUROC=0.5259  F1=0.0000  lr=9.05e-05
+  [GPU 2]   │  ep  11/50  loss=1.5329  AUROC=0.5323  F1=0.0667  lr=8.86e-05
+  [GPU 2]   │  ep  12/50  loss=1.5366  AUROC=0.5401  F1=0.1212  lr=8.66e-05
+  [GPU 2]   │  ep  13/50  loss=1.4105  AUROC=0.5303  F1=0.3158  lr=8.44e-05
+  [GPU 2]   │  ep  14/50  loss=1.4013  AUROC=0.5054  F1=0.1714  lr=8.21e-05
+  [GPU 2]   │  ep  15/50  loss=1.3601  AUROC=0.5455  F1=0.1290  lr=7.96e-05
+  [GPU 2]   │  ep  16/50  loss=1.3408  AUROC=0.5181  F1=0.2564  lr=7.70e-05
+  [GPU 2]   │  ep  17/50  loss=1.2821  AUROC=0.5186  F1=0.2162  lr=7.43e-05
+  [GPU 2]   │  ep  18/50  loss=1.2690  AUROC=0.5259  F1=0.3226  lr=7.16e-05
+  [GPU 2]   │  ep  19/50  loss=1.1819  AUROC=0.5230  F1=0.2564  lr=6.87e-05
+  [GPU 2]   │  ep  20/50  loss=1.1633  AUROC=0.5426  F1=0.2381  lr=6.58e-05
+  [GPU 2]   │  ep  21/50  loss=1.0368  AUROC=0.5636  F1=0.2439  lr=6.28e-05 ★
+  [GPU 2]   │  ep  22/50  loss=1.0602  AUROC=0.5445  F1=0.3111  lr=5.98e-05
+  [GPU 2]   │  ep  23/50  loss=1.0596  AUROC=0.5528  F1=0.3043  lr=5.67e-05
+  [GPU 2]   │  ep  24/50  loss=1.0775  AUROC=0.5499  F1=0.2979  lr=5.36e-05
+  [GPU 2]   │  ep  25/50  loss=0.9998  AUROC=0.5587  F1=0.2727  lr=5.05e-05
+  [GPU 2]   │  ep  26/50  loss=0.9940  AUROC=0.5548  F1=0.3279  lr=4.74e-05
+  [GPU 2]   │  ep  27/50  loss=0.9823  AUROC=0.5768  F1=0.2632  lr=4.43e-05 ★
+  [GPU 2]   │  ep  28/50  loss=0.9309  AUROC=0.5484  F1=0.3256  lr=4.12e-05
+  [GPU 2]   │  ep  29/50  loss=0.8132  AUROC=0.5729  F1=0.2051  lr=3.82e-05
+  [GPU 2]   │  ep  30/50  loss=0.8570  AUROC=0.5548  F1=0.3111  lr=3.52e-05
+  [GPU 2]   │  ep  31/50  loss=0.8173  AUROC=0.5607  F1=0.2500  lr=3.23e-05
+  [GPU 2]   │  ep  32/50  loss=0.8203  AUROC=0.5700  F1=0.2564  lr=2.94e-05
+  [GPU 2]   │  ep  33/50  loss=0.8619  AUROC=0.5313  F1=0.2917  lr=2.67e-05
+  [GPU 2]   │  ep  34/50  loss=0.7967  AUROC=0.5484  F1=0.3043  lr=2.40e-05
+  [GPU 2]   │  ep  35/50  loss=0.7689  AUROC=0.5484  F1=0.3404  lr=2.14e-05
+  [GPU 2]   │  ep  36/50  loss=0.7683  AUROC=0.5509  F1=0.2857  lr=1.89e-05
+  [GPU 2]   │  ep  37/50  loss=0.7706  AUROC=0.5523  F1=0.1905  lr=1.66e-05
+  [GPU 2]   │  ep  38/50  loss=0.7282  AUROC=0.5592  F1=0.1905  lr=1.44e-05
+  [GPU 2]   │  ep  39/50  loss=0.7019  AUROC=0.5572  F1=0.3404  lr=1.24e-05
+  [GPU 2]   │  ep  40/50  loss=0.7081  AUROC=0.5592  F1=0.2979  lr=1.05e-05
+  [GPU 2]   │  ep  41/50  loss=0.7098  AUROC=0.5582  F1=0.2667  lr=8.71e-06
+  [GPU 2]   │  ep  42/50  loss=0.7073  AUROC=0.5572  F1=0.3043  lr=7.12e-06
+  [GPU 2]   │  Early stop at epoch 42
+  [GPU 2]   └─ Best AUROC=0.5768  (643s)
+  [GPU 2]   ✓ checkpoint → ckpt_proposed_fuzzy_choquet_KRAS_fold4.pth
+
+[GPU 2] ── Fold 5 summary for KRAS:
+  [GPU 2]   baseline1_xgboost                    AUROC=0.4760  F1=0.2545
+  [GPU 2]   baseline2_abmil_embeddings           AUROC=0.5714  F1=0.3529
+  [GPU 2]   baseline3_abmil_patterns             AUROC=0.4364  F1=0.0000
+  [GPU 2]   proposed_abmil_concat                AUROC=0.5695  F1=0.3111
+  [GPU 2]   ablation_abmil_onehot                AUROC=0.5499  F1=0.2917
+  [GPU 2]   proposed_fuzzy_choquet               AUROC=0.5768  F1=0.2632
+
+[GPU 2] Summary → /home/rapids/notebooks/slima/results_luad_full_v2/summary_table.csv
+                 condition gene  n_folds  auroc_mean  auroc_std  auprc_mean  auprc_std  f1_mean   f1_std
+         baseline1_xgboost KRAS        5    0.521965   0.056921    0.289744   0.034823 0.279236 0.040004
+baseline2_abmil_embeddings KRAS        5    0.607260   0.078219    0.359598   0.053685 0.248674 0.138764
+  baseline3_abmil_patterns KRAS        5    0.544598   0.076390    0.308034   0.052077 0.000000 0.000000
+     proposed_abmil_concat KRAS        5    0.589866   0.071189    0.359726   0.055712 0.142222 0.099403
+     ablation_abmil_onehot KRAS        5    0.594303   0.071456    0.373549   0.082435 0.138490 0.099485
+    proposed_fuzzy_choquet KRAS        5    0.608840   0.058729    0.376602   0.048385 0.190324 0.118736
+Plots saved → /home/rapids/notebooks/slima/results_luad_full_v2/auroc_by_gene.png  auroc_heatmap.png

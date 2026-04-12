@@ -1,0 +1,30 @@
+{
+  "auroc": 0.7170542635658914,
+  "auprc": 0.36663524115054535,
+  "f1": 0.1111111111111111,
+  "fuzzy_shapley_values": {
+    "acinar": 0.5414601564407349,
+    "lepidic": 0.5410324931144714,
+    "micropapillary": 0.540980339050293,
+    "mucinous": 0.5428662896156311,
+    "papillary": 0.541667103767395,
+    "solid": 0.542621374130249
+  },
+  "fuzzy_interactions": {
+    "acinar\u00d7lepidic": 0.014300854876637459,
+    "acinar\u00d7micropapillary": 0.00722305616363883,
+    "acinar\u00d7mucinous": 0.018171554431319237,
+    "acinar\u00d7papillary": -0.00949675403535366,
+    "acinar\u00d7solid": -0.010573068633675575,
+    "lepidic\u00d7micropapillary": 0.027548223733901978,
+    "lepidic\u00d7mucinous": 0.002430578926578164,
+    "lepidic\u00d7papillary": 0.009668150916695595,
+    "lepidic\u00d7solid": 0.021306117996573448,
+    "micropapillary\u00d7mucinous": 0.020809773355722427,
+    "micropapillary\u00d7papillary": 0.014436332508921623,
+    "micropapillary\u00d7solid": -0.0044320374727249146,
+    "mucinous\u00d7papillary": 0.012624223716557026,
+    "mucinous\u00d7solid": -0.00278800749219954,
+    "papillary\u00d7solid": 0.0017648236826062202
+  }
+}
