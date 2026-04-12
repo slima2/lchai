@@ -38,7 +38,6 @@ function that adaptively reduces the angular margin penalty for
 ambiguous samples, allowing the model to learn softer, more
 biologically faithful representations.
 The classifier is trained on 637 expert-annotated tissue tiles
-(each with pixel-level spatial ground truth drawn by a pathologist)
 and assigns every tile a probability vector over six histological
 growth patterns.
 Across 15~runs (5-fold $\times$ 3~seeds), FuzzyArcLoss~V2 achieves
@@ -57,8 +56,6 @@ that explicitly encodes \emph{what} each tile looks like in
 clinically validated terms.
 A gated attention mechanism then learns which tiles contribute most
 to the slide-level mutation prediction.
-This explicit injection of histological knowledge as a structured
-prior is a key novelty of the approach.
 
 \textbf{Artefact~3 (Fuzzy Choquet MIL).}
 Standard attention pooling aggregates tiles independently, ignoring
@@ -79,79 +76,61 @@ All artefacts are evaluated on the largest public LUAD cohort
 The pattern-informed ABMIL attains AUROCs of $0.717 \pm 0.058$
 (TP53), $0.694 \pm 0.051$ (EGFR), $0.695 \pm 0.023$ (STK11),
 and $0.610 \pm 0.071$ (KEAP1)---competitive with similarly-scaled
-studies while providing a six-level interpretability framework
-absent from all prior work: spatial attention maps, pattern overlays,
-SHAP feature attribution, intrinsic Choquet Shapley values,
-per-slide feature channel ablation, and fuzzy linguistic labels
-for XAI outputs that prevent LLM hallucination of intensity terms.
+studies.
 The Fuzzy Choquet MIL emerges as the optimal method for KRAS
 ($0.609 \pm 0.059$) and RBM10 ($0.661 \pm 0.063$), confirming
 that the Choquet branch adds gene-specific discriminative value.
+
 A novel analytical finding is that the utility of pattern knowledge
 is gene-dependent: embedding-only models suffice for genes with
-strong visual correlates, while pattern-informed and Choquet models
-benefit genes whose mutation signal is distributed across multiple
-morphological categories.
+strong visual correlates (TP53, EGFR), while pattern-informed and
+Choquet models benefit genes whose mutation signal is distributed
+across multiple morphological categories (KRAS, RBM10).
 Per-slide feature channel ablation---comparing separately trained
 combined, embeddings-only, and patterns-only models on the same
-tiles---reveals that \emph{high SHAP pattern attribution does not
-imply positive contribution}: patterns measurably improve prediction
-only for KRAS ($+7.6$\,pp) while actively degrading it for TP53
-($-16.1$\,pp) and KEAP1 ($-44.7$\,pp), a dissociation between
-attribution and utility that no prior system exposes.
+tiles---reveals a dissociation between \emph{attribution} and
+\emph{utility}: patterns measurably improve prediction only for
+KRAS ($+7.6$\,pp) while actively degrading it for TP53
+($-16.1$\,pp) and KEAP1 ($-44.7$\,pp).
 
 A cross-cutting contribution is the empirical characterisation of
 the \emph{genotype--phenotype gap} that fundamentally limits
 histology-based mutation prediction.
-The mutation labels used for training come from DNA sequencing and
-indicate only \emph{whether} a patient carries a mutation, not
-\emph{where} in the tissue its effect is visible---a patient-level
-binary signal with no spatial correspondence to the image.
-This is in stark contrast to the pattern classification stage, where
-pathologist-drawn pixel-level annotations provide exact spatial
-ground truth.
-Consequently, only mutations that visibly reorganise tissue
-architecture are reliably detectable from microscopy images; mutations
-that operate at the molecular level without altering visible structure
-remain inherently difficult.
-This gap is compounded by co-mutations: most tumours harbour two or
-more simultaneous driver mutations whose phenotypic effects
-superimpose, making it impossible to attribute observed morphology to
-any single gene.
-The six-level interpretability framework---spatial attention,
-pattern overlay, post-hoc SHAP attribution, intrinsic Choquet
-Shapley values, per-slide feature channel ablation, and fuzzy
-linguistic labels---makes these limitations transparent, enabling
-clinicians to
-judge when a prediction is trustworthy and when molecular testing is
-required.
-Crucially, the system's explanations are \emph{most valuable when
-predictions fail}: for genes labelled Inconclusive
-(AUROC~$< 0.70$), the SHAP decomposition and Choquet Shapley
-values quantitatively explain \emph{why} the model lacks confidence,
-distinguishing genes whose signal resides in sub-cellular texture
-(embedding-dominated) from those where the six-pattern taxonomy
-carries partial information (pattern-dominated).
+Only mutations that visibly reorganise tissue architecture are
+reliably detectable from microscopy images; mutations that operate
+at the molecular level without altering visible structure remain
+inherently difficult, compounded by co-mutations whose phenotypic
+effects superimpose.
+
+To make these limitations transparent, the system provides a
+six-level interpretability framework: (i)~spatial attention maps,
+(ii)~pattern overlays, (iii)~SHAP feature attribution,
+(iv)~intrinsic Choquet Shapley values, (v)~per-slide feature
+channel ablation, and (vi)~fuzzy linguistic labels that classify
+numeric XAI outputs into calibrated intensity terms (e.g.,
+``Moderate Synergy,'' ``Embedding-Led'').
+These labels are computed deterministically by the system and
+injected into LLM-generated natural-language explanations with
+numbered PubMed citations from a biomedical knowledge graph,
+creating a dual anti-hallucination mechanism: the knowledge graph
+constrains \emph{what} the LLM says, and the fuzzy labels constrain
+\emph{how} it says it.
 This capacity to explain its own limitations---rather than merely
 flagging low confidence---is absent from all prior mutation
-prediction systems and represents a key contribution of this work.
+prediction systems.
 
-A preliminary expert validation by a board-certified pathologist
-reveals domain shift between the training cohort (ANORAK, UK) and the
-inference cohort (TCGA, US), motivating an active learning mechanism
-whereby pathologists can correct tile-level pattern classifications
-and trigger incremental model refinement.
+A preliminary expert validation reveals domain shift between the
+training cohort (ANORAK, UK) and the inference cohort (TCGA, US),
+motivating an active learning mechanism whereby pathologists can
+correct tile-level pattern classifications and trigger incremental
+model refinement through head-only delta training.
 
 The resulting system, \lchai{}, integrates all artefacts into a
-clinical decision-support prototype deployed on cloud infrastructure,
-with an ontology-grounded explanation layer that links predicted
-mutations to therapeutic targets through a curated biomedical
-knowledge graph.
-This thesis contributes the first integration of fuzzy-logic--encoded
-histological domain knowledge into an attention MIL mutation
-prediction pipeline, offering interpretability at multiple
-granularities---from tile-level pattern classification to slide-level
-Shapley-value decomposition---within a single, coherent framework.
+clinical decision-support prototype deployed on cloud infrastructure.
+Fuzzy logic is applied coherently across four levels of the pipeline:
+training (FuzzyArcLoss~V2), representation (soft probability
+vectors), aggregation (Choquet integral), and interpretation
+(fuzzy linguistic labels on XAI outputs).
 While the system is not intended to replace molecular testing,
 it can serve as a triage tool to prioritise patients for expedited
 sequencing, as an educational resource for residents learning

@@ -56,11 +56,14 @@ Guided by the design science research (DSR) paradigm~\cite{hevner2004design, pef
 
     \item[\textbf{RQ4} (Clinically meaningful interpretability).]
 \emph{Does the pattern-informed approach produce clinically
-meaningful explanations---in the form of spatially grounded attention
-maps and histological pattern attributions---that a pathologist can
-verify against the original slide, and do SHAP decompositions
-quantify the relative contribution of visual embeddings versus
-explicit pattern knowledge?}
+meaningful explanations---through a six-level interpretability
+framework comprising spatial attention maps, pattern overlays,
+SHAP decomposition, intrinsic Choquet Shapley values, per-slide
+feature channel ablation, and fuzzy linguistic labels---that a
+pathologist can verify against the original slide?
+Do fuzzy linguistic labels computed by the system and injected
+into LLM-generated explanations prevent hallucination of intensity
+terms while maintaining clinical accuracy?}
   \item[\textbf{RQ5} (Data scarcity).]
     \emph{Does the incorporation of domain knowledge (validated histological
     patterns) via fuzzy logic provide a greater relative benefit under data
@@ -147,6 +150,34 @@ thesis.
 The DSR paradigm is appropriate for this thesis because the primary contributions are \emph{artefacts}---a loss function, a feature fusion architecture and an aggregation module---complemented by an ontology-grounded explanation layer and the LCHAI~v2.0 clinical prototype that instantiates all components into a functional system.  The value of these artefacts is demonstrated through their evaluation on the LUAD use case, but the artefacts themselves are general-purpose computational intelligence contributions applicable beyond cancer research.
 
 % ============================================================
+\section{Visual Summary of the Thesis}
+\label{sec:intro:visual_summary}
+% ============================================================
+
+Figure~\ref{fig:thesis_visual_summary} provides a visual overview of
+the thesis, mapping the seven research questions to the chapters where
+they are addressed, the six contributions that result, and the three
+prior publications by the author that serve as foundations for the
+artefacts.
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/thesis_visual_summary.png}
+\caption[Visual summary of the thesis]{%
+    Visual summary of the thesis.
+    \textbf{Left}: Seven research questions (RQ1--RQ7) framed from a
+    computer science perspective.
+    \textbf{Centre}: Six thesis chapters where each RQ is addressed.
+    \textbf{Right-centre}: Six contributions produced by the thesis.
+    \textbf{Far right}: Three prior publications by the author, each
+    extended in this work.
+    Arrows indicate the primary mapping between questions, chapters,
+    contributions, and publications.}
+\label{fig:thesis_visual_summary}
+\end{figure}
+
+
+% ============================================================
 \section{Contributions}
 \label{sec:intro:contributions}
 % ============================================================
@@ -170,7 +201,9 @@ The principal contributions of this thesis are:
     
     \item \textbf{Ontology-grounded explanation layer:} A three-tier knowledge graph architecture (curated assertions from WHO/OncoKB/FDA with PMID provenance, dynamic case filtering, and DeepSearch literature enrichment) that links predicted mutations to therapeutic targets via provenance-tagged relations grounded in NCIt and MONDO ontologies (RQ6, RQ7).
 
-    \item \textbf{LCHAI~v2.0 clinical prototype:} An integrated clinical decision-support system that combines tile-level pattern classification, attention-based mutation prediction with gene-dependent optimal method selection, SHAP decomposition, Choquet Shapley values, LLM-generated explanations, and knowledge-graph reasoning, demonstrating the translational potential of the proposed artefacts.
+    \item \textbf{LCHAI~v2.0 clinical prototype:} An integrated clinical decision-support system that combines tile-level pattern classification, attention-based mutation prediction with gene-dependent optimal method selection, a six-level interpretability framework, and a biomedical knowledge graph.
+    Key features include: a unified Analysis tab with gene sub-tabs sorted by $P(\text{mut})$; fuzzy linguistic labels (trapezoidal membership functions) that classify XAI outputs into calibrated intensity terms and are injected into LLM-generated explanations to prevent hallucination; interactive hover tooltips on pattern overlays and attention heatmaps; numbered PubMed citations from the knowledge graph; an active learning mechanism enabling expert pattern correction with head-only delta retraining; and an administrator-configurable fuzzy label editor.
+    Fuzzy logic is applied coherently across four levels of the pipeline: training (FuzzyArcLoss~V2), representation (soft probability vectors), aggregation (Choquet integral), and interpretation (fuzzy linguistic labels).
 \end{enumerate}
 
 

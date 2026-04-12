@@ -423,7 +423,7 @@ The six experimental conditions differ in how the tile-level representation $\ma
 Let $\mathbf{x}_i \in \mathbb{R}^{512}$ be the CTransPath embedding and $\mathbf{p}_i \in \Delta^5$ the six-dimensional pattern probability vector (where $\Delta^5$ denotes the 5-simplex, i.e., $\sum_k p_{i,k} = 1$ and $p_{i,k} \geq 0$), both obtained from Artefact~1.
 Let $\mathbf{o}_i \in \{0,1\}^6$ be the one-hot encoding of the predicted pattern class $\hat{y}_i = \arg\max_k p_{i,k}$.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \caption{Tile-level representation $\mathbf{h}_i$ for each experimental condition.}
 \label{tab:tile_representations}
@@ -621,7 +621,7 @@ shares the embedding encoder with ABMIL.
 Table~\ref{tab:param_count} breaks down the parameter count for the
 two MIL architectures evaluated in the mutation prediction benchmark.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \small
 \caption{Parameter count comparison: ABMIL (condition~P) vs Fuzzy
@@ -726,7 +726,7 @@ In the proposed condition P, the SHAP decomposition can distinguish contribution
 For the Fuzzy Choquet condition (FC), the learned Shapley values and interaction indices provide a fourth level of interpretability that is \emph{intrinsic} to the model rather than post-hoc.
 These values can be directly compared against known biological associations (Table~\ref{tab:expected_associations}) to assess clinical plausibility.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \small
 \caption{Expected pattern--mutation associations based on clinical
@@ -797,7 +797,7 @@ Figure~\ref{fig:ablation_causal_chain} illustrates the complete causal
 chain from tile features to $P(\text{mut})$ for the three ablation
 models.
 
-\begin{figure}[htbp]
+\begin{figure}[ht!]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/ablation_causal_chain.png}
 \caption[Causal chain from tile features to $P(\text{mut})$ in the
@@ -855,7 +855,7 @@ two-dimensional space, revealing the dissociation between
 (what actually helps)---a key finding of the evaluation
 (Chapter~\ref{ch:evaluation}).
 
-\begin{figure}[htbp]
+\begin{figure}[ht!]
 \centering
 \includegraphics[width=0.85\textwidth]{chapters/figures/shap_ablation_quadrant.png}
 \caption[Attribution vs utility: SHAP pattern attribution versus
@@ -888,7 +888,7 @@ Five fuzzy scales are defined (Table~\ref{tab:fuzzy_scales}):
 SHAP Balance, Shapley Profile, Shapley Individual, Interaction Index,
 and ABMIL Attention Level.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering\small
 \caption{Fuzzy linguistic scales for XAI output classification.}
 \label{tab:fuzzy_scales}
@@ -911,7 +911,7 @@ The overlapping regions between adjacent sets reflect the gradual
 transition between linguistic categories---a core property of fuzzy
 classification that avoids the brittleness of crisp thresholds.
 
-\begin{figure}[htbp]
+\begin{figure}[ht!]
 \centering
 \begin{minipage}[t]{0.48\textwidth}
 \centering
@@ -1013,7 +1013,7 @@ mutation predictions.
 Figure~\ref{fig:active_learning_delta} illustrates the delta training
 architecture.
 
-\begin{figure}[htbp]
+\begin{figure}[ht!]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/active_learning_delta_training.png}
 \caption[Delta training architecture for active learning]{%
@@ -1064,7 +1064,7 @@ The unified graph encodes the relation chain:
 \end{equation}
 grounded in canonical IRIs (Table~\ref{tab:iri_mapping}).
  
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \small
 \caption{Canonical IRI assignments for LUAD knowledge graph entities.}

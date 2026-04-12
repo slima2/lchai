@@ -53,7 +53,7 @@ are therefore subject to high variance; they serve as a screening step
 to select the top~5 methods for the definitive K-fold evaluation
 (Section~\ref{sec:eval:pattern:kfold}).
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \small
 \caption{All 18 loss functions ranked by macro-F1 on a single 80/20
@@ -126,7 +126,7 @@ repeated with 3 random seeds (42, 123, 2026), yielding 15 independent
 runs per method (75 total training runs across 5 methods).
 Table~\ref{tab:kfold_f1} reports the final rankings.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \caption{Pattern classification: 15-run evaluation
 (5-fold $\times$ 3 seeds) on 637 annotated tiles across six LUAD
@@ -167,7 +167,7 @@ Table~\ref{tab:pattern_stats} reports pairwise statistical comparisons of
 FuzzyArcLoss~V2 against each competitor, using paired $t$-tests on the 15
 fold-level macro-F1 values, Cohen's $d$ effect sizes, and win rates.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \caption{Statistical comparison of FuzzyArcLoss~V2 against baseline loss
 functions (15 paired runs).
@@ -234,7 +234,7 @@ be reliably detected.
 The per-class F1 scores reveal where FuzzyArcLoss~V2's adaptive margin
 provides the greatest benefit and where all methods converge.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \small
 \caption{Per-class F1 scores (\%, mean $\pm$ std across 15 runs) for
@@ -465,7 +465,7 @@ Table~\ref{tab:mutation_luad} reports the AUROC for each (condition, gene) pair.
 Results are reported as mean $\pm$ standard deviation across 5 folds.
 The highest AUROC per gene is marked in bold.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \small
 \caption{Mutation prediction AUROC (mean $\pm$ std, 5-fold CV) on 687
@@ -552,7 +552,7 @@ information improves mutation prediction.
 Table~\ref{tab:p_vs_b2} compares the proposed condition (P) against the
 embedding-only baseline (B2) gene by gene.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \caption{Gene-level comparison: Proposed (P) versus ABMIL embeddings (B2).
 $\Delta = \text{P} - \text{B2}$.}
@@ -598,7 +598,7 @@ prediction quality.
 No single condition dominates across all genes.
 Table~\ref{tab:gene_winners} identifies the top condition per gene.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \caption{Best-performing condition per gene (LUAD-only, 687 slides).}
 \label{tab:gene_winners}
@@ -675,7 +675,7 @@ The comparison between the proposed condition P (soft fuzzy probabilities)
 and the ablation A (hard one-hot labels) tests whether the continuous fuzzy
 representation is more informative than its discrete counterpart.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \caption{Fuzzy (P) versus crisp (A) pattern representations.}
 \label{tab:fuzzy_vs_crisp}
@@ -830,7 +830,7 @@ before the decision to restrict to LUAD-only
 Table~\ref{tab:mutation_mixed} reports these results for the four genes
 evaluated.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \small
 \caption{Mutation prediction AUROC on the mixed LUAD+LUSC cohort ($N = 351$,
@@ -861,7 +861,7 @@ confound identified in Section~\ref{sec:uc:tcga:luad_only}.
 The gene-specific pattern of AUROC change upon restricting to LUAD-only
 (Table~\ref{tab:luad_only_change}) provides direct evidence for this confound.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \caption{AUROC change when restricting from LUAD+LUSC ($N=351$) to
 LUAD-only ($N=687$) for the proposed condition (P). Genes with near-zero
@@ -899,7 +899,7 @@ handling of a confound that many published studies do not address.
 Table~\ref{tab:lit_comparison_full} positions the results of this thesis
 within the published mutation prediction literature.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \small
 \caption{AUROC comparison with the published literature.
@@ -1026,7 +1026,7 @@ For transparency, the best fold AUROC is reported alongside the mean
 to show the performance ceiling and to motivate future work with
 larger cohorts where the gap between mean and best narrows.
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \small
 \caption{AUROC values for the six target genes.
@@ -1603,7 +1603,7 @@ pattern, SHAP decomposition (embedding vs.\ pattern contribution),
 and the prediction method selected by the gene-dependent optimal
 strategy (thesis Finding~2).
 
-\begin{table}[htbp]
+\begin{table}[ht!]
 \centering
 \footnotesize
 \setlength{\tabcolsep}{3pt}
