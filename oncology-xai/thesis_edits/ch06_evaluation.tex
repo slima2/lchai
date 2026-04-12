@@ -387,12 +387,14 @@ scheme (Table~\ref{tab:variant_types_patterns}).
 \caption[Confusion matrix: FuzzyArcLoss V2 on ANORAK validation set]{%
     Confusion matrix for FuzzyArcLoss~V2 on the ANORAK validation set
     (N\,=\,138 tiles, Macro-F1\,=\,89.2\%).
-    Class names follow the official Zenodo annotation mapping.
-    Acinar (36/36), solid (21/21), and lepidic (16/16) achieve perfect recall.
-    Cribriform shows the most confusion (63\% recall), primarily
-    misclassified as solid or acinar---consistent with its morphological
-    overlap as a high-grade acinar variant.
-    Micropapillary (77\% recall) is occasionally confused with papillary.}
+    Class names follow the corrected Zenodo annotation mapping
+    (Table~\ref{tab:variant_types_patterns}).
+    Acinar (36/36), solid (21/21), and lepidic (16/16) are perfectly
+    classified.
+    Cribriform is the most confused class (12/19 correct), primarily
+    misclassified as acinar (4~tiles) or solid (3~tiles).
+    Micropapillary (10/13 correct) is occasionally confused with
+    papillary (3~tiles).}
 \label{fig:confusion_matrix}
 \end{figure}
 
@@ -400,21 +402,24 @@ Three observations emerge from the confusion matrix:
 
 \begin{enumerate}
     \item \textbf{Acinar, solid, and lepidic are perfectly classified}
-    (100\% recall each), indicating that the model has learned
-    discriminative features for these morphologically distinct patterns.
+    (36/36, 21/21, and 16/16 respectively), indicating that the model
+    has learned discriminative features for these morphologically
+    distinct patterns.
 
-    \item \textbf{Cribriform is the most confused class} (recall 63\%),
-    primarily misclassified as solid (3~tiles) or acinar (4~tiles).
+    \item \textbf{Cribriform is the most confused class} (12/19
+    correct; per-class F1\,=\,0.63), primarily misclassified as acinar
+    (4~tiles) or solid (3~tiles).
     This is morphologically plausible: cribriform is defined as a
     high-grade acinar variant with sieve-like glandular
     structures~\cite{who2021thoracic}, and its boundary with complex
     acinar and solid patterns is a known source of inter-observer
-    disagreement.
+    disagreement~\cite{thunnissen2014reproducibility}.
 
     \item \textbf{Micropapillary--papillary confusion} (3~tiles of
-    micropapillary classified as papillary) aligns with the ANORAK
-    paper's finding that micropapillary has the lowest inter-observer
-    agreement among pathologists ($\rho = 0.35$--$0.44$)~\cite{anorak2024}.
+    micropapillary classified as papillary; per-class F1\,=\,0.77)
+    aligns with the ANORAK paper's finding that micropapillary has the
+    lowest inter-observer agreement among pathologists
+    ($\rho = 0.35$--$0.44$)~\cite{anorak2024}.
 \end{enumerate}
 
 \paragraph{Preliminary expert validation on TCGA slides.}
@@ -442,8 +447,9 @@ confused in the expert review are precisely those with the lowest
 pathologist agreement in the literature ($\rho = 0.35$--$0.44$).
 
 Critically, this preliminary expert review \emph{does not invalidate}
-the tile-level classifier on ANORAK data (where acinar achieves 100\%
-recall and micropapillary 77\%), but highlights that
+the tile-level classifier on ANORAK data (where acinar achieves
+perfect classification and the overall Macro-F1 is 89.2\%), but
+highlights that
 \textbf{pattern-level predictions on out-of-distribution slides
 should be interpreted with caution} and accompanied by pathologist
 verification---which is the intended clinical workflow in LCHAI~v2.0.
