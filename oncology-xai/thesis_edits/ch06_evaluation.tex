@@ -778,16 +778,20 @@ uncertainty carries diagnostic information that hard labels discard.
 For EGFR the difference is negligible ($-$0.001), consistent with its
 well-defined morphological correlates (lepidic, papillary) that are
 adequately captured by crisp classification.
-For KRAS the difference is also negligible ($-$0.004); however, this
-does \emph{not} imply that patterns are unimportant for KRAS---Finding~2
-showed that FC-MIL (FC) leads all conditions for KRAS,
-exploiting \emph{inter-pattern interactions} via the Choquet integral
-rather than individual pattern membership softness.
-KRAS benefits from the Choquet aggregation mechanism
-(Finding~2) but not from fuzzy-versus-crisp softness (this finding),
-because its primary morphological correlate (mucinous/IMA) is absent
-from the 6-class taxonomy and the discriminative signal comes from
-pattern \emph{co-occurrence} rather than boundary uncertainty.
+For KRAS the crisp representation is marginally better ($-$0.004)
+within the PI-ABMIL framework; however, this does \emph{not} imply that
+fuzzy pattern information is unimportant for KRAS.
+Finding~2 showed that FC-MIL leads all conditions for KRAS
+(AUROC~0.609), exploiting \emph{inter-pattern interactions} via the
+Choquet integral---a fundamentally different mechanism from
+the simple feature-vector concatenation used by PI-ABMIL.
+The distinction is important: for KRAS, the value of fuzzy pattern
+scores emerges not from soft-versus-crisp boundary encoding
+(tested here) but from the Choquet integral's ability to model
+multiplicative co-occurrence patterns across the six classes.
+This is consistent with KRAS's known association with
+lepidic--solid co-presence, a signal that requires \emph{aggregation}
+rather than \emph{concatenation} to capture.
 
 The gene-specific finding---that the utility of fuzzy versus crisp pattern
 representations is largest for genes with diffuse or heterogeneous
