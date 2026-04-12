@@ -1,6 +1,6 @@
 # LCHAI v2.0 — User Manual
 
-**Lung Cancer Histologic Analysis with AI**  
+**Lung Cancer Histologic Analysis with AI**
 *Explainable mutation prediction from H&E whole-slide images*
 
 > DISCLAIMER: LCHAI v2.0 is a research tool (THESIS_INTERNAL evidence). Mutation predictions use ABMIL + Fuzzy Choquet MIL. Inconclusive genes (AUROC < 0.70) require molecular testing. NOT for clinical diagnosis.
@@ -11,19 +11,23 @@
 
 1. [System Overview](#1-system-overview)
 2. [Getting Started — Login](#2-getting-started--login)
-3. [Images Tab — Upload and Analyze](#3-images-tab--upload-and-analyze)
+3. [Analysis Tab — Upload, Analyze, and Explain](#3-analysis-tab--upload-analyze-and-explain)
    - 3.1 [Uploading an Image](#31-uploading-an-image)
    - 3.2 [Analyzing a Slide](#32-analyzing-a-slide)
-   - 3.3 [Card 1 — Mutation Report](#33-card-1--mutation-report)
-   - 3.4 [Card 2 — Pattern Visualization](#34-card-2--pattern-visualization)
-   - 3.5 [Card 3 — Clinical Summary](#35-card-3--clinical-summary)
+   - 3.3 [Gene Sub-tabs](#33-gene-sub-tabs)
+   - 3.4 [Pattern Overlay and ABMIL Attention Heatmap](#34-pattern-overlay-and-abmil-attention-heatmap)
+   - 3.5 [SHAP Decomposition with Fuzzy Balance Label](#35-shap-decomposition-with-fuzzy-balance-label)
+   - 3.6 [Ablation Comparison](#36-ablation-comparison)
+   - 3.7 [AI-Generated Explanation](#37-ai-generated-explanation)
+   - 3.8 [Fuzzy Choquet Analysis (Conditional)](#38-fuzzy-choquet-analysis-conditional)
+   - 3.9 [Morphologic Profile](#39-morphologic-profile)
 4. [Viewer Tab — Image Exploration](#4-viewer-tab--image-exploration)
 5. [Graph Tab — Knowledge Graph](#5-graph-tab--knowledge-graph)
-6. [Explainability Tab — XAI Results](#6-explainability-tab--xai-results)
-7. [Admin Tab — System Parameters](#7-admin-tab--system-parameters)
-8. [User Profile and Settings](#8-user-profile-and-settings)
-9. [Supported Image Formats](#9-supported-image-formats)
-10. [Understanding the Results](#10-understanding-the-results)
+6. [Admin Tab — System Configuration](#6-admin-tab--system-configuration)
+7. [User Profile and Settings](#7-user-profile-and-settings)
+8. [Supported Image Formats](#8-supported-image-formats)
+9. [Understanding the Results](#9-understanding-the-results)
+10. [Fuzzy Linguistic Labels](#10-fuzzy-linguistic-labels)
 11. [Troubleshooting](#11-troubleshooting)
 
 ---
@@ -32,401 +36,377 @@
 
 LCHAI v2.0 is an AI-powered decision-support system for lung adenocarcinoma (LUAD) histopathology. It analyzes whole-slide images (WSI) to:
 
-- **Classify histological growth patterns**: acinar, lepidic, papillary, micropapillary, solid, mucinous
+- **Classify histological growth patterns**: lepidic, acinar, papillary, micropapillary, solid, cribriform
 - **Predict oncogenic mutations**: TP53, EGFR, KRAS, STK11, KEAP1, RBM10
-- **Provide explainable AI outputs**: attention maps, SHAP decomposition, Choquet Shapley values, ablation studies
-- **Generate knowledge graphs** linking predictions to ontologies (NCIt, MONDO) and treatment associations
-
-![System Architecture](images/00-architecture.png)
-*Figure 1: LCHAI v2.0 system architecture — microservices, ML pipeline, and knowledge graph*
+- **Provide six-level explainability**: attention maps, pattern overlays, SHAP decomposition, Choquet Shapley values, per-slide ablation, and fuzzy linguistic labels
+- **Generate knowledge graphs** linking predictions to biomedical ontologies (NCIt, MONDO) and treatment associations
+- **Produce AI-generated explanations** grounded in the knowledge graph with numbered PubMed citations
 
 ### ML Pipeline Summary
 
-The analysis pipeline processes each slide through the following stages:
+![Tile Filtering Pipeline](images/11-tile-filtering-pipeline.png)
+*Figure 1: Three-stage tile filtering pipeline from WSI to accepted tissue tiles*
 
-1. **WSI Decode** — Opens the slide file (SVS, TIFF, or BIF) using OpenSlide. BIF and flat TIFF files are automatically converted to pyramidal format.
-2. **Full-Resolution Tiling** — Extracts 224x224 pixel tiles from tissue regions, rejecting artifacts (ink markers, barcodes, background).
-3. **CTransPath Inference** (GPU-accelerated) — Each tile is processed by CTransPath (Swin Tiny backbone) to produce 512-dimensional embeddings.
-4. **Pattern Classification** — FuzzyArcLoss V2 cosine head classifies each tile into one of 6 histological patterns.
-5. **Mutation Prediction** — Gene-specific models (ABMIL or Fuzzy Choquet MIL) predict mutation probability for each of 6 genes.
-6. **Explainability** — Ablation comparison, permutation importance, SHAP decomposition, and Choquet Shapley values.
+1. **WSI Decode** — Opens the slide file (SVS, TIFF, or BIF) using OpenSlide
+2. **Tile Filtering** — Three-stage quality control rejects glass, artifacts, pen marks (see Figure 1)
+3. **CTransPath Inference** (GPU) — Each tile produces a 512-dimensional embedding
+4. **Pattern Classification** — FuzzyArcLoss V2 classifies each tile into 1 of 6 histological patterns
+5. **Mutation Prediction** — Gene-specific models (ABMIL or Fuzzy Choquet MIL) predict mutation probability
+6. **Explainability** — Ablation, SHAP decomposition, Choquet Shapley values, and fuzzy linguistic labels
 
 ---
 
 ## 2. Getting Started — Login
 
-When you navigate to the LCHAI system (typically `http://localhost:3000`), you will be redirected to the authentication page.
+Navigate to the LCHAI system (`https://lchai.gptfy.biz` or `http://localhost:3000`). You will be redirected to the Keycloak authentication page.
 
-![Login Screen](images/01-login-screen.png)
-*Figure 2: Keycloak login screen with username/password and Google OAuth2 options*
-
-### Login Options
+![Login Screen](images/00-login-screen.png)
+*Figure 2: Keycloak login screen*
 
 | Method | Description |
 |--------|-------------|
-| **Username / Password** | Enter your assigned credentials (e.g., `clinician1` / `clinician1`) |
+| **Username / Password** | Enter your assigned credentials (e.g., `admin1` / `admin1`) |
 | **Google** | Click "Google" to sign in with your Google account (OAuth2) |
 
 ### User Roles
 
-| Role | Access Level |
-|------|-------------|
-| **Clinician** | Full access to Images, Viewer, Graph, Explainability tabs |
-| **Admin** | All clinician access PLUS the Admin tab (system parameters, DeepSearch, ontology management) |
-| **Auditor** | Read-only access to the audit trail |
-
-After successful login, you will see the main application with your name and role displayed in the top-right corner.
+| Role | Access |
+|------|--------|
+| **Clinician** | Analysis, Viewer, Graph tabs |
+| **Admin** | All clinician access + Admin tab |
+| **Auditor** | Read-only access to audit trail |
 
 ---
 
-## 3. Images Tab — Upload and Analyze
+## 3. Analysis Tab — Upload, Analyze, and Explain
 
-The Images tab is the primary workspace for uploading slide images and viewing analysis results.
+The Analysis tab is the primary workspace. It integrates image upload, mutation prediction, and multi-level explainability into a single unified view.
+
+![Analysis Tab Overview](images/01-analysis-tab-overview.png)
+*Figure 3: Analysis tab showing TP53 (93.2%, Conclusive). Gene sub-tabs at top, side-by-side overlays, SHAP with fuzzy label, and ablation comparison.*
 
 ### 3.1 Uploading an Image
 
-1. Click the **"Upload Image"** button (blue)
-2. Select a histopathology image file from your computer
-3. A **progress bar** will appear showing the upload percentage — this is especially useful for large WSI files (500 MB – 10 GB)
-4. Supported formats: PNG, JPEG, TIFF, SVS, BIF
-5. After upload completes, the system automatically creates a new case and selects the uploaded slide
+1. Click **"Upload Image"** (blue button)
+2. Select a histopathology image file (PNG, JPEG, TIFF, SVS, BIF)
+3. A progress bar shows upload percentage
+4. The system creates a new case and selects the uploaded slide
 
-**Slide Selector**: The yellow bar at the top shows all uploaded slides. Click the dropdown to switch between slides.
+**Slide Selector**: The yellow bar at the top shows all uploaded slides. Click the dropdown to switch.
 
 ### 3.2 Analyzing a Slide
 
-1. After uploading (or selecting) a slide, click **"Analyze Slide"** (purple button)
-2. A **processing modal** appears showing real-time progress:
+1. Select a slide, then click **"Analyze Slide"** (purple button)
+2. A processing modal shows real-time progress:
 
-![Processing Modal](images/06-processing-modal.png)
-*Figure 3: Processing modal with progress bar, tile count, estimated time, and stage checklist*
+| Stage | Description | Time |
+|-------|-------------|------|
+| Decoding image | Opens WSI, creates thumbnail | 5-10s |
+| CTransPath inference | GPU processes tiles | 10-30s |
+| Mutation prediction | ABMIL/Choquet for 6 genes | 5-10s |
+| Ablation + permutation | Model comparison | 10-20s |
+| SHAP decomposition | Feature attribution | 5-15s |
+| Saving results | Store in database | 2-5s |
 
-**Processing Stages:**
+Click **"Cancel and discard"** to abort at any time.
 
-| Stage | Description | Typical Time |
-|-------|-------------|-------------|
-| Decoding image | Opens the WSI file, creates thumbnail | 5-10 seconds |
-| CTransPath tile inference | GPU processes ~2,500-5,000 tiles | 10-30 seconds (GPU) |
-| Mutation prediction | ABMIL/Choquet models for 6 genes | 5-10 seconds |
-| Ablation + permutation | Comparison of model variants | 10-20 seconds |
-| SHAP decomposition | Feature attribution analysis | 5-15 seconds |
-| Saving results | Stores results and overlays in database | 2-5 seconds |
+### 3.3 Gene Sub-tabs
 
-**Total processing time**: Approximately 1-3 minutes with GPU, 5-10 minutes on CPU.
+After processing, gene sub-tabs appear **sorted by descending P(mut)**. The highest-probability mutation is selected by default.
 
-You can click **"Cancel and discard"** at any time to abort the analysis and remove all associated data.
+Each tab shows:
+- Gene name, P(mut) percentage, and prediction method
+- A filled circle (●) for Conclusive genes, empty circle (○) for Inconclusive
+- A "TOP" badge on the highest-probability gene
 
-### 3.3 Card 1 — Mutation Report
+### 3.4 Pattern Overlay and ABMIL Attention Heatmap
 
-After processing completes, Card 1 displays the mutation prediction results:
+Two images are displayed side by side:
 
-![Mutation Report](images/02-images-mutation-report.png)
-*Figure 4: Card 1 — Mutation Report with confidence labels, methods, interpretability, and interpretation*
-
-**Table Columns:**
-
-| Column | Description |
-|--------|-------------|
-| **Gene** | The gene being analyzed (TP53, EGFR, KRAS, STK11, KEAP1, RBM10) |
-| **Probability** | Predicted mutation probability (0-100%). Higher = more likely mutated |
-| **Label** | **Conclusive** (green) if the model's AUROC >= threshold (reliable prediction). **Inconclusive** (yellow) if AUROC < threshold (limited reliability) |
-| **Method** | The optimal model used for this gene: B2 (embeddings-only ABMIL), P (pattern-informed ABMIL), or FC (Fuzzy Choquet) |
-| **Interpretability** | Visual summary: SHAP split bar (blue=embeddings, red=patterns) for ABMIL genes, or Choquet Shapley values for FC genes |
-| **Interpretation** | Natural language explanation of the prediction, including AUROC value and clinical recommendation |
-
-### 3.4 Card 2 — Pattern Visualization
-
-Card 2 shows the spatial distribution of histological patterns detected across the slide:
-
-![Pattern Overlay](images/03-images-pattern-overlay.png)
-*Figure 5: Card 2 — Pattern overlay (left) and pattern composition bar chart (right)*
-
-**Two views available** (toggle buttons in top-right):
-- **Pattern Overlay**: Color-coded tile-level pattern map overlaid on the H&E image
-- **ABMIL Attention Map**: Heatmap showing which regions the AI focused on for mutation prediction
+| Left: Pattern Overlay | Right: ABMIL Attention Heatmap |
+|---|---|
+| Tile-level color map of 6 growth patterns | Top-200 tiles by gated attention weight |
+| Legend shows pattern names with composition % | Red = high attention |
+| **Hover**: shows tile pattern name and % | **Hover**: shows fuzzy attention label (e.g., "High Attention, p97") |
 
 **Pattern Color Legend:**
 
-| Color | Pattern | Clinical Significance |
-|-------|---------|----------------------|
-| Green | Acinar | Most common LUAD subtype, intermediate prognosis |
-| Yellow-green | Lepidic | Best prognosis, associated with EGFR mutations |
-| Blue | Papillary | Common subtype, moderate prognosis |
-| Gold | Micropapillary | Aggressive, poor prognosis |
-| Red | Solid | Aggressive, associated with TP53 mutations |
-| Orange | Mucinous | Distinct molecular profile, KRAS-associated |
+| Color | Pattern |
+|-------|---------|
+| Blue | Lepidic |
+| Red | Acinar |
+| Yellow | Papillary |
+| Green | Micropapillary |
+| Dark red | Solid |
+| Cyan | Cribriform |
 
-**Pattern Composition** (right panel): Horizontal bar chart showing the percentage of each pattern. Patterns above 20% are labeled "Major", above 5% are "Minor".
+### 3.5 SHAP Decomposition with Fuzzy Balance Label
 
-### 3.5 Card 3 — Clinical Summary
+A stacked bar shows what percentage of the prediction comes from:
+- **Embeddings** (512-d CTransPath visual texture) — blue
+- **Patterns** (6-class histological classification) — red
 
-Card 3 provides a narrative summary of the analysis in clinical language:
+A **fuzzy linguistic label** classifies the balance:
 
-- **Histological analysis**: Number of tiles analyzed, predominant pattern, secondary patterns
-- **Reliable predictions** (Conclusive): Genes with AUROC above threshold, with clinical associations
-- **Wild-type predictions** (Conclusive, low probability): Genes likely not mutated
-- **Requires molecular testing** (Inconclusive): Genes that cannot be reliably predicted from histology alone
+| Label | Meaning |
+|-------|---------|
+| Embedding-Dominated | Patterns nearly irrelevant (<10%) |
+| Embedding-Led | Patterns provide minor signal (10-25%) |
+| Balanced | Both contribute meaningfully (25-55%) |
+| Pattern-Led | Patterns are primary signal (55-70%) |
+| Pattern-Dominated | Embeddings secondary (>70%) |
 
----
+### 3.6 Ablation Comparison
 
-## 4. Viewer Tab — Image Exploration
+Three vertical bars compare P(mut) from **three independently trained models**:
+- **Combined** (blue): embeddings + patterns (518-d)
+- **Emb-only** (orange): embeddings alone (512-d)
+- **Pat-only** (purple): patterns alone (6-d)
 
-The Viewer tab provides a QuPath-like interactive image viewer with zoom, pan, and multiple overlay layers.
+A delta indicator shows whether patterns help (+) or hurt (-).
 
-![Viewer - Patterns](images/04-viewer-patterns.png)
-*Figure 6: Viewer tab with "2 Patterns" layer selected, showing pattern colors overlaid on the H&E image*
+> **Important**: These are three different models, not components of one prediction. The P(mut) in the header comes from the gene-optimal method, which may differ from any bar.
 
-### Layer Controls (top toolbar)
+### 3.7 AI-Generated Explanation
 
-| Button | Layer | Description |
-|--------|-------|-------------|
-| **1 Original** | H&E image | The original histopathology image (thumbnail for WSI) |
-| **2 Patterns** | Pattern overlay | Color-coded histological pattern classification per tile |
-| **3 Attention** | ABMIL attention | Heatmap showing high-attention regions with white contour lines |
-| **4 Combined** | Patterns + Attention | Both pattern colors and attention contours combined |
+![AI Explanation](images/02-analysis-explanation.png)
+*Figure 4: AI-generated explanation with SHAP fuzzy label, ablation interpretation, literature citations [1][2], and PubMed references*
 
-### Navigation
+The system generates a structured clinical narrative (8-12 sentences) that:
+- States P(mut) and whether it is conclusive or inconclusive
+- Describes the SHAP balance using the system's fuzzy label
+- Interprets the ablation comparison
+- Compares the slide's patterns to literature expectations with **numbered PubMed citations** [1], [2]
+- Includes the thesis disclaimer
 
-| Action | How |
-|--------|-----|
-| **Zoom in** | Scroll up, press `+`, or click `+` button |
-| **Zoom out** | Scroll down, press `-`, or click `-` button |
-| **Pan** | Click and drag the image |
-| **Reset view** | Click "Fit" or press `0` |
-| **Switch layers** | Press keys `1`, `2`, `3`, `4` |
+All fuzzy labels and clinical facts are **system-controlled** — the LLM cannot invent intensity terms or clinical associations.
 
-### Opacity Slider
+**References**: Below the explanation, clickable PubMed links for each cited paper.
 
-When viewing overlay layers (Patterns, Attention, Combined), use the **Opacity slider** to blend between the overlay and the original image (0% = original only, 100% = overlay only).
+### 3.8 Fuzzy Choquet Analysis (Conditional)
 
-### Right Sidebar
+![Choquet Fuzzy Labels](images/03-analysis-choquet-fuzzy.png)
+*Figure 5: Choquet section for KRAS with "Profile: Uniform" badge, per-pattern Shapley labels, and interaction indices with fuzzy classifications*
 
-The sidebar shows a compact summary of results:
-- **Mutation Report**: Mini-cards for each gene with probability and Conclusive/Inconclusive label
-- **Patterns**: Color-coded list with percentages
-- **Layers**: Clickable list to switch between layers
+This section appears **only when patterns contribute positively** (Combined > Emb-only).
 
-![Viewer - Attention](images/05-viewer-attention.png)
-*Figure 7: Viewer tab with "3 Attention" layer, showing ABMIL attention regions with white contour lines*
+| Component | Description |
+|-----------|-------------|
+| **Profile badge** | Fuzzy classification of Shapley spread (e.g., "Uniform", "Near-Uniform") |
+| **Shapley value bars** | Per-pattern importance with individual fuzzy labels (e.g., "Average") |
+| **Interaction indices table** | Pairwise synergy/redundancy with fuzzy intensity (e.g., "Moderate Synergy ↑") |
+| **Explain with AI** button | LLM interpretation using the system-computed fuzzy labels |
 
----
-
-## 5. Graph Tab — Knowledge Graph
-
-The Graph tab displays an interactive ontology-grounded knowledge graph that links the analysis results to clinical knowledge.
-
-### Building the Graph
-
-1. Click **"Rebuild Graph"** to generate the knowledge graph for the current case
-2. The graph is assembled from:
-   - Predicted mutations and patterns from the analysis
-   - NCIt (National Cancer Institute Thesaurus) ontology relationships
-   - MONDO (Monarch Disease Ontology) disease classifications
-   - Treatment associations from clinical guidelines (OncoKB/FDA)
-
-### Graph Visualization
-
-The graph uses a force-directed layout (D3.js) with:
-
-| Node Type | Color | Description |
-|-----------|-------|-------------|
-| Case | Blue | The analyzed case/slide |
-| Gene / Mutation | Red | Predicted genes and their mutation status |
-| Pattern | Amber | Detected histological patterns |
-| Treatment | Purple | Available targeted therapies |
-| Diagnosis | Green | Related diagnoses |
-| Ontology | Gray | Ontology concepts (NCIt, MONDO) |
-
-**Interactions:**
-- Click a node to see its details
-- Drag nodes to rearrange
-- Scroll to zoom, drag background to pan
-- Toggle "Show inferred edges" to see/hide ontology-derived relationships
-
-### AI Explanation
-
-Click **"Explain with AI"** to generate a natural language summary of the knowledge graph. The explanation is generated in your selected language (configurable in user profile) and describes:
-- Detected patterns and their clinical significance
-- Predicted mutations and reliability
-- Available treatments for detected mutations
-- Recommendations for molecular confirmation
-
----
-
-## 6. Explainability Tab — XAI Results
-
-The Explainability tab provides detailed interpretability information for each gene prediction.
-
-![Explainability](images/07-explainability.png)
-*Figure 8: Explainability tab showing gene selector, prediction details, ablation study, and SHAP decomposition*
-
-### Gene Selector
-
-Click on any gene button (TP53, EGFR, KRAS, STK11, KEAP1, RBM10) to view its detailed explainability results. Each button shows whether the prediction is "(conclusive)" or "(inconclusive)".
-
-### Per-Gene Explanation
-
-For each selected gene, the system shows:
-
-#### How was this prediction made?
-
-- **AI-generated explanation** (via OpenAI GPT-4o-mini): A 3-4 sentence summary of what drives the prediction, which input features matter, and clinical implications. Generated in your preferred language.
-- **Ablation comparison chart** (3 vertical bars):
-  - **Combined**: Probability using both visual embeddings + histological patterns
-  - **Emb-only**: Probability using only visual embeddings (512-d)
-  - **Pat-only**: Probability using only pattern features (6-d)
-  - This shows whether the prediction is driven by visual morphology, histological patterns, or both.
-
-#### SHAP Decomposition (for pattern-informed ABMIL genes: STK11, KEAP1)
-
-- **Embedding vs Pattern contribution**: Stacked bar showing what percentage of the prediction comes from visual embeddings (512 dimensions) vs. histological patterns (6 dimensions)
-- **Top contributing patterns**: Which specific patterns (acinar, solid, etc.) most influence the prediction
-
-#### Choquet Shapley Values (for Fuzzy Choquet genes: KRAS, RBM10)
-
-- **Pattern Shapley Values**: Importance of each individual pattern for the prediction
-- **Interaction Indices**: Pairwise pattern interactions — "Synergy" means two patterns together are more predictive than the sum of their individual contributions; "Redundancy" means they overlap
-
-#### Morphologic Profile
+### 3.9 Morphologic Profile
 
 Grid showing total tile count and percentage breakdown of all 6 histological patterns.
 
 ---
 
-## 7. Admin Tab — System Parameters
+## 4. Viewer Tab — Image Exploration
 
-The Admin tab is only visible to users with the **admin** role. It provides control over system configuration.
+The Viewer tab provides an interactive image viewer with zoom, pan, and overlay layers.
+
+![Viewer - Patterns](images/04-viewer-patterns.png)
+*Figure 6: Viewer tab with pattern overlay layer*
+
+### Layer Controls
+
+| Button | Layer | Description |
+|--------|-------|-------------|
+| **1 Original** | H&E image | The original histopathology image |
+| **2 Patterns** | Pattern overlay | Color-coded pattern classification per tile |
+| **3 Attention** | ABMIL attention | Heatmap with white contour lines |
+| **4 Combined** | Both | Pattern colors + attention contours |
+
+### Navigation
+
+| Action | How |
+|--------|-----|
+| Zoom in/out | Scroll wheel or `+`/`-` keys |
+| Pan | Click and drag |
+| Reset view | Click "Fit" or press `0` |
+| Switch layers | Press `1`, `2`, `3`, `4` |
+
+### Hover Tooltips
+
+On Pattern and Combined layers, hovering over a tile shows the **pattern name** with a color indicator.
+
+### Active Learning (Pattern Correction)
+
+In Pattern/Combined layers, click **"Correction Mode"** to:
+1. Draw a lasso around misclassified tiles
+2. Select the correct pattern from the dropdown
+3. Submit corrections for delta retraining
+
+---
+
+## 5. Graph Tab — Knowledge Graph
+
+![Graph Tab](images/06-graph-tab.png)
+*Figure 7: Knowledge graph linking patterns, genes, treatments, and ontology concepts*
+
+### Building the Graph
+
+Click **"Rebuild Graph"** to generate a case-specific knowledge graph from:
+- Predicted mutations and patterns
+- NCIt and MONDO ontology relationships
+- Treatment associations (OncoKB/FDA guidelines)
+- DeepSearch-discovered literature relations
+
+### AI Explanation
+
+Click **"Explain with AI"** to generate a natural language summary in your selected language.
+
+![Graph Explanation](images/07-graph-explain.png)
+*Figure 8: LLM-generated graph explanation*
+
+---
+
+## 6. Admin Tab — System Configuration
+
+Accessible only to users with the **admin** role. Contains seven sub-tabs:
+
+### Parameters
 
 ![Admin Parameters](images/08-admin-parameters.png)
-*Figure 9: Admin tab — Parameters panel with editable AUROC values, threshold, and inference settings*
-
-### Parameters Panel
-
-#### Editable Parameters
+*Figure 9: System parameters — AUROC values, methods, thresholds*
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| **Gene AUROC values** | Mean AUROC from 5-fold cross-validation for each gene. Determines Conclusive/Inconclusive labels | 0.609 – 0.718 |
-| **Method per gene** | The optimal model to use for each gene (B2, P, or FC) | From thesis Finding 2 |
-| **AUROC Threshold** | Genes with AUROC >= this value are labeled "Conclusive" | 0.700 |
-| **Mutation threshold** | Probability threshold for POS/NEG classification | 0.50 |
-| **Top-K attention tiles** | Number of highest-attention tiles to highlight in the attention map | 200 |
-| **Max tiles per WSI** | Maximum number of tiles to extract from a whole-slide image | 10,000 |
-| **Permutation repeats** | Number of random shuffles for permutation importance | 10 |
+| Gene AUROC values | Mean 5-fold CV AUROC per gene | 0.609–0.718 |
+| Method per gene | Optimal model (B2, P, or FC) | From thesis Finding 2 |
+| AUROC Threshold | Conclusive/Inconclusive boundary | 0.700 |
+| Max tiles per WSI | Tile extraction limit | 20,000 |
 
-Click **"Save All Parameters"** to apply changes. Changes take effect on the next image analysis.
+### Fuzzy Labels
 
-#### Fixed Parameters (read-only)
+![Admin Fuzzy Labels](images/09-admin-fuzzy-labels.png)
+*Figure 10: Fuzzy linguistic label editor with trapezoidal membership functions*
 
-| Parameter | Value |
-|-----------|-------|
-| Tile size | 224 px |
-| Backbone | CTransPath Swin Tiny |
-| Classifier | FuzzyArcLoss V2 |
+Edit the five fuzzy scales that classify XAI outputs:
+1. **Interaction Index** — Negligible to Very Strong
+2. **Shapley Profile** — Uniform to Highly Polarised
+3. **SHAP Balance** — Embedding-Dominated to Pattern-Dominated
+4. **Shapley Individual** — Average to Strongly Above
+5. **ABMIL Attention Level** — Very Low to Very High
 
-### Other Admin Sub-tabs
+Each scale shows editable trapezoidal parameters [a, b, c, d] with real-time SVG preview. Changes take effect immediately in the Analysis tab.
+
+### Other Sub-tabs
 
 | Sub-tab | Purpose |
 |---------|---------|
-| **DeepSearch Pipeline** | Run automated literature search across PubMed, arXiv, and Semantic Scholar to discover new gene-pattern-treatment relationships |
-| **KG Versions** | View and manage knowledge graph snapshots and changelogs |
-| **Ontology Management** | Manage ontology versions (NCIt, MONDO, SO) and create update proposals |
-| **Audit Log** | View system event history (image uploads, analyses, parameter changes) |
+| **DeepSearch Pipeline** | Automated literature search for new gene-pattern-treatment relations |
+| **Reference** | Clinical reference tables and method formulas |
+| **KG Versions** | Knowledge graph snapshot management |
+| **Ontology Management** | NCIt/MONDO ontology update proposals |
+| **Audit Log** | System event history with user, case, action, timestamp |
 
 ---
 
-## 8. User Profile and Settings
+## 7. User Profile and Settings
 
-Click your **name/avatar** in the top-right corner to access the user menu:
+Click your **name** in the top-right corner to access:
 
-- **Profile information**: Name, email, and role badges
-- **Explanation language**: Select the language for AI-generated explanations:
-  - English, Espanol, Deutsch, Francais, Portugues
-  - This affects: Graph tab explanations, Explainability tab per-gene explanations, Clinical Summary text
-- **Logout**: End your session and return to the login screen
-
----
-
-## 9. Supported Image Formats
-
-| Format | Extension | Type | Notes |
-|--------|-----------|------|-------|
-| **SVS** | `.svs` | Aperio pyramidal | Recommended for large slides. Fastest processing via OpenSlide |
-| **TIFF** | `.tif`, `.tiff` | Standard/Pyramidal | Flat TIFFs are automatically converted to pyramidal format |
-| **BIF** | `.bif` | Ventana/Roche | Automatically converted to pyramidal TIFF via pyvips |
-| **PNG** | `.png` | Standard image | For small tissue sections or exported regions |
-| **JPEG** | `.jpg`, `.jpeg` | Standard image | For small tissue sections or exported regions |
-
-### Upload Size Guidelines
-
-| File Size | Expected Upload Time | Processing Time |
-|-----------|---------------------|-----------------|
-| < 50 MB | < 5 seconds | 30-60 seconds |
-| 50-500 MB | 5-30 seconds | 1-2 minutes |
-| 500 MB – 2 GB | 30 seconds – 2 minutes | 2-3 minutes |
-| 2-10 GB | 2-5 minutes | 3-5 minutes (includes format conversion for BIF/flat TIFF) |
+- **Profile**: Name, email, role badges
+- **Explanation language**: English, Espanol, Deutsch, Francais, Portugues
+  - Affects AI-generated explanations in the Analysis and Graph tabs
+- **Logout**: End session
 
 ---
 
-## 10. Understanding the Results
+## 8. Supported Image Formats
+
+| Format | Extension | Notes |
+|--------|-----------|-------|
+| **SVS** | `.svs` | Recommended. Fastest via OpenSlide |
+| **TIFF** | `.tif`, `.tiff` | Flat TIFFs auto-converted to pyramidal |
+| **BIF** | `.bif` | Ventana/Roche. Auto-converted via pyvips |
+| **PNG** | `.png` | For small sections |
+| **JPEG** | `.jpg`, `.jpeg` | For small sections |
+
+---
+
+## 9. Understanding the Results
 
 ### Mutation Probability
 
-The probability (0-100%) represents the model's confidence that the gene is mutated based on histological features:
-
-| Probability | Interpretation |
-|-------------|---------------|
-| > 70% | Strong evidence of mutation — confirm with molecular testing |
+| P(mut) | Interpretation |
+|--------|---------------|
+| > 70% | Strong evidence — confirm with molecular testing |
 | 50-70% | Moderate evidence — molecular testing recommended |
-| 30-50% | Weak/ambiguous signal — molecular testing needed |
-| < 30% | Likely wild-type (not mutated) |
+| 30-50% | Weak signal — molecular testing needed |
+| < 30% | Likely wild-type |
 
-### Conclusive vs. Inconclusive
+### Conclusive vs Inconclusive
 
-This label refers to the **reliability of the model** for that gene, NOT the presence of the mutation:
+- **Conclusive** (AUROC >= 0.70): Reliable prediction. The model has demonstrated acceptable discrimination.
+- **Inconclusive** (AUROC < 0.70): Limited accuracy. Molecular testing is strongly recommended.
 
-- **Conclusive** (AUROC >= 0.70): The model has demonstrated acceptable discrimination on the TCGA-LUAD cohort. The prediction is considered reliable (though not diagnostic).
-- **Inconclusive** (AUROC < 0.70): The model has limited accuracy for this gene. The prediction should not be relied upon. Molecular testing is strongly recommended.
+### Gene-Specific Associations
 
-### Gene-Specific Clinical Associations
+| Gene | Pattern association | Treatment implications |
+|------|--------------------|-----------------------|
+| **TP53** | Solid, micropapillary | No targeted therapy; immunotherapy in selected cases |
+| **EGFR** | Lepidic, papillary | Osimertinib, erlotinib, gefitinib, afatinib |
+| **KRAS** | Solid (mucinous not in taxonomy) | Sotorasib, adagrasib (G12C-specific) |
+| **STK11** | Variable (immune-cold) | May predict IO resistance |
+| **KEAP1** | Diffuse | NRF2 pathway; affects IO response |
+| **RBM10** | Variable | No targeted therapy; splicing biology |
 
-This block is a **short summary** of the thesis integrated reference table (Chapter 3, `tab:gene_unified` in `ch03_usecase_data.tex`). The thesis table includes prevalence, mechanism, and **full bibliography** (e.g. Leighl et al. for TP53 morphology; Shim et al. for KRAS / mucinous IMA; Yoshizawa et al. for EGFR morphology; Skoulidis et al. for STK11 / immune context; TCGA for diffuse-signal genes). Treatment wording here is **not** a substitute for current NCCN / national guidelines or drug labels.
+---
 
-| Gene | Pattern association (summary) | Treatment implications (summary) |
-|------|--------------------------------|-----------------------------------|
-| **TP53** | Solid, micropapillary | No targeted therapy; immunotherapy may benefit in selected cases; chemotherapy standard |
-| **EGFR** | Lepidic, papillary | Osimertinib (3rd-gen TKI), erlotinib, gefitinib, afatinib (per guideline) |
-| **KRAS** | Mucinous invasive (IMA), solid | Sotorasib, adagrasib (G12C-specific); no approved targeted therapy for all KRAS variants |
-| **STK11** | Variable (immune-cold microenvironment) | May predict resistance to PD-1/PD-L1 immunotherapy; no approved targeted monotherapy |
-| **KEAP1** | Diffuse (no single dominant pattern) | NRF2 pathway context; concurrent mutations affect IO response (trials) |
-| **RBM10** | Variable (no established dominant pattern) | No approved targeted therapy; research-stage / splicing biology |
+## 10. Fuzzy Linguistic Labels
+
+LCHAI uses **trapezoidal fuzzy membership functions** to classify numeric XAI outputs into human-readable intensity terms. These labels are:
+
+- Displayed as badges in the Analysis tab
+- Injected into LLM prompts to **prevent hallucination** of intensity terms
+- Editable by administrators via Admin > Fuzzy Labels
+
+### The Five Scales
+
+| Scale | Input | Labels |
+|-------|-------|--------|
+| SHAP Balance | Pattern contribution % | Emb-Dominated → Emb-Led → Balanced → Pat-Led → Pat-Dominated |
+| Shapley Profile | Spread (max-min) | Uniform → Near-Uniform → Mod. Diff. → Strongly Diff. → Polarised |
+| Shapley Individual | % deviation from uniform | Average → Slightly → Moderately → Strongly Above/Below |
+| Interaction Index | \|I_jk\| | Negligible → Weak → Moderate → Strong → Very Strong |
+| Attention Level | Tile percentile | Very Low → Low → Moderate → High → Very High |
+
+### Anti-Hallucination
+
+The fuzzy labels create a **dual anti-hallucination mechanism**:
+1. **Knowledge Graph** constrains *what* the LLM says (clinical facts with PMID provenance)
+2. **Fuzzy labels** constrain *how* it says it (intensity terms computed deterministically)
+
+This ensures the AI explanation matches exactly what is displayed in the interface.
 
 ---
 
 ## 11. Troubleshooting
 
-### Common Issues
-
 | Problem | Solution |
 |---------|----------|
-| **Blank screen after login** | Refresh the page (F5). If persistent, clear browser cache |
-| **Upload stuck at 0%** | Check your internet connection. For files > 5 GB, ensure stable connection |
-| **Processing takes too long** | Normal for CPU processing (~5 min). GPU reduces to ~1 min. Check Admin > Max tiles per WSI |
-| **"No results" after processing** | Select the correct slide in the dropdown. Click the image pill to select it, then results should appear |
-| **BIF file fails** | Large BIF files (>5 GB) are automatically converted to pyramidal TIFF. This may take extra time. Check worker logs if it fails |
-| **Labels don't update after changing Admin parameters** | Labels refresh automatically. If not, reload the page |
-| **Admin tab not visible** | Only users with the "admin" role can see this tab. Contact your administrator |
-| **Graph shows "mock" badge** | The LLM API key may not be configured. Check with your administrator |
-| **Explanation in wrong language** | Click your name (top-right) and change the "Explanation language" setting |
+| Blank screen after login | Refresh (F5) or clear browser cache |
+| Upload stuck at 0% | Check internet connection |
+| Processing too slow | Normal ~1min GPU, ~5min CPU. Check Admin > Max tiles |
+| No results after processing | Select the correct slide in the dropdown |
+| BIF file fails | Large BIFs auto-convert. Check worker logs |
+| Admin tab not visible | Requires admin role |
+| Explanation in wrong language | Change in user menu (top-right) |
+| Attention hover not showing labels | Slide needs re-processing with current pipeline |
+| Choquet section not appearing | Only shows when patterns help (Combined > Emb-only) |
 
 ### Performance Tips
 
-- **Use SVS format** for the best performance with large slides
-- **Keep Max tiles per WSI at 10,000** for balanced accuracy and speed
-- **GPU acceleration** reduces CTransPath inference from ~5 minutes to ~15 seconds
-- **Close other browser tabs** when uploading large files (>2 GB)
+- Use **SVS format** for large slides
+- Keep **Max tiles at 20,000** for balanced accuracy/speed
+- **GPU acceleration** reduces processing from ~5 min to ~1 min
+- Close other tabs when uploading large files (>2 GB)
 
 ---
 
-*LCHAI v2.0 — Servio Fernando Lima Reina, PhD Computer Science, University of Fribourg, Switzerland*  
+*LCHAI v2.0 — Servio Fernando Lima Reina, PhD Computer Science, University of Fribourg, Switzerland*
 *For research use only. Always confirm AI predictions with molecular testing.*

@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>LCHAI v2.0 User Manual</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">LCHAI v2.0 User Manual</h1>
+</header>
+<h1 id="lchai-v2.0-user-manual">LCHAI v2.0 — User Manual</h1>
+<p><strong>Lung Cancer Histologic Analysis with AI</strong>
+<em>Explainable mutation prediction from H&amp;E whole-slide
+images</em></p>
+<blockquote>
+<p>DISCLAIMER: LCHAI v2.0 is a research tool (THESIS_INTERNAL evidence).
+Mutation predictions use ABMIL + Fuzzy Choquet MIL. Inconclusive genes
+(AUROC &lt; 0.70) require molecular testing. NOT for clinical
+diagnosis.</p>
+</blockquote>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol type="1">
+<li><a href="#1-system-overview">System Overview</a></li>
+<li><a href="#2-getting-started--login">Getting Started — Login</a></li>
+<li><a href="#3-analysis-tab--upload-analyze-and-explain">Analysis Tab —
+Upload, Analyze, and Explain</a>
+<ul>
+<li>3.1 <a href="#31-uploading-an-image">Uploading an Image</a></li>
+<li>3.2 <a href="#32-analyzing-a-slide">Analyzing a Slide</a></li>
+<li>3.3 <a href="#33-gene-sub-tabs">Gene Sub-tabs</a></li>
+<li>3.4 <a
+href="#34-pattern-overlay-and-abmil-attention-heatmap">Pattern Overlay
+and ABMIL Attention Heatmap</a></li>
+<li>3.5 <a href="#35-shap-decomposition-with-fuzzy-balance-label">SHAP
+Decomposition with Fuzzy Balance Label</a></li>
+<li>3.6 <a href="#36-ablation-comparison">Ablation Comparison</a></li>
+<li>3.7 <a href="#37-ai-generated-explanation">AI-Generated
+Explanation</a></li>
+<li>3.8 <a href="#38-fuzzy-choquet-analysis-conditional">Fuzzy Choquet
+Analysis (Conditional)</a></li>
+<li>3.9 <a href="#39-morphologic-profile">Morphologic Profile</a></li>
+</ul></li>
+<li><a href="#4-viewer-tab--image-exploration">Viewer Tab — Image
+Exploration</a></li>
+<li><a href="#5-graph-tab--knowledge-graph">Graph Tab — Knowledge
+Graph</a></li>
+<li><a href="#6-admin-tab--system-configuration">Admin Tab — System
+Configuration</a></li>
+<li><a href="#7-user-profile-and-settings">User Profile and
+Settings</a></li>
+<li><a href="#8-supported-image-formats">Supported Image
+Formats</a></li>
+<li><a href="#9-understanding-the-results">Understanding the
+Results</a></li>
+<li><a href="#10-fuzzy-linguistic-labels">Fuzzy Linguistic
+Labels</a></li>
+<li><a href="#11-troubleshooting">Troubleshooting</a></li>
+</ol>
+<hr />
+<h2 id="system-overview">1. System Overview</h2>
+<p>LCHAI v2.0 is an AI-powered decision-support system for lung
+adenocarcinoma (LUAD) histopathology. It analyzes whole-slide images
+(WSI) to:</p>
+<ul>
+<li><strong>Classify histological growth patterns</strong>: lepidic,
+acinar, papillary, micropapillary, solid, cribriform</li>
+<li><strong>Predict oncogenic mutations</strong>: TP53, EGFR, KRAS,
+STK11, KEAP1, RBM10</li>
+<li><strong>Provide six-level explainability</strong>: attention maps,
+pattern overlays, SHAP decomposition, Choquet Shapley values, per-slide
+ablation, and fuzzy linguistic labels</li>
+<li><strong>Generate knowledge graphs</strong> linking predictions to
+biomedical ontologies (NCIt, MONDO) and treatment associations</li>
+<li><strong>Produce AI-generated explanations</strong> grounded in the
+knowledge graph with numbered PubMed citations</li>
+</ul>
+<h3 id="ml-pipeline-summary">ML Pipeline Summary</h3>
+<p><img src="images/11-tile-filtering-pipeline.png"
+alt="Tile Filtering Pipeline" /> <em>Figure 1: Three-stage tile
+filtering pipeline from WSI to accepted tissue tiles</em></p>
+<ol type="1">
+<li><strong>WSI Decode</strong> — Opens the slide file (SVS, TIFF, or
+BIF) using OpenSlide</li>
+<li><strong>Tile Filtering</strong> — Three-stage quality control
+rejects glass, artifacts, pen marks (see Figure 1)</li>
+<li><strong>CTransPath Inference</strong> (GPU) — Each tile produces a
+512-dimensional embedding</li>
+<li><strong>Pattern Classification</strong> — FuzzyArcLoss V2 classifies
+each tile into 1 of 6 histological patterns</li>
+<li><strong>Mutation Prediction</strong> — Gene-specific models (ABMIL
+or Fuzzy Choquet MIL) predict mutation probability</li>
+<li><strong>Explainability</strong> — Ablation, SHAP decomposition,
+Choquet Shapley values, and fuzzy linguistic labels</li>
+</ol>
+<hr />
+<h2 id="getting-started-login">2. Getting Started — Login</h2>
+<p>Navigate to the LCHAI system (<code>https://lchai.gptfy.biz</code> or
+<code>http://localhost:3000</code>). You will be redirected to the
+Keycloak authentication page.</p>
+<p><img src="images/00-login-screen.png" alt="Login Screen" />
+<em>Figure 2: Keycloak login screen</em></p>
+<table>
+<colgroup>
+<col style="width: 38%" />
+<col style="width: 61%" />
+</colgroup>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Username / Password</strong></td>
+<td>Enter your assigned credentials (e.g., <code>admin1</code> /
+<code>admin1</code>)</td>
+</tr>
+<tr>
+<td><strong>Google</strong></td>
+<td>Click “Google” to sign in with your Google account (OAuth2)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="user-roles">User Roles</h3>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Access</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Clinician</strong></td>
+<td>Analysis, Viewer, Graph tabs</td>
+</tr>
+<tr>
+<td><strong>Admin</strong></td>
+<td>All clinician access + Admin tab</td>
+</tr>
+<tr>
+<td><strong>Auditor</strong></td>
+<td>Read-only access to audit trail</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="analysis-tab-upload-analyze-and-explain">3. Analysis Tab —
+Upload, Analyze, and Explain</h2>
+<p>The Analysis tab is the primary workspace. It integrates image
+upload, mutation prediction, and multi-level explainability into a
+single unified view.</p>
+<p><img src="images/01-analysis-tab-overview.png"
+alt="Analysis Tab Overview" /> <em>Figure 3: Analysis tab showing TP53
+(93.2%, Conclusive). Gene sub-tabs at top, side-by-side overlays, SHAP
+with fuzzy label, and ablation comparison.</em></p>
+<h3 id="uploading-an-image">3.1 Uploading an Image</h3>
+<ol type="1">
+<li>Click <strong>“Upload Image”</strong> (blue button)</li>
+<li>Select a histopathology image file (PNG, JPEG, TIFF, SVS, BIF)</li>
+<li>A progress bar shows upload percentage</li>
+<li>The system creates a new case and selects the uploaded slide</li>
+</ol>
+<p><strong>Slide Selector</strong>: The yellow bar at the top shows all
+uploaded slides. Click the dropdown to switch.</p>
+<h3 id="analyzing-a-slide">3.2 Analyzing a Slide</h3>
+<ol type="1">
+<li>Select a slide, then click <strong>“Analyze Slide”</strong> (purple
+button)</li>
+<li>A processing modal shows real-time progress:</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Description</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Decoding image</td>
+<td>Opens WSI, creates thumbnail</td>
+<td>5-10s</td>
+</tr>
+<tr>
+<td>CTransPath inference</td>
+<td>GPU processes tiles</td>
+<td>10-30s</td>
+</tr>
+<tr>
+<td>Mutation prediction</td>
+<td>ABMIL/Choquet for 6 genes</td>
+<td>5-10s</td>
+</tr>
+<tr>
+<td>Ablation + permutation</td>
+<td>Model comparison</td>
+<td>10-20s</td>
+</tr>
+<tr>
+<td>SHAP decomposition</td>
+<td>Feature attribution</td>
+<td>5-15s</td>
+</tr>
+<tr>
+<td>Saving results</td>
+<td>Store in database</td>
+<td>2-5s</td>
+</tr>
+</tbody>
+</table>
+<p>Click <strong>“Cancel and discard”</strong> to abort at any time.</p>
+<h3 id="gene-sub-tabs">3.3 Gene Sub-tabs</h3>
+<p>After processing, gene sub-tabs appear <strong>sorted by descending
+P(mut)</strong>. The highest-probability mutation is selected by
+default.</p>
+<p>Each tab shows: - Gene name, P(mut) percentage, and prediction method
+- A filled circle (●) for Conclusive genes, empty circle (○) for
+Inconclusive - A “TOP” badge on the highest-probability gene</p>
+<h3 id="pattern-overlay-and-abmil-attention-heatmap">3.4 Pattern Overlay
+and ABMIL Attention Heatmap</h3>
+<p>Two images are displayed side by side:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Left: Pattern Overlay</th>
+<th>Right: ABMIL Attention Heatmap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tile-level color map of 6 growth patterns</td>
+<td>Top-200 tiles by gated attention weight</td>
+</tr>
+<tr>
+<td>Legend shows pattern names with composition %</td>
+<td>Red = high attention</td>
+</tr>
+<tr>
+<td><strong>Hover</strong>: shows tile pattern name and %</td>
+<td><strong>Hover</strong>: shows fuzzy attention label (e.g., “High
+Attention, p97”)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pattern Color Legend:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Color</th>
+<th>Pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Blue</td>
+<td>Lepidic</td>
+</tr>
+<tr>
+<td>Red</td>
+<td>Acinar</td>
+</tr>
+<tr>
+<td>Yellow</td>
+<td>Papillary</td>
+</tr>
+<tr>
+<td>Green</td>
+<td>Micropapillary</td>
+</tr>
+<tr>
+<td>Dark red</td>
+<td>Solid</td>
+</tr>
+<tr>
+<td>Cyan</td>
+<td>Cribriform</td>
+</tr>
+</tbody>
+</table>
+<h3 id="shap-decomposition-with-fuzzy-balance-label">3.5 SHAP
+Decomposition with Fuzzy Balance Label</h3>
+<p>A stacked bar shows what percentage of the prediction comes from: -
+<strong>Embeddings</strong> (512-d CTransPath visual texture) — blue -
+<strong>Patterns</strong> (6-class histological classification) —
+red</p>
+<p>A <strong>fuzzy linguistic label</strong> classifies the balance:</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Embedding-Dominated</td>
+<td>Patterns nearly irrelevant (&lt;10%)</td>
+</tr>
+<tr>
+<td>Embedding-Led</td>
+<td>Patterns provide minor signal (10-25%)</td>
+</tr>
+<tr>
+<td>Balanced</td>
+<td>Both contribute meaningfully (25-55%)</td>
+</tr>
+<tr>
+<td>Pattern-Led</td>
+<td>Patterns are primary signal (55-70%)</td>
+</tr>
+<tr>
+<td>Pattern-Dominated</td>
+<td>Embeddings secondary (&gt;70%)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ablation-comparison">3.6 Ablation Comparison</h3>
+<p>Three vertical bars compare P(mut) from <strong>three independently
+trained models</strong>: - <strong>Combined</strong> (blue): embeddings
++ patterns (518-d) - <strong>Emb-only</strong> (orange): embeddings
+alone (512-d) - <strong>Pat-only</strong> (purple): patterns alone
+(6-d)</p>
+<p>A delta indicator shows whether patterns help (+) or hurt (-).</p>
+<blockquote>
+<p><strong>Important</strong>: These are three different models, not
+components of one prediction. The P(mut) in the header comes from the
+gene-optimal method, which may differ from any bar.</p>
+</blockquote>
+<h3 id="ai-generated-explanation">3.7 AI-Generated Explanation</h3>
+<p><img src="images/02-analysis-explanation.png" alt="AI Explanation" />
+<em>Figure 4: AI-generated explanation with SHAP fuzzy label, ablation
+interpretation, literature citations [1][2], and PubMed
+references</em></p>
+<p>The system generates a structured clinical narrative (8-12 sentences)
+that: - States P(mut) and whether it is conclusive or inconclusive -
+Describes the SHAP balance using the system’s fuzzy label - Interprets
+the ablation comparison - Compares the slide’s patterns to literature
+expectations with <strong>numbered PubMed citations</strong> [1], [2] -
+Includes the thesis disclaimer</p>
+<p>All fuzzy labels and clinical facts are
+<strong>system-controlled</strong> — the LLM cannot invent intensity
+terms or clinical associations.</p>
+<p><strong>References</strong>: Below the explanation, clickable PubMed
+links for each cited paper.</p>
+<h3 id="fuzzy-choquet-analysis-conditional">3.8 Fuzzy Choquet Analysis
+(Conditional)</h3>
+<p><img src="images/03-analysis-choquet-fuzzy.png"
+alt="Choquet Fuzzy Labels" /> <em>Figure 5: Choquet section for KRAS
+with “Profile: Uniform” badge, per-pattern Shapley labels, and
+interaction indices with fuzzy classifications</em></p>
+<p>This section appears <strong>only when patterns contribute
+positively</strong> (Combined &gt; Emb-only).</p>
+<table>
+<colgroup>
+<col style="width: 45%" />
+<col style="width: 54%" />
+</colgroup>
+<thead>
+<tr>
+<th>Component</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Profile badge</strong></td>
+<td>Fuzzy classification of Shapley spread (e.g., “Uniform”,
+“Near-Uniform”)</td>
+</tr>
+<tr>
+<td><strong>Shapley value bars</strong></td>
+<td>Per-pattern importance with individual fuzzy labels (e.g.,
+“Average”)</td>
+</tr>
+<tr>
+<td><strong>Interaction indices table</strong></td>
+<td>Pairwise synergy/redundancy with fuzzy intensity (e.g., “Moderate
+Synergy ↑”)</td>
+</tr>
+<tr>
+<td><strong>Explain with AI</strong> button</td>
+<td>LLM interpretation using the system-computed fuzzy labels</td>
+</tr>
+</tbody>
+</table>
+<h3 id="morphologic-profile">3.9 Morphologic Profile</h3>
+<p>Grid showing total tile count and percentage breakdown of all 6
+histological patterns.</p>
+<hr />
+<h2 id="viewer-tab-image-exploration">4. Viewer Tab — Image
+Exploration</h2>
+<p>The Viewer tab provides an interactive image viewer with zoom, pan,
+and overlay layers.</p>
+<p><img src="images/04-viewer-patterns.png" alt="Viewer - Patterns" />
+<em>Figure 6: Viewer tab with pattern overlay layer</em></p>
+<h3 id="layer-controls">Layer Controls</h3>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 25%" />
+<col style="width: 46%" />
+</colgroup>
+<thead>
+<tr>
+<th>Button</th>
+<th>Layer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1 Original</strong></td>
+<td>H&amp;E image</td>
+<td>The original histopathology image</td>
+</tr>
+<tr>
+<td><strong>2 Patterns</strong></td>
+<td>Pattern overlay</td>
+<td>Color-coded pattern classification per tile</td>
+</tr>
+<tr>
+<td><strong>3 Attention</strong></td>
+<td>ABMIL attention</td>
+<td>Heatmap with white contour lines</td>
+</tr>
+<tr>
+<td><strong>4 Combined</strong></td>
+<td>Both</td>
+<td>Pattern colors + attention contours</td>
+</tr>
+</tbody>
+</table>
+<h3 id="navigation">Navigation</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Zoom in/out</td>
+<td>Scroll wheel or <code>+</code>/<code>-</code> keys</td>
+</tr>
+<tr>
+<td>Pan</td>
+<td>Click and drag</td>
+</tr>
+<tr>
+<td>Reset view</td>
+<td>Click “Fit” or press <code>0</code></td>
+</tr>
+<tr>
+<td>Switch layers</td>
+<td>Press <code>1</code>, <code>2</code>, <code>3</code>,
+<code>4</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="hover-tooltips">Hover Tooltips</h3>
+<p>On Pattern and Combined layers, hovering over a tile shows the
+<strong>pattern name</strong> with a color indicator.</p>
+<h3 id="active-learning-pattern-correction">Active Learning (Pattern
+Correction)</h3>
+<p>In Pattern/Combined layers, click <strong>“Correction Mode”</strong>
+to: 1. Draw a lasso around misclassified tiles 2. Select the correct
+pattern from the dropdown 3. Submit corrections for delta retraining</p>
+<hr />
+<h2 id="graph-tab-knowledge-graph">5. Graph Tab — Knowledge Graph</h2>
+<p><img src="images/06-graph-tab.png" alt="Graph Tab" /> <em>Figure 7:
+Knowledge graph linking patterns, genes, treatments, and ontology
+concepts</em></p>
+<h3 id="building-the-graph">Building the Graph</h3>
+<p>Click <strong>“Rebuild Graph”</strong> to generate a case-specific
+knowledge graph from: - Predicted mutations and patterns - NCIt and
+MONDO ontology relationships - Treatment associations (OncoKB/FDA
+guidelines) - DeepSearch-discovered literature relations</p>
+<h3 id="ai-explanation">AI Explanation</h3>
+<p>Click <strong>“Explain with AI”</strong> to generate a natural
+language summary in your selected language.</p>
+<p><img src="images/07-graph-explain.png" alt="Graph Explanation" />
+<em>Figure 8: LLM-generated graph explanation</em></p>
+<hr />
+<h2 id="admin-tab-system-configuration">6. Admin Tab — System
+Configuration</h2>
+<p>Accessible only to users with the <strong>admin</strong> role.
+Contains seven sub-tabs:</p>
+<h3 id="parameters">Parameters</h3>
+<p><img src="images/08-admin-parameters.png" alt="Admin Parameters" />
+<em>Figure 9: System parameters — AUROC values, methods,
+thresholds</em></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 39%" />
+<col style="width: 27%" />
+</colgroup>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gene AUROC values</td>
+<td>Mean 5-fold CV AUROC per gene</td>
+<td>0.609–0.718</td>
+</tr>
+<tr>
+<td>Method per gene</td>
+<td>Optimal model (B2, P, or FC)</td>
+<td>From thesis Finding 2</td>
+</tr>
+<tr>
+<td>AUROC Threshold</td>
+<td>Conclusive/Inconclusive boundary</td>
+<td>0.700</td>
+</tr>
+<tr>
+<td>Max tiles per WSI</td>
+<td>Tile extraction limit</td>
+<td>20,000</td>
+</tr>
+</tbody>
+</table>
+<h3 id="fuzzy-labels">Fuzzy Labels</h3>
+<p><img src="images/09-admin-fuzzy-labels.png"
+alt="Admin Fuzzy Labels" /> <em>Figure 10: Fuzzy linguistic label editor
+with trapezoidal membership functions</em></p>
+<p>Edit the five fuzzy scales that classify XAI outputs: 1.
+<strong>Interaction Index</strong> — Negligible to Very Strong 2.
+<strong>Shapley Profile</strong> — Uniform to Highly Polarised 3.
+<strong>SHAP Balance</strong> — Embedding-Dominated to Pattern-Dominated
+4. <strong>Shapley Individual</strong> — Average to Strongly Above 5.
+<strong>ABMIL Attention Level</strong> — Very Low to Very High</p>
+<p>Each scale shows editable trapezoidal parameters [a, b, c, d] with
+real-time SVG preview. Changes take effect immediately in the Analysis
+tab.</p>
+<h3 id="other-sub-tabs">Other Sub-tabs</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Sub-tab</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DeepSearch Pipeline</strong></td>
+<td>Automated literature search for new gene-pattern-treatment
+relations</td>
+</tr>
+<tr>
+<td><strong>Reference</strong></td>
+<td>Clinical reference tables and method formulas</td>
+</tr>
+<tr>
+<td><strong>KG Versions</strong></td>
+<td>Knowledge graph snapshot management</td>
+</tr>
+<tr>
+<td><strong>Ontology Management</strong></td>
+<td>NCIt/MONDO ontology update proposals</td>
+</tr>
+<tr>
+<td><strong>Audit Log</strong></td>
+<td>System event history with user, case, action, timestamp</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="user-profile-and-settings">7. User Profile and Settings</h2>
+<p>Click your <strong>name</strong> in the top-right corner to
+access:</p>
+<ul>
+<li><strong>Profile</strong>: Name, email, role badges</li>
+<li><strong>Explanation language</strong>: English, Espanol, Deutsch,
+Francais, Portugues
+<ul>
+<li>Affects AI-generated explanations in the Analysis and Graph
+tabs</li>
+</ul></li>
+<li><strong>Logout</strong>: End session</li>
+</ul>
+<hr />
+<h2 id="supported-image-formats">8. Supported Image Formats</h2>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Extension</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SVS</strong></td>
+<td><code>.svs</code></td>
+<td>Recommended. Fastest via OpenSlide</td>
+</tr>
+<tr>
+<td><strong>TIFF</strong></td>
+<td><code>.tif</code>, <code>.tiff</code></td>
+<td>Flat TIFFs auto-converted to pyramidal</td>
+</tr>
+<tr>
+<td><strong>BIF</strong></td>
+<td><code>.bif</code></td>
+<td>Ventana/Roche. Auto-converted via pyvips</td>
+</tr>
+<tr>
+<td><strong>PNG</strong></td>
+<td><code>.png</code></td>
+<td>For small sections</td>
+</tr>
+<tr>
+<td><strong>JPEG</strong></td>
+<td><code>.jpg</code>, <code>.jpeg</code></td>
+<td>For small sections</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="understanding-the-results">9. Understanding the Results</h2>
+<h3 id="mutation-probability">Mutation Probability</h3>
+<table>
+<thead>
+<tr>
+<th>P(mut)</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>&gt; 70%</td>
+<td>Strong evidence — confirm with molecular testing</td>
+</tr>
+<tr>
+<td>50-70%</td>
+<td>Moderate evidence — molecular testing recommended</td>
+</tr>
+<tr>
+<td>30-50%</td>
+<td>Weak signal — molecular testing needed</td>
+</tr>
+<tr>
+<td>&lt; 30%</td>
+<td>Likely wild-type</td>
+</tr>
+</tbody>
+</table>
+<h3 id="conclusive-vs-inconclusive">Conclusive vs Inconclusive</h3>
+<ul>
+<li><strong>Conclusive</strong> (AUROC &gt;= 0.70): Reliable prediction.
+The model has demonstrated acceptable discrimination.</li>
+<li><strong>Inconclusive</strong> (AUROC &lt; 0.70): Limited accuracy.
+Molecular testing is strongly recommended.</li>
+</ul>
+<h3 id="gene-specific-associations">Gene-Specific Associations</h3>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 40%" />
+<col style="width: 46%" />
+</colgroup>
+<thead>
+<tr>
+<th>Gene</th>
+<th>Pattern association</th>
+<th>Treatment implications</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TP53</strong></td>
+<td>Solid, micropapillary</td>
+<td>No targeted therapy; immunotherapy in selected cases</td>
+</tr>
+<tr>
+<td><strong>EGFR</strong></td>
+<td>Lepidic, papillary</td>
+<td>Osimertinib, erlotinib, gefitinib, afatinib</td>
+</tr>
+<tr>
+<td><strong>KRAS</strong></td>
+<td>Solid (mucinous not in taxonomy)</td>
+<td>Sotorasib, adagrasib (G12C-specific)</td>
+</tr>
+<tr>
+<td><strong>STK11</strong></td>
+<td>Variable (immune-cold)</td>
+<td>May predict IO resistance</td>
+</tr>
+<tr>
+<td><strong>KEAP1</strong></td>
+<td>Diffuse</td>
+<td>NRF2 pathway; affects IO response</td>
+</tr>
+<tr>
+<td><strong>RBM10</strong></td>
+<td>Variable</td>
+<td>No targeted therapy; splicing biology</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="fuzzy-linguistic-labels">10. Fuzzy Linguistic Labels</h2>
+<p>LCHAI uses <strong>trapezoidal fuzzy membership functions</strong> to
+classify numeric XAI outputs into human-readable intensity terms. These
+labels are:</p>
+<ul>
+<li>Displayed as badges in the Analysis tab</li>
+<li>Injected into LLM prompts to <strong>prevent hallucination</strong>
+of intensity terms</li>
+<li>Editable by administrators via Admin &gt; Fuzzy Labels</li>
+</ul>
+<h3 id="the-five-scales">The Five Scales</h3>
+<table>
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 31%" />
+<col style="width: 36%" />
+</colgroup>
+<thead>
+<tr>
+<th>Scale</th>
+<th>Input</th>
+<th>Labels</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SHAP Balance</td>
+<td>Pattern contribution %</td>
+<td>Emb-Dominated → Emb-Led → Balanced → Pat-Led → Pat-Dominated</td>
+</tr>
+<tr>
+<td>Shapley Profile</td>
+<td>Spread (max-min)</td>
+<td>Uniform → Near-Uniform → Mod. Diff. → Strongly Diff. →
+Polarised</td>
+</tr>
+<tr>
+<td>Shapley Individual</td>
+<td>% deviation from uniform</td>
+<td>Average → Slightly → Moderately → Strongly Above/Below</td>
+</tr>
+<tr>
+<td>Interaction Index</td>
+<td>|I_jk|</td>
+<td>Negligible → Weak → Moderate → Strong → Very Strong</td>
+</tr>
+<tr>
+<td>Attention Level</td>
+<td>Tile percentile</td>
+<td>Very Low → Low → Moderate → High → Very High</td>
+</tr>
+</tbody>
+</table>
+<h3 id="anti-hallucination">Anti-Hallucination</h3>
+<p>The fuzzy labels create a <strong>dual anti-hallucination
+mechanism</strong>: 1. <strong>Knowledge Graph</strong> constrains
+<em>what</em> the LLM says (clinical facts with PMID provenance) 2.
+<strong>Fuzzy labels</strong> constrain <em>how</em> it says it
+(intensity terms computed deterministically)</p>
+<p>This ensures the AI explanation matches exactly what is displayed in
+the interface.</p>
+<hr />
+<h2 id="troubleshooting">11. Troubleshooting</h2>
+<table>
+<colgroup>
+<col style="width: 47%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Blank screen after login</td>
+<td>Refresh (F5) or clear browser cache</td>
+</tr>
+<tr>
+<td>Upload stuck at 0%</td>
+<td>Check internet connection</td>
+</tr>
+<tr>
+<td>Processing too slow</td>
+<td>Normal ~1min GPU, ~5min CPU. Check Admin &gt; Max tiles</td>
+</tr>
+<tr>
+<td>No results after processing</td>
+<td>Select the correct slide in the dropdown</td>
+</tr>
+<tr>
+<td>BIF file fails</td>
+<td>Large BIFs auto-convert. Check worker logs</td>
+</tr>
+<tr>
+<td>Admin tab not visible</td>
+<td>Requires admin role</td>
+</tr>
+<tr>
+<td>Explanation in wrong language</td>
+<td>Change in user menu (top-right)</td>
+</tr>
+<tr>
+<td>Attention hover not showing labels</td>
+<td>Slide needs re-processing with current pipeline</td>
+</tr>
+<tr>
+<td>Choquet section not appearing</td>
+<td>Only shows when patterns help (Combined &gt; Emb-only)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="performance-tips">Performance Tips</h3>
+<ul>
+<li>Use <strong>SVS format</strong> for large slides</li>
+<li>Keep <strong>Max tiles at 20,000</strong> for balanced
+accuracy/speed</li>
+<li><strong>GPU acceleration</strong> reduces processing from ~5 min to
+~1 min</li>
+<li>Close other tabs when uploading large files (&gt;2 GB)</li>
+</ul>
+<hr />
+<p><em>LCHAI v2.0 — Servio Fernando Lima Reina, PhD Computer Science,
+University of Fribourg, Switzerland</em> <em>For research use only.
+Always confirm AI predictions with molecular testing.</em></p>
+</body>
+</html>
