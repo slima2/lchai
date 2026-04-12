@@ -650,6 +650,23 @@ rather than \emph{discriminative}: it enables the six-level interpretability
 framework (Section~\ref{sec:eval:interpretability}) without sacrificing
 prediction quality.
 
+\textbf{Important caveat: population-level vs.\ per-slide behaviour.}
+The AUROC equivalence above is a \emph{population-level} statement
+averaged over 687~slides.
+It does not imply that patterns are neutral on every individual slide.
+The per-slide ablation comparison displayed in LCHAI~v2.0
+(Section~\ref{sec:eval:interp:enrichment}) reveals that on some slides
+the pattern channel substantially \emph{helps} the prediction while on
+others it substantially \emph{hurts} it---for example, on one TP53
+case the combined model yields $P(\text{mut}) = 79.0\%$ while the
+embedding-only model yields $95.1\%$ ($-16.1$\,pp).
+These per-slide deviations cancel out in aggregate, producing the
+identical population-level AUROC.
+This is precisely the motivation for the per-slide ablation
+(Level~5 of the interpretability framework): it warns the clinician
+when the pattern channel is constructive or destructive for a specific
+slide, rather than relying on the population average.
+
 \subsection{Finding 2: The Optimal Representation Is Gene-Dependent}
 \label{sec:eval:mutation:finding2}
 
