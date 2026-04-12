@@ -119,9 +119,10 @@ projected to a 512-d embedding space optimised jointly with FuzzyArcLoss~V2
 for the six LUAD growth patterns.
 Extension to UNI/UNI2-h embeddings is identified as a medium-term future
 direction (Section~\ref{sec:disc:future:medium}): if the Fuzzy Choquet MIL
-achieves competitive performance with only 21 parameters on foundation
-model embeddings, this would confirm the value of the fuzzy aggregation
-mechanism independently of the encoder.
+achieves competitive performance with a 21-parameter interpretable
+fuzzy measure (within a hybrid architecture of $\sim$266{,}000 total
+parameters) on foundation model embeddings, this would confirm the
+value of the fuzzy aggregation mechanism independently of the encoder.
 
 
 % ============================================================================
@@ -154,7 +155,7 @@ Three standard loss functions serve as baselines without angular margin enforcem
 \textbf{(1) Softmax Cross-Entropy (CE).}
 The baseline loss in Equation~\ref{eq:softmax}, optimised over the normalised embedding space without margin penalties.
 
-\textbf{(2) Label Smoothing CE.}
+\textbf{(2) Label Smoothing CE}~\cite{szegedy2016rethinking}.
 Replaces the one-hot target $y_k \in \{0,1\}$ with a smoothed distribution $\tilde{y}_k = (1 - \epsilon)\,y_k + \epsilon / K$, where $\epsilon = 0.1$ is the smoothing parameter.
 Label smoothing prevents the model from producing overconfident predictions and acts as a regulariser, which is beneficial when training on small datasets.
 
@@ -318,8 +319,9 @@ This section formalises the complete family of fuzzy margin variants evaluated i
 \subsection{The Motivation: Morphological Ambiguity}
 \label{sec:bg:fuzzy_margin:motivation}
 
-In histopathological pattern classification, inter-class boundaries are inherently gradual.
+In histopathological pattern classification, inter-class boundaries are inherently gradual~\cite{thunnissen2014reproducibility}.
 A tile at the transition between acinar and papillary morphology may exhibit partial features of both patterns; a region of solid growth interspersed with residual glandular lumina is not cleanly assignable to either class.
+Thunnissen et al.\ reported only fair inter-observer agreement ($\kappa = 0.38$) for the predominant pattern among 27~pathologists, with acinar--papillary distinction being particularly difficult~\cite{thunnissen2014reproducibility}.
 Standard ArcFace applies a fixed margin $m$ to all training samples equally.
 For unambiguous samples (clearly solid, clearly lepidic), this margin encourages tight clustering around the class prototype.
 For ambiguous samples at morphological boundaries, however, the same margin forces the model to make confident but potentially incorrect assignments, which can destabilise training on small datasets.
@@ -593,7 +595,8 @@ In this thesis, a 2-additive fuzzy measure is used, parameterised by the Shapley
 g(A) = \sum_{i \in A} \phi_i + \sum_{\{i,j\} \subseteq A} I_{ij},
 \end{equation}
 which requires only $n + \binom{n}{2}$ parameters.
-For $n = 6$ histological pattern classes, this yields 21 learnable parameters---a tractable number even for the limited training set of approximately 350 slides.
+For $n = 6$ histological pattern classes, this yields 21 semantically interpretable parameters---a tractable number even for the limited training set of approximately 350 slides.
+Note that the full Fuzzy Choquet MIL model has $\sim$266{,}000 trainable parameters (shared ABMIL encoder + Choquet branch); the ``21 parameters'' refer exclusively to the interpretable fuzzy measure component, not to the model as a whole.
 
 \textbf{Interpretability advantage:} The Shapley values $\phi_i$ quantify the marginal contribution of each pattern to the fuzzy measure, while the interaction indices $I_{ij}$ reveal whether co-occurrence of two patterns is synergistic (e.g., solid + micropapillary predicting TP53 more than either alone) or redundant.
 These quantities are extractable without post-hoc explanation methods, providing built-in interpretability.
@@ -1060,8 +1063,10 @@ classes under data scarcity;
 (ii)~\textbf{Pattern-Informed ABMIL} (Artifact~2): first injection of
 fuzzy pattern probabilities into attention MIL for mutation prediction
 with six-level interpretability;
-(iii)~\textbf{Fuzzy Choquet MIL} (Artifact~3): 21-parameter aggregation
-with intrinsic Shapley values and interaction indices;
+(iii)~\textbf{Fuzzy Choquet MIL} (Artifact~3): hybrid dual-pathway
+architecture ($\sim$266{,}000 total parameters) with a 21-parameter
+interpretable fuzzy measure providing intrinsic Shapley values and
+interaction indices;
 (iv)~\textbf{Ontology explanation layer}: three-tier knowledge graph
 grounding mutations in NCIt+MONDO with PMID provenance (RQ6, RQ7);
 (v)~\textbf{Analytical insight}: gene-dependent utility of fuzzy
