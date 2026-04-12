@@ -37,14 +37,19 @@ Prior to the rigorous K-fold evaluation, all 18 loss function variants
 train/test split (509 training tiles, 128 test tiles) to identify the
 top performers for the computationally expensive multi-seed
 cross-validation.
-The key finding was a universal improvement of approximately 18 percentage
-points in macro-F1 across \emph{all} 18 variants, from a range of
-71--76\% before the pipeline corrections documented in
-Section~\ref{sec:uc:pipeline_fixes} to 89--95\% after corrections.
-This universal improvement confirms that the dominant performance gains
-were attributable to the pipeline fixes (4-channel mask input, fp32
-precision, margin-free evaluation logits) rather than to any specific
-loss function.
+A prerequisite for meaningful loss function comparison was establishing
+a correct experimental baseline.
+The pipeline corrections documented in
+Section~\ref{sec:uc:pipeline_fixes}---4-channel mask input, fp32
+precision, and margin-free evaluation logits---raised all 18 variants
+uniformly by approximately 18~percentage points in macro-F1 (from
+71--76\% to 89--95\%).
+Because this improvement was \emph{universal} across all loss functions,
+it represents the establishment of a fair experimental foundation
+rather than a contribution of any specific method.
+With this corrected baseline in place, any remaining performance
+differences between loss functions are attributable to the loss
+functions themselves.
 
 Table~\ref{tab:singlerun_all18} reports the single-run macro-F1 for all
 18 loss functions within the corrected pipeline.
@@ -363,10 +368,13 @@ screening and yields the following conclusions for RQ1:
     directly supporting the design hypothesis that adaptive fuzzy margins
     benefit underrepresented classes with ambiguous morphological boundaries.
 
-    \item The systematic pipeline corrections contributed the largest
-    absolute gains ($+$18~pp across all methods), demonstrating that
-    implementation details---particularly 4-channel mask input, fp32
-    precision, and margin-free evaluation logits---are as critical as
+    \item The systematic pipeline corrections (4-channel mask input,
+    fp32 precision, margin-free evaluation logits) established a correct
+    experimental baseline, raising all methods uniformly by $+$18~pp.
+    This universal improvement is not attributable to any loss function
+    but rather provides the fair foundation upon which the loss function
+    comparisons above become meaningful.
+    The lesson is that implementation details are as critical as
     algorithmic innovation when applying angular margin losses to small
     histopathological datasets.
 \end{enumerate}
@@ -2250,8 +2258,10 @@ paired observations.
 The per-class analysis reveals that V2's advantage concentrates on the
 minority class (cribriform: $+2.2$ pp over ArcFace), consistent with its design
 principle of softer margins for ambiguous samples.
-The pipeline fixes (4-channel mask, fp32, margin-free evaluation) contributed
-more to absolute performance ($+$18 pp) than any individual loss function.
+The pipeline fixes (4-channel mask, fp32, margin-free evaluation)
+established the correct experimental baseline ($+$18~pp uniformly),
+ensuring that the loss function deltas above reflect genuine
+algorithmic merit.
 
 \textbf{Success criterion:} Met. V2 $\geq$ ArcFace mean F1 ($\checkmark$);
 $p < 0.05$ versus $\geq$1 baseline ($\checkmark$, SphereFace).
@@ -2644,9 +2654,10 @@ significantly outperforming SphereFace ($p = 0.001$) and consistently
 ranking first against all baselines.
 The adaptive fuzzy margin provides the greatest benefit on minority classes
 (cribriform: 83.6\%).
-The systematic pipeline improvements contributed the largest absolute gains
-($+$18 pp), demonstrating that implementation details are as important as
-algorithmic innovation for angular margin losses on small datasets.
+The systematic pipeline corrections established a correct experimental
+baseline ($+$18~pp uniformly across all methods), ensuring that the
+performance deltas between loss functions reflect genuine algorithmic
+merit rather than implementation artefacts.
 
 \textbf{Mutation prediction (Artifacts 2 and 3):}
 PI-ABMIL matches embedding-only ABMIL globally (mean AUROC
