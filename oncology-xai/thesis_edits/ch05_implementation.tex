@@ -81,8 +81,8 @@ scikit-learn & 1.3+ & StratifiedKFold, metrics \\
 XGBoost & 2.0+ & Gradient-boosted tree baseline \\
 Optuna & 3.4+ & Bayesian hyperparameter optimisation \\
 SHAP & 0.43+ & Feature attribution \\
-NumPy, Pandas & latest & Data manipulation \\
-Matplotlib, Seaborn & latest & Visualisation \\
+NumPy, Pandas & 1.26+, 2.1+ & Data manipulation \\
+Matplotlib, Seaborn & 3.8+, 0.13+ & Visualisation \\
 RAPIDS cuML & 23.10+ & GPU-accelerated data processing \\
 \hline
 \end{tabular}
@@ -120,8 +120,16 @@ The implementation is structured into four logical modules:
     prototype with an ontology explanation layer.
 \end{enumerate}
 
-All source code, trained checkpoints, and experimental scripts are
-publicly available at \url{https://github.com/slima2/lchai}~\cite{lchai_repo}.
+All source code, trained checkpoints, experimental scripts,
+per-fold result JSON files, training logs, and figure-generation
+scripts are publicly available at
+\url{https://github.com/slima2/lchai}~\cite{lchai_repo}
+(mirrored at \url{https://gitlab.com/serviolimareina/lchaiv2}).
+The repository includes a \texttt{Thesis/} directory organised
+for reproducibility, containing training scripts (by artefact),
+evaluation scripts, per-fold metric JSONs backing all tables in
+Chapter~\ref{ch:evaluation}, and standalone Python generators
+for all thesis figures.
 
 
 % ============================================================================
@@ -676,7 +684,14 @@ full-dimensional attention over 518-d concatenated representations.
 \subsection{XGBoost Baseline Implementation}
 \label{sec:impl:mutation:xgboost}
 
-The XGBoost baseline (condition B1) operates on slide-level features rather than tile-level representations.
+The XGBoost baseline (condition B1) serves as a \emph{floor baseline}
+that establishes the minimum performance achievable from pattern
+information alone via simple feature engineering, without deep
+learning or attention mechanisms.
+B1 operates on slide-level features rather than tile-level
+representations; the primary experimental baseline is B2
+(Section~\ref{sec:meth:mutation:representations}), against which all
+pattern-informed methods are compared.
 For each slide, the seven features (six pattern fractions + entropy) are computed from the pre-extracted pattern probabilities:
 
 \begin{verbatim}
@@ -833,7 +848,17 @@ LCHAI follows a modular architecture with four processing layers:
 
     \item \textbf{Analysis layer:} Runs the Pattern-Informed ABMIL (Artifact~2) and optionally the Fuzzy Choquet MIL (Artifact~3) to produce mutation predictions for all six target genes. Additionally computes slide-level pattern distribution statistics.
 
-    \item \textbf{Interpretability layer:} Generates attention heatmaps (Level~1), pattern overlay maps (Level~2), SHAP decompositions (Level~3), Choquet Shapley values (Level~4, for FC-MIL genes), and per-slide feature channel ablation comparisons (Level~5, Section~\ref{sec:meth:interp:ablation}) that run the B2 and B3 checkpoints alongside the primary model on the same tile set to measure whether adding pattern features helps or harms the prediction on each individual slide.
+    \item \textbf{Interpretability layer:} Generates the six-level
+    interpretability framework: attention heatmaps (Level~1), pattern
+    overlay maps (Level~2), SHAP decompositions (Level~3), Choquet
+    Shapley values and interaction indices (Level~4, for FC-MIL genes),
+    per-slide feature channel ablation comparisons (Level~5,
+    Section~\ref{sec:meth:interp:ablation}) that run the B2 and B3
+    checkpoints alongside the primary model on the same tile set, and
+    fuzzy linguistic labels (Level~6,
+    Section~\ref{sec:impl:lchai:fuzzy_labels}) that classify all
+    numeric XAI outputs into calibrated intensity terms injected into
+    LLM-generated explanations.
 
     \item \textbf{Knowledge layer:} Links mutation predictions to a biomedical knowledge graph encoding gene $\to$ pathway $\to$ drug associations, and provides literature references through a DeepSearch module that queries PubMed and bioRxiv.
 \end{enumerate}
@@ -1464,39 +1489,52 @@ Q12 & lung cancer histopathology deep learning mutation prediction \\
 \end{tabular}
 \end{table}
 
+    \textbf{Scope justification.}
+    Queries Q1--Q3 directly target the six genes and six patterns
+    analysed in this thesis.
+    Queries Q4--Q10 extend coverage to the broader NSCLC therapeutic
+    landscape (ALK, BRAF, RET, MET, HER2) for two reasons:
+    (i)~clinicians interpreting a negative prediction
+    (e.g., ``EGFR not detected'') need context about alternative
+    actionable targets to guide the next diagnostic step; and
+    (ii)~seeding the KG with these relations enables future extension
+    of LCHAI to additional genes without rebuilding the knowledge base.
+    Q11--Q12 cover immunotherapy biomarkers and methodological advances,
+    providing contextual depth for the discussion layer.
+
     \item \textbf{LLM relation extraction.}
     Each abstract is processed by an LLM (OpenAI GPT-4o-mini) with a
     structured prompt that constrains output to JSON triples of the
-    form \texttt{(subject, predicate, object, evidence\_quote)}.
+    form (\emph{subject entity}, \emph{predicate}, \emph{object entity},
+    \emph{evidence quote}).
     Allowed predicates are restricted to six domain-specific
-    relationships: \texttt{associatedWithMutation},
-    \texttt{treatedWith}, \texttt{subtypeOf}, \texttt{mutatedIn},
-    \texttt{resistantTo}, and \texttt{biomarkerFor}.
+    relationships: \emph{associatedWithMutation},
+    \emph{treatedWith}, \emph{subtypeOf}, \emph{mutatedIn},
+    \emph{resistantTo}, and \emph{biomarkerFor}.
 
     \item \textbf{Entity linking.}
     Extracted entity names (e.g., ``KRAS'', ``solid pattern'') are
-    mapped to canonical ontology IRIs via a curated dictionary
-    (\texttt{ENTITY\_IRI\_MAP}) covering all genes, patterns,
-    diagnoses, and treatments in the knowledge base.
+    mapped to canonical ontology IRIs via a curated entity dictionary
+    covering all genes, patterns, diagnoses, and treatments in the
+    knowledge base.
     Unresolved entities are discarded.
 
     \item \textbf{Deduplication.}
-    Triples with identical \texttt{(subject\_iri, predicate,
-    object\_iri)} from multiple papers are merged, preserving all
-    source citations.
+    Triples with identical (subject IRI, predicate, object IRI)
+    from multiple papers are merged, preserving all source citations.
 
     \item \textbf{Type-constraint validation.}
     Rules analogous to SHACL shapes enforce type compatibility:
-    \texttt{associatedWithMutation} requires a \emph{pattern}
-    subject and a \emph{gene} object;
-    \texttt{treatedWith} requires a \emph{gene} subject and a
-    \emph{treatment} object.
+    the \emph{associatedWithMutation} predicate requires a pattern
+    as subject and a gene as object;
+    \emph{treatedWith} requires a gene as subject and a treatment
+    as object.
     Triples violating these constraints are rejected.
 
     \item \textbf{Versioned persistence.}
-    Valid relations are stored in the \texttt{discovered\_relations}
-    table with metadata: paper source (PubMed/Semantic Scholar/arXiv),
-    paper ID, evidence quote, and \texttt{is\_active} flag.
+    Valid relations are stored in a versioned database table with
+    metadata: paper source (PubMed/Semantic Scholar/arXiv), paper ID,
+    evidence quote, and an active/inactive flag.
     A full changelog tracks additions, modifications, and
     deactivations.
 \end{enumerate}
@@ -1776,6 +1814,16 @@ SHAP decomposition, Choquet Shapley values, per-slide ablation, and
 fuzzy linguistic labels),
 and a biomedical knowledge graph into a web-based clinical decision
 support interface with Conclusive/Inconclusive confidence labelling.
+
+\textbf{Reproducibility.}
+All training scripts, per-fold result JSON files, worker logs, and
+figure generators are archived in the \texttt{Thesis/} directory of
+the public repository, enabling independent verification of every
+table and figure in Chapter~\ref{ch:evaluation}.
+The ANORAK class mapping was corrected on 4 April 2026 using the
+official Zenodo documentation (Section~\ref{sec:uc:zenodo}); the
+corrected overlay index and generation script are included in the
+repository.
 
 Chapter~\ref{ch:evaluation} presents the quantitative and qualitative
 evaluation of these implementations.
