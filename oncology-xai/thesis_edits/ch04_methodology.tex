@@ -58,6 +58,22 @@ A learned linear projection head, fine-tuned during the pattern classification t
 where $\mathbf{W}_{\text{proj}} \in \mathbb{R}^{512 \times 768}$ and $\mathbf{b}_{\text{proj}} \in \mathbb{R}^{512}$ are the projection parameters.
 This 512-dimensional embedding serves as the primary tile-level representation throughout the pipeline.
 
+\textbf{Intuitive interpretation of the embedding.}
+Each of the 512 dimensions does not correspond to a single named
+feature; instead, the vector as a whole encodes morphological
+properties visible in the tile: nuclear size, shape and chromatin
+texture; glandular lumen formation and architecture; stromal density
+and fibrosis; cell spatial arrangement; and staining intensity
+gradients (see Section~\ref{sec:bg:ctranspath} for details).
+Unlike the six explicit pattern probabilities $\mathbf{p}_i$, which
+carry clinically labelled meaning, the embedding captures a much
+richer but less directly interpretable set of visual features.
+This distinction is central to the SHAP decomposition
+(Section~\ref{sec:meth:shap}), where the relative contribution of the
+512 embedding dimensions versus the 6 pattern dimensions reveals
+whether the model relies on interpretable domain knowledge or on
+opaque visual features for each gene.
+
 \textbf{Rationale for 512 dimensions.}
 The projection from 768 to 512 dimensions was optimised jointly with the FuzzyArcLoss~V2 objective during fine-tuning on the six LUAD histological patterns.
 The resulting embedding space is therefore \emph{pattern-oriented}: its geometry reflects the angular separation of the six histological classes rather than the generic histopathological features of the pretrained CTransPath model.

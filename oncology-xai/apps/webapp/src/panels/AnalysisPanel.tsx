@@ -447,6 +447,7 @@ SHAP DECOMPOSITION (attribution analysis):
 - Pattern features (6-class histological): ${shapPatPct}%
 - System classification: "${shapBalLabel}" (fuzzy logic — use this exact label)
 ${topShapPatterns ? `- Top contributing pattern dims: ${topShapPatterns}` : ''}
+IMPORTANT — EXPLAIN EMBEDDINGS TO THE READER: The 512-dimensional embedding is a compact numerical representation of each tissue tile extracted by CTransPath, a deep learning model pretrained on 15 million histopathological image patches. These 512 numbers encode visual features that a pathologist would recognize: nuclear size, shape and density; chromatin texture and staining intensity; glandular architecture and lumen formation; stromal composition and fibrosis; cell-to-cell spatial arrangement; and mitotic activity. Unlike the 6 pattern features (which are explicitly labeled growth patterns), the embedding captures a much richer set of morphological details that are not tied to any predefined category. When you explain the SHAP balance, briefly clarify this distinction so the reader understands what "embedding features" means in practical terms.
 
 ABLATION STUDY (three independently trained models, each producing its own P(mut)):
 - Combined model (embeddings+patterns, 518-d): P(mut) = ${pComb}%

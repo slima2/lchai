@@ -88,6 +88,26 @@ Its architecture combines a CNN stem for local feature extraction with Swin Tran
 
 The pretraining objective is a modified contrastive loss that pulls together semantically similar tiles (from the same tissue region or cancer type) while pushing apart dissimilar ones.
 This produces a 768-dimensional embedding per tile that captures both fine-grained cytological features and coarser architectural patterns.
+
+\textbf{What the embedding encodes.}
+Although the 768 numbers lack individual human-readable labels,
+the contrastive pretraining forces them to encode the visual features
+that distinguish one tissue region from another.
+In practical terms, these dimensions collectively represent
+morphological properties that a pathologist would recognise:
+nuclear size, shape and chromatin texture;
+glandular architecture and lumen formation;
+stromal composition and fibrosis;
+cell density and spatial arrangement;
+and staining intensity gradients.
+The embedding is therefore a compact numerical summary of
+\emph{how the tissue looks} in each tile, expressed in a form that
+downstream models can process.
+This distinction is important because, unlike the six explicit pattern
+features (Section~\ref{sec:meth:pattern:problem}), the embedding
+captures a much richer---but less interpretable---set of
+morphological details that are not tied to any predefined category.
+
 Crucially, CTransPath is \emph{not} trained with mutation labels; its representations are general-purpose histopathological features that can be adapted to downstream tasks through fine-tuning or feature extraction.
 
 In this thesis, CTransPath serves as the tile-level feature extractor.

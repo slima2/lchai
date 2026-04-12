@@ -1832,7 +1832,12 @@ is required.
 This is the design working as intended---not a failure.
 
 The SHAP decompositions of the four false negatives also reveal genuine
-biological insights:
+biological insights.
+Recall that the embedding dimensions encode visual features learned from
+15~million histopathological patches---nuclear morphology, chromatin
+texture, glandular architecture, stromal composition, and staining
+gradients---while the six pattern dimensions represent the explicitly
+labelled growth patterns.
 STK11 (90\% embedding, 10\% pattern) indicates the mutation signal
 resides in sub-cellular texture consistent with its known effect on
 tumour-infiltrating lymphocytes~\cite{skoulidis2018stk11immune},

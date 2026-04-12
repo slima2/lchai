@@ -945,7 +945,18 @@ Two images are displayed simultaneously: (i)~a \emph{Pattern Overlay} showing th
 Both images support interactive hover: hovering over the pattern overlay displays the tile's classified pattern; hovering over the attention heatmap displays a fuzzy linguistic attention label computed from the tile's attention percentile (e.g., ``High Attention, p97'').
 
 \textbf{Component~3 --- SHAP Decomposition with Fuzzy Balance Label.}
-A stacked bar shows the relative SHAP contribution of embedding dimensions (0--511) versus pattern dimensions (512--517).
+A stacked bar shows the relative SHAP contribution of
+\emph{embedding dimensions} (0--511) versus
+\emph{pattern dimensions} (512--517).
+The embedding dimensions encode the rich morphological features
+learned by CTransPath from 15~million histopathological patches---nuclear
+shape and chromatin texture, glandular architecture, stromal composition,
+cell density, and staining gradients---while the six pattern dimensions
+represent the explicitly labelled growth patterns
+(lepidic, acinar, papillary, micropapillary, solid, cribriform).
+This decomposition therefore reveals whether the model relies on
+interpretable domain knowledge (patterns) or on opaque but
+high-dimensional visual features (embeddings) for each gene.
 A fuzzy linguistic label classifies the balance (e.g., ``Embedding-Led,'' ``Balanced,'' ``Pattern-Dominated'') using trapezoidal membership functions over the pattern contribution percentage (Section~\ref{sec:impl:lchai:fuzzy_labels}).
 
 \textbf{Component~4 --- Ablation Comparison.}
