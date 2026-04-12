@@ -577,7 +577,7 @@ The cribriform pattern, with only $\sim$55 training samples, achieves 83.6\% F1-
 Cribriform is a high-grade acinar variant whose accurate identification is clinically important for tumour grading.
 The limited training data for this class constrains the overall reliability of the pattern classifier in cribriform-rich tumours.
 
-\textbf{Threshold sensitivity.}
+\textbf{Threshold sensitivity and the AUROC--AUPRC gap.}
 AUROC evaluates ranking ability, but clinical deployment requires a
 probability threshold for binary classification.
 The representative-slide analysis in
@@ -591,6 +591,30 @@ Threshold optimisation (e.g., Youden's $J$ index) or probability
 calibration (e.g., Platt scaling) would be required for any clinical
 application, and the calibration properties of the models have not
 been systematically studied in this thesis.
+
+The AUPRC analysis (Figure~\ref{fig:auprc_by_gene}) exposes a related
+limitation: the gap between AUROC and AUPRC is inversely correlated
+with mutation prevalence.
+RBM10 (5.4\% prevalence) shows the most extreme gap
+(AUROC~0.661 vs.\ AUPRC~$\approx$0.17), meaning the model cannot
+identify rare positives without generating a large number of false
+positives.
+Most notably, EGFR is the only gene besides TP53 labelled
+\emph{Conclusive} (AUROC~$\geq$~0.70), yet its AUPRC of
+$\approx$0.36 at 14.8\% prevalence indicates that at any fixed
+decision threshold roughly two of three positive predictions would
+be incorrect.
+This gap does \emph{not} invalidate the method comparisons in
+Chapter~\ref{ch:evaluation}: because prevalence is constant across
+conditions, the relative ranking between methods is preserved under
+AUPRC.
+However, it reveals that the current Conclusive/Inconclusive criterion
+based solely on AUROC can overstate clinical readiness for
+moderate-prevalence genes.
+A more conservative criterion---incorporating both AUROC and
+AUPRC, or applying a prevalence-adjusted threshold---would provide
+a more clinically meaningful confidence signal and is recommended
+as a short-term improvement.
 
 \textbf{No multi-task learning.}
 Each gene is predicted by a separate model, ignoring potential correlations between mutations (e.g., KRAS and STK11 co-mutation is common in LUAD and produces a distinctive immune phenotype).

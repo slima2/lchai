@@ -614,6 +614,42 @@ for TP53 and EGFR.
 \label{fig:auprc_by_gene}
 \end{figure}
 
+\paragraph{Interpreting the AUROC--AUPRC gap.}
+The gap between AUROC and AUPRC correlates inversely with mutation
+prevalence.
+TP53 (46\% prevalence) shows the smallest gap
+(AUROC~0.718, AUPRC~$\approx$0.64): high prevalence means that good
+ranking translates directly into acceptable precision-recall.
+At the other extreme, RBM10 (5.4\%) shows the largest gap
+(AUROC~0.661, AUPRC~$\approx$0.17): the model ranks reasonably but
+cannot identify the rare positives without generating many false
+positives.
+EGFR is a particularly instructive case: despite being labelled
+\emph{Conclusive} (AUROC~0.701~$\geq$~0.70), its AUPRC of
+$\approx$0.36 indicates that at any fixed decision threshold roughly
+two out of three positive predictions would be incorrect.
+
+Two important implications follow:
+\begin{enumerate}
+    \item \textbf{The method comparisons remain valid.}
+    Because the prevalence-driven gap affects \emph{all six conditions
+    equally} for each gene, the relative ranking between methods---the
+    basis of Findings~1--6---is preserved under AUPRC.
+    No method can escape the class imbalance; the question ``which
+    method best handles gene $g$?'' has the same answer whether
+    measured by AUROC or AUPRC.
+
+    \item \textbf{The Conclusive/Inconclusive threshold may be
+    optimistic for moderate-prevalence genes.}
+    The current threshold (fold-AUROC~$\geq$~0.70) measures
+    population-level ranking ability but does not guarantee precision
+    at clinically relevant thresholds.
+    EGFR's AUPRC gap suggests that a composite criterion incorporating
+    both AUROC and AUPRC---or a prevalence-adjusted threshold---would
+    provide a more conservative and clinically meaningful confidence
+    label (see Section~\ref{sec:disc:lim:method} for discussion).
+\end{enumerate}
+
 \subsection{Finding 1: Pattern-Informed Approaches Match Embedding-Only ABMIL}
 \label{sec:eval:mutation:finding1}
 
@@ -2412,13 +2448,29 @@ complements but does not replace data scale.
 
 The AUPRC analysis (Figure~\ref{fig:auprc_by_gene}) confirms that
 genes with low mutation prevalence are disproportionately affected by
-data scarcity: RBM10 (5.4\% prevalence) and STK11 (9.9\%) show
-AUPRC values substantially lower than their corresponding AUROC,
-indicating that while the models achieve acceptable ranking ability,
-their precision at clinically relevant thresholds remains limited
-for rare mutations.
-This gap between AUROC and AUPRC reinforces the need for larger
-cohorts---or targeted oversampling strategies---for low-prevalence genes.
+data scarcity: RBM10 (5.4\% prevalence, AUPRC~$\approx$0.17) and
+STK11 (9.9\%, AUPRC~$\approx$0.31) show AUPRC values substantially
+lower than their corresponding AUROC (0.661 and 0.684 respectively).
+Even EGFR, labelled \emph{Conclusive} with AUROC~0.701, drops to
+AUPRC~$\approx$0.36 at 14.8\% prevalence.
+The gap is prevalence-driven: TP53 (46\%) shows a modest gap
+(AUROC~0.718, AUPRC~$\approx$0.64), while RBM10 (5.4\%) shows the
+largest (AUROC--AUPRC gap $\approx$0.49).
+
+Crucially, this gap does \emph{not} invalidate the method comparisons
+presented in Findings~1--6: all six experimental conditions share the
+same class prevalence for each gene, so the prevalence-driven AUPRC
+penalty applies equally to all methods.
+The relative ranking between conditions---the basis for the gene-dependent
+findings---is preserved under AUPRC.
+What the gap does reveal is that AUROC, while appropriate for method
+comparison, can overstate clinical readiness, particularly for
+low-prevalence genes where even a model with good ranking ability would
+produce unacceptable false positive rates at any fixed threshold.
+This reinforces the need for larger cohorts---or targeted oversampling
+strategies---for low-prevalence genes, and suggests that the
+Conclusive/Inconclusive criterion should incorporate AUPRC alongside
+AUROC (Section~\ref{sec:disc:lim:method}).
 
 \textbf{Success criterion:} Met.
 Competitive with Saldanha (2023) and Logan (2022) ($\checkmark$).
