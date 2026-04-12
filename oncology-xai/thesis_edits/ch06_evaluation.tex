@@ -536,13 +536,64 @@ FC  & .716$\pm$.047 & .684$\pm$.037 & .658$\pm$.077 &
 \label{fig:auroc_heatmap}
 \end{figure}
 
-Figures~\ref{fig:auroc_by_gene} and~\ref{fig:auroc_heatmap} provide
-a visual summary of these results.
+Figures~\ref{fig:auroc_by_gene}--\ref{fig:auroc_radar} provide
+complementary visual summaries of these results.
 Figure~\ref{fig:auroc_by_gene} shows the per-gene distribution of
 AUROC across conditions with fold-level variance; the heatmap
 (Figure~\ref{fig:auroc_heatmap}) enables direct cross-condition and
 cross-gene comparison of all 36 mean values simultaneously.
+Figure~\ref{fig:auroc_difference} highlights the delta AUROC of each
+condition relative to the B2 (embedding-only) baseline, revealing that
+most conditions cluster within $\pm 0.02$ of B2 for the well-predicted
+genes (TP53, EGFR) but diverge for the difficult genes.
+The radar plot (Figure~\ref{fig:auroc_radar}) shows the gene-level
+AUROC profile of four key conditions, illustrating that the Fuzzy
+Choquet (FC) expands the profile for KRAS and RBM10 while B2 leads
+for TP53 and EGFR.
 
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/auroc_difference_vs_b2.png}
+\caption[AUROC difference vs B2 baseline]{%
+    AUROC difference relative to the B2 (ABMIL embeddings) baseline for
+    each (condition, gene) pair.
+    Red cells indicate worse performance than B2; blue cells indicate
+    improvement.
+    B1 (XGBoost) shows the largest deficits across all genes.
+    The proposed methods (P, FC) show gene-specific improvements:
+    FC gains $+0.019$ for RBM10 and $+0.002$ for KRAS, while P gains
+    $+0.011$ for STK11 and $+0.012$ for KEAP1.}
+\label{fig:auroc_difference}
+\end{figure}
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.7\textwidth]{chapters/figures/auroc_radar_profile.png}
+\caption[AUROC radar profile across genes]{%
+    Radar plot of mean AUROC across six genes for four conditions:
+    B2 (embeddings-only), B3 (patterns-only), Proposed concat (ours),
+    and Fuzzy Choquet (ours).
+    B2 and Proposed nearly overlap for TP53 and EGFR;
+    FC extends the profile for KRAS and RBM10;
+    B3 (patterns-only) shows the smallest area, confirming that
+    patterns alone are insufficient.}
+\label{fig:auroc_radar}
+\end{figure}
+
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/auprc_by_gene.png}
+\caption[AUPRC per gene: all six conditions]{%
+    Area Under the Precision-Recall Curve (AUPRC) per gene for all six
+    experimental conditions.
+    AUPRC is particularly informative for imbalanced genes: RBM10
+    (5.4\% prevalence) and STK11 (9.9\%) show the largest gap between
+    AUPRC and AUROC, confirming that high AUROC can coexist with
+    modest precision-recall performance when the positive class is rare.
+    Error bars show standard deviation across 5 folds.}
+\label{fig:auprc_by_gene}
+\end{figure}
 
 \subsection{Finding 1: Pattern-Informed Approaches Match Embedding-Only ABMIL}
 \label{sec:eval:mutation:finding1}
