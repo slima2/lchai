@@ -560,7 +560,7 @@ weights; (iii)~attention-weighted aggregation into a single
 slide-level vector; and (iv)~a linear classifier that produces one
 mutation logit per gene.
 
-The input dimension varies by condition: 512 (B2), 6 (B3), 518 (P and A).
+The input dimension varies by condition: 512 (B2), 6 (B3), 518 (PI and A).
 A separate model instance is created and trained for each (condition, gene) pair.
 
 \subsection{Training Configuration}
@@ -588,7 +588,7 @@ configuration for the ABMIL mutation prediction benchmark.
 \centering
 \small
 \caption{Hyperparameters for the ABMIL mutation prediction benchmark
-(conditions B2, B3, P, A).}
+(conditions B2, B3, PI~(ours), A).}
 \label{tab:hyper_abmil2}
 \begin{tabular}{l l c}
 \hline
@@ -596,7 +596,7 @@ configuration for the ABMIL mutation prediction benchmark.
 \hline
 Embedding dim.      & CTransPath projection output        & 512 \\
 Pattern dim.        & FuzzyArcLoss~V2 soft probabilities  & 6 \\
-Concat dim.         & Total input (proposed condition P)  & 518 \\
+Concat dim.         & Total input (PI-ABMIL condition PI, ours)  & 518 \\
 Attention hidden    & Gated attention hidden size         & 256 \\
 Attention dim       & $\mathbf{w}$, $\mathbf{V}$, $\mathbf{U}$ size & 128 \\
 Dropout             & After attention and encoder         & 0.25 \\
@@ -626,7 +626,7 @@ The benchmark runner orchestrates the complete evaluation:
     \item \textbf{Outer loop:} For each gene $g \in \mathcal{G}$
     (6 genes).
     \item \textbf{Middle loop:} For each experimental condition
-    $c \in \{B1, B2, B3, P, A, FC\}$ (6 conditions).
+    $c \in \{B1, B2, B3, \text{PI}, A, \text{FC}\}$ (6 conditions).
     \item \textbf{Inner loop:} For each fold $k \in \{1, \ldots, 5\}$
     (5-fold patient-stratified CV). % <-- CHANGED: added "patient-stratified"
     \begin{enumerate}
@@ -643,7 +643,7 @@ The benchmark runner orchestrates the complete evaluation:
         (Table~\ref{tab:tile_representations}).
         \item For condition B1: train an XGBoost classifier on the
         7 slide-level features.
-        \item For conditions B2, B3, P, A: train an ABMIL model for
+        \item For conditions B2, B3, PI, A: train an ABMIL model for
         50 epochs.
         \item For condition FC: train the Fuzzy Choquet MIL model for
         50 epochs.
@@ -778,7 +778,7 @@ hyperparameters.
 \begin{table}[ht!]
 \centering
 \small
-\caption{Hyperparameters for the Fuzzy Choquet MIL (condition~FC).
+\caption{Hyperparameters for the Fuzzy Choquet MIL (FC-MIL, ours; condition~FC).
 The \emph{interpretable} fuzzy measure has 21 learnable parameters;
 the full dual-pathway model has $\sim$266{,}000.}
 \label{tab:hyper_choquet2}
@@ -938,7 +938,7 @@ with the highest-probability mutation selected by default.
 Each gene sub-tab presents the following components:
 
 \textbf{Component~1 --- Gene Header.}
-Displays the gene name, $P(\text{mut})$ as a percentage, a confidence label (\emph{Conclusive} if fold-AUROC~$\geq 0.70$, \emph{Inconclusive} otherwise), the prediction method (B2 embeddings, Proposed concat, or Fuzzy Choquet), and the model AUROC.
+Displays the gene name, $P(\text{mut})$ as a percentage, a confidence label (\emph{Conclusive} if fold-AUROC~$\geq 0.70$, \emph{Inconclusive} otherwise), the prediction method (B2 embeddings, PI-ABMIL, or FC-MIL), and the model AUROC.
 
 \textbf{Component~2 --- Side-by-Side Visual Overlays.}
 Two images are displayed simultaneously: (i)~a \emph{Pattern Overlay} showing the tile-level categorical colour map of the six growth patterns with a legend listing each pattern name and its composition percentage; and (ii)~an \emph{ABMIL Attention Heatmap} showing the spatial distribution of gated attention weights (top-200 tiles highlighted).
@@ -949,7 +949,7 @@ A stacked bar shows the relative SHAP contribution of embedding dimensions (0--5
 A fuzzy linguistic label classifies the balance (e.g., ``Embedding-Led,'' ``Balanced,'' ``Pattern-Dominated'') using trapezoidal membership functions over the pattern contribution percentage (Section~\ref{sec:impl:lchai:fuzzy_labels}).
 
 \textbf{Component~4 --- Ablation Comparison.}
-Three vertical bars compare $P(\text{mut})$ from three independently trained models: Combined (518-d), Embedding-only (512-d), and Pattern-only (6-d).
+Three vertical bars compare $P(\text{mut})$ from three independently trained models: Combined (518-d, i.e.\ the PI-ABMIL condition, displayed as ``Combined'' in the LCHAI clinical interface), Embedding-only (512-d), and Pattern-only (6-d).
 A delta indicator states whether adding patterns helps or hurts the prediction.
 An explanatory note clarifies that each bar represents a different model and that the $P(\text{mut})$ in the gene header corresponds to the gene-optimal method.
 
@@ -1192,7 +1192,7 @@ linguistic labels on XAI outputs).
 \includegraphics[width=\textwidth]{chapters/figures/shap_decomp_STK11_55_7815_patterns.png}
 \end{minipage}
 \caption[LCHAI~v2.0 SHAP Decomposition --- STK11]{%
-    SHAP decomposition for STK11 (Proposed concat method) on
+    SHAP decomposition for STK11 (PI-ABMIL method) on
     TCGA-55-7815 (P(mut)~$= 0.5\%$, Inconclusive).
     \textbf{Left}: Embedding vs.\ pattern contribution stacked bar.
     Embeddings contribute 51\% and patterns 49\% of the SHAP
@@ -1272,7 +1272,7 @@ provides seven sub-tabs:
 \includegraphics[width=\textwidth]{chapters/figures/lchai_v2_admin_params.png}
 \caption[LCHAI~v2.0 Admin --- System Parameters]{%
     System Parameters sub-tab in the Admin panel.  Adjustable per-gene AUROC
-    thresholds, prediction method selection (B2/P/FC), and inference parameters
+    thresholds, prediction method selection (B2/PI/FC), and inference parameters
     (classification threshold, min/max tiles).  Default AUROC values are the
     mean across 5-fold CV on 687 LUAD slides.}
 \label{fig:lchai_v2_admin_params}

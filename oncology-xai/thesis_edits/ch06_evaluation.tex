@@ -15,7 +15,7 @@ Following the Design Science Research methodology, each artefact is evaluated ag
 
 The evaluation is organised in three parts.
 Section~\ref{sec:eval:pattern} evaluates Artifact~1 (FuzzyArcLoss~V2 for pattern classification).
-Section~\ref{sec:eval:mutation} evaluates Artifacts~2 and~3 (Pattern-Informed ABMIL and Fuzzy Choquet MIL for mutation prediction).
+Section~\ref{sec:eval:mutation} evaluates Artifacts~2 and~3 (PI-ABMIL and FC-MIL for mutation prediction).
 Section~\ref{sec:eval:literature} compares the results against the published literature.
 Section~\ref{sec:eval:interpretability} presents the qualitative interpretability analysis.
 Section~\ref{sec:eval:rq} synthesises the findings by answering each research question.
@@ -477,7 +477,8 @@ The highest AUROC per gene is marked in bold.
 \caption{Mutation prediction AUROC (mean $\pm$ std, 5-fold CV) on 687
 LUAD-only slides. Best per gene in \textbf{bold}.
 B1~=~XGBoost, B2~=~ABMIL embeddings, B3~=~ABMIL patterns,
-P~=~Proposed concat, A~=~Ablation one-hot, FC~=~Fuzzy Choquet.}
+PI~=~PI-ABMIL (ours), A~=~Ablation one-hot, FC~=~FC-MIL (ours).
+Note: PI-ABMIL appears as ``Combined'' in the LCHAI clinical interface.}
 \label{tab:mutation_luad}
 \begin{tabular}{l c c c c c c c}
 \hline
@@ -491,7 +492,7 @@ B2  & \textbf{.718}$\pm$.053 & \textbf{.701}$\pm$.049 &
       .642$\pm$.054 & .658 \\
 B3  & .616$\pm$.043 & .625$\pm$.044 & .617$\pm$.050 &
       .588$\pm$.031 & .545$\pm$.076 & .653$\pm$.081 & .607 \\
-P   & .717$\pm$.058 & .694$\pm$.051 & \textbf{.695}$\pm$.023 &
+PI  & .717$\pm$.058 & .694$\pm$.051 & \textbf{.695}$\pm$.023 &
       \textbf{.610}$\pm$.071 & .590$\pm$.071 & .640$\pm$.064 & .658 \\
 A   & .716$\pm$.050 & .695$\pm$.046 & .691$\pm$.050 &
       .594$\pm$.082 & .594$\pm$.071 & .623$\pm$.048 & .652 \\
@@ -506,14 +507,14 @@ FC  & .716$\pm$.047 & .684$\pm$.037 & .658$\pm$.077 &
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/auroc_by_gene_ver_15_mar_2026.png}
 \caption[AUROC per gene: all six conditions]{%
-    Pattern-Informed ABMIL benchmark results: mean AUROC $\pm$ standard
+    PI-ABMIL benchmark results: mean AUROC $\pm$ standard
     deviation per gene across 5-fold patient-stratified cross-validation
     (687 LUAD slides, 668 patients).
     Each panel shows one target gene; bars correspond to the six
     experimental conditions (B1--FC).
     The dashed horizontal line indicates random performance (AUROC~$= 0.5$).
-    B2 (ABMIL embeddings, orange) and the proposed concat (P, red) are
-    the strongest overall performers; the Fuzzy Choquet (FC, brown) leads
+    B2 (ABMIL embeddings, orange) and PI-ABMIL (PI, red) are
+    the strongest overall performers; FC-MIL (FC, brown) leads
     for RBM10.
     High fold-to-fold variance is visible for RBM10 and KEAP1,
     consistent with their low mutation prevalence (5.4\% and 14.3\%
@@ -529,14 +530,14 @@ FC  & .716$\pm$.047 & .684$\pm$.037 & .658$\pm$.077 &
     Colour scale: red~$= 0.50$ (random), yellow-green~$\approx 0.70$,
     dark green~$= 0.90$.
     Row ordering follows the benchmark hierarchy from the weakest
-    (B1~XGBoost) to the strongest overall conditions (B2, P).
+    (B1~XGBoost) to the strongest overall conditions (B2, PI).
     Three structural patterns are visible:
     (1)~B1 shows near-random performance for KEAP1 (0.489) and RBM10
     (0.474), confirming that slide-level pattern aggregation fails for
     diffuse or rare mutations;
-    (2)~B2 and P achieve the highest per-cell values for TP53 (0.718)
+    (2)~B2 and PI achieve the highest per-cell values for TP53 (0.718)
     and EGFR (0.701/0.694), consistently the most predictable genes;
-    (3)~the Fuzzy Choquet condition leads for RBM10 (0.661), the
+    (3)~FC-MIL leads for RBM10 (0.661), the
     lowest-prevalence gene, suggesting that fuzzy aggregation
     is advantageous when signal is sparse.}
 \label{fig:auroc_heatmap}
@@ -553,8 +554,8 @@ condition relative to the B2 (embedding-only) baseline, revealing that
 most conditions cluster within $\pm 0.02$ of B2 for the well-predicted
 genes (TP53, EGFR) but diverge for the difficult genes.
 The radar plot (Figure~\ref{fig:auroc_radar}) shows the gene-level
-AUROC profile of four key conditions, illustrating that the Fuzzy
-Choquet (FC) expands the profile for KRAS and RBM10 while B2 leads
+AUROC profile of four key conditions, illustrating that
+FC-MIL (FC) expands the profile for KRAS and RBM10 while B2 leads
 for TP53 and EGFR.
 
 \begin{figure}[ht!]
@@ -566,8 +567,8 @@ for TP53 and EGFR.
     Red cells indicate worse performance than B2; blue cells indicate
     improvement.
     B1 (XGBoost) shows the largest deficits across all genes.
-    The proposed methods (P, FC) show gene-specific improvements:
-    FC gains $+0.019$ for RBM10 and $+0.002$ for KRAS, while P gains
+    The proposed methods (PI, FC) show gene-specific improvements:
+    FC gains $+0.019$ for RBM10 and $+0.002$ for KRAS, while PI gains
     $+0.011$ for STK11 and $+0.012$ for KEAP1.}
 \label{fig:auroc_difference}
 \end{figure}
@@ -577,9 +578,9 @@ for TP53 and EGFR.
 \includegraphics[width=0.7\textwidth]{chapters/figures/auroc_radar_profile.png}
 \caption[AUROC radar profile across genes]{%
     Radar plot of mean AUROC across six genes for four conditions:
-    B2 (embeddings-only), B3 (patterns-only), Proposed concat (ours),
-    and Fuzzy Choquet (ours).
-    B2 and Proposed nearly overlap for TP53 and EGFR;
+    B2 (embeddings-only), B3 (patterns-only), PI-ABMIL (ours),
+    and FC-MIL (ours).
+    B2 and PI-ABMIL nearly overlap for TP53 and EGFR;
     FC extends the profile for KRAS and RBM10;
     B3 (patterns-only) shows the smallest area, confirming that
     patterns alone are insufficient.}
@@ -606,17 +607,17 @@ for TP53 and EGFR.
 
 The central hypothesis of this thesis (RQ2) is that injecting fuzzy pattern
 information improves mutation prediction.
-Table~\ref{tab:p_vs_b2} compares the proposed condition (P) against the
+Table~\ref{tab:p_vs_b2} compares PI-ABMIL (PI) against the
 embedding-only baseline (B2) gene by gene.
 
 \begin{table}[ht!]
 \centering
-\caption{Gene-level comparison: Proposed (P) versus ABMIL embeddings (B2).
-$\Delta = \text{P} - \text{B2}$.}
+\caption{Gene-level comparison: PI-ABMIL (PI) versus ABMIL embeddings (B2).
+$\Delta = \text{PI} - \text{B2}$.}
 \label{tab:p_vs_b2}
 \begin{tabular}{l c c c}
 \hline
-\textbf{Gene} & \textbf{B2 (emb)} & \textbf{P (concat)} & \textbf{$\Delta$} \\
+\textbf{Gene} & \textbf{B2 (emb)} & \textbf{PI-ABMIL} & \textbf{$\Delta$} \\
 \hline
 TP53  & 0.718 & 0.717 & $-$0.001 \\
 EGFR  & 0.701 & 0.694 & $-$0.007 \\
@@ -630,11 +631,11 @@ RBM10 & 0.642 & 0.640 & $-$0.002 \\
 \end{tabular}
 \end{table}
 
-The proposed method is essentially tied with B2 on the overall mean
+PI-ABMIL is essentially tied with B2 on the overall mean
 (0.658 versus 0.658).
 The deltas are within the fold-to-fold standard deviation for every gene,
 indicating that none of the differences is statistically significant.
-The pattern-informed concatenation neither harms nor substantially improves
+PI-ABMIL neither harms nor substantially improves
 AUROC.
 
 \textbf{Interpretation.}
@@ -666,10 +667,10 @@ Table~\ref{tab:gene_winners} identifies the top condition per gene.
 \hline
 TP53  & B2 (embeddings) & 0.718 & Visual features sufficient \\
 EGFR  & B2 (embeddings) & 0.701 & Visual features sufficient \\
-STK11 & P (proposed)    & 0.695 & Patterns add signal \\
-KEAP1 & P (proposed)    & 0.610 & Patterns add signal over B2 \\
-KRAS  & FC (Fuzzy Choquet) & 0.609 & Fuzzy aggregation captures signal \\
-RBM10 & FC (Fuzzy Choquet) & 0.661 & Choquet best despite low prevalence \\
+STK11 & PI-ABMIL (ours) & 0.695 & Patterns add signal \\
+KEAP1 & PI-ABMIL (ours) & 0.610 & Patterns add signal over B2 \\
+KRAS  & FC-MIL (ours)   & 0.609 & Fuzzy aggregation captures signal \\
+RBM10 & FC-MIL (ours)   & 0.661 & Choquet best despite low prevalence \\
 \hline
 \end{tabular}
 \end{table}
@@ -678,7 +679,7 @@ The results stratify into three distinct groups.
 B2 (embedding-only ABMIL) leads for TP53 and EGFR, where mutations correlate
 with well-defined morphological signatures~\cite{leighl2002tp53morphology,yoshizawa2013egfrmorph} already encoded compactly in the
 CTransPath feature space.
-The proposed pattern-informed concat (P) leads for STK11 and KEAP1, the two
+PI-ABMIL (PI) leads for STK11 and KEAP1, the two
 genes with the most diffuse morphological associations---where, at the
 \emph{population level}, the explicit pattern probabilities provide signal
 that is less efficiently extracted by the generic embeddings alone.
@@ -686,7 +687,7 @@ Note that per-slide ablation analysis (Section~\ref{sec:eval:interp:enrichment})
 reveals that this population-level benefit does not hold for every
 individual slide: on the representative cases, patterns actively degrade
 STK11 ($-5.5$\,pp) and KEAP1 ($-44.7$\,pp) predictions.
-The Fuzzy Choquet MIL (FC) leads for KRAS and RBM10, where inter-pattern
+FC-MIL (FC) leads for KRAS and RBM10, where inter-pattern
 interactions modelled by the Choquet integral appear to capture relevant
 co-occurrence structure.
 
@@ -705,8 +706,8 @@ mutation--morphology associations:
     For STK11 ($+$0.011) and KEAP1 ($+$0.013), the explicit pattern
     probabilities provide a modest but consistent advantage over
     embedding-only ABMIL.
-    Notably, for KEAP1, neither Fuzzy Choquet (0.589, $-$0.008 vs B2) nor
-    ablation one-hot (0.594) matches the proposed soft-probability
+    Notably, for KEAP1, neither FC-MIL (0.589, $-$0.008 vs B2) nor
+    ablation one-hot (0.594) matches PI-ABMIL's soft-probability
     concatenation, suggesting that the continuous fuzzy representation
     captures inter-pattern gradients that crisp labels and Choquet
     aggregation do not.
@@ -728,17 +729,17 @@ mutation--morphology associations:
 \subsection{Finding 3: Fuzzy Versus Crisp Pattern Representations}
 \label{sec:eval:mutation:finding3}
 
-The comparison between the proposed condition P (soft fuzzy probabilities)
+The comparison between PI-ABMIL (PI, soft fuzzy probabilities)
 and the ablation A (hard one-hot labels) tests whether the continuous fuzzy
 representation is more informative than its discrete counterpart.
 
 \begin{table}[ht!]
 \centering
-\caption{Fuzzy (P) versus crisp (A) pattern representations.}
+\caption{PI-ABMIL (PI, fuzzy) versus Ablation (A, crisp) pattern representations.}
 \label{tab:fuzzy_vs_crisp}
 \begin{tabular}{l c c c l}
 \hline
-\textbf{Gene} & \textbf{P (fuzzy)} & \textbf{A (crisp)} &
+\textbf{Gene} & \textbf{PI (fuzzy)} & \textbf{A (crisp)} &
 \textbf{$\Delta$} & \textbf{Better} \\
 \hline
 TP53  & 0.717 & 0.716 & $+$0.001 & Fuzzy \\
@@ -762,7 +763,7 @@ well-defined morphological correlates (lepidic, papillary) that are
 adequately captured by crisp classification.
 For KRAS the difference is also negligible ($-$0.004); however, this
 does \emph{not} imply that patterns are unimportant for KRAS---Finding~2
-showed that the Fuzzy Choquet MIL (FC) leads all conditions for KRAS,
+showed that FC-MIL (FC) leads all conditions for KRAS,
 exploiting \emph{inter-pattern interactions} via the Choquet integral
 rather than individual pattern membership softness.
 KRAS benefits from the Choquet aggregation mechanism
@@ -830,12 +831,12 @@ learning for this task; however, the EGFR result suggests that for select
 genes with strong single-pattern correlates, a lightweight XGBoost
 classifier may be a practical clinical approximation.
 
-\subsection{Finding 6: Fuzzy Choquet MIL---Competitive Performance on
+\subsection{Finding 6: FC-MIL---Competitive Performance on
 Gene-Specific Tasks}
 \label{sec:eval:mutation:finding6}
 
-The Fuzzy Choquet MIL (FC) achieves a mean AUROC of 0.653, comparable
-to the proposed concat (0.658) and embedding-only ABMIL (0.658), and
+FC-MIL (FC) achieves a mean AUROC of 0.653, comparable
+to PI-ABMIL (0.658) and embedding-only ABMIL (0.658), and
 is the sole top performer for KRAS (0.609) and RBM10 (0.661).
 This is a notable result.
 FC is a hybrid dual-pathway model ($\sim$266{,}000 trainable parameters)
@@ -862,14 +863,14 @@ candidates for such synergistic effects.
 
 For KEAP1---the gene most commonly cited as a candidate for interaction-based
 modelling given its diffuse morphological signature---FC (0.589) is
-outperformed by both B2 (0.597) and the proposed method (0.610).
+outperformed by both B2 (0.597) and PI-ABMIL (0.610).
 This negative result is instructive: KEAP1's diffuseness manifests as
 a \emph{spread of probability mass across all six patterns} rather than
 as a superadditive interaction between any two specific patterns.
 The Choquet integral, which models multiplicative co-occurrence of high-scoring
 patterns, is not the right inductive bias for a gene whose discriminative
 signal lies in low-confidence, multi-pattern uncertainty.
-The proposed soft concatenation, which preserves the full probability vector
+PI-ABMIL, which preserves the full probability vector
 without imposing any interaction structure, is better suited to this
 diffuse regime.
 
@@ -921,7 +922,7 @@ The gene-specific pattern of AUROC change upon restricting to LUAD-only
 \begin{table}[ht!]
 \centering
 \caption{AUROC change when restricting from LUAD+LUSC ($N=351$) to
-LUAD-only ($N=687$) for the proposed condition (P). Genes with near-zero
+LUAD-only ($N=687$) for PI-ABMIL (PI). Genes with near-zero
 LUSC mutation prevalence show the largest drops.}
 \label{tab:luad_only_change}
 \begin{tabular}{l c c c l}
@@ -974,9 +975,9 @@ Saldanha et al.   & 2023 & 676   & RetCCL+attMIL     & $\sim$0.65$^\dagger$ & $\
 Logan et al.      & 2022 & 747   & CNN+subtypes      & 0.692 & 0.681 & --- \\
 \textbf{This thesis (B2)} & 2026 & 687 & CTransPath+ABMIL
   & \textbf{0.718} & \textbf{0.701} & 0.607 \\
-\textbf{This thesis (P)}  & 2026 & 687 & Pattern-ABMIL
+\textbf{This thesis (PI)} & 2026 & 687 & PI-ABMIL
   & 0.717 & 0.694 & 0.590 \\
-\textbf{This thesis (FC)} & 2026 & 687 & Fuzzy Choquet
+\textbf{This thesis (FC)} & 2026 & 687 & FC-MIL
   & 0.716 & 0.684 & \textbf{0.609} \\
 \hline
 \multicolumn{7}{l}{\textit{Large-scale (proprietary data, $N > 1{,}000$):}} \\
@@ -1059,7 +1060,7 @@ public data.
 % ============================================================================
 
 This section presents the qualitative interpretability evidence for the
-proposed pattern-informed ABMIL approach (RQ4), based on attention maps
+PI-ABMIL approach (RQ4), based on attention maps
 generated from the trained model checkpoints.
 Table~\ref{tab:viz_folds} reports the AUROC values used by LCHAI~v2.0
 for Conclusive/Inconclusive labelling.
@@ -1352,11 +1353,11 @@ mismatch, not a reliable negative.
 
 
 \subsubsection{KRAS: Micropapillary-Classified Predominant Tumour with High
-Fuzzy Choquet Prediction}
+FC-MIL Prediction}
 
 Figure~\ref{fig:attn_kras_tp} shows the LCHAI~v2.0 output for slide
 TCGA-55-7815, a KRAS-mutant case predicted with very high confidence
-via the Fuzzy Choquet MIL (P(mut)~$= 0.965$, method: FC,
+via FC-MIL (P(mut)~$= 0.965$, method: FC,
 label: Inconclusive).
 The slide is 79.44\% micropapillary-classified with 17.14\% acinar content and minor
 cribriform (2.5\%) and solid (0.64\%) components.
@@ -1388,7 +1389,7 @@ positive interaction indices for lepidic$\times$solid
 \end{minipage}
 \caption[LCHAI~v2.0 interpretability: KRAS (TCGA-55-7815)]{%
     LCHAI~v2.0 interpretability for KRAS-mutant slide TCGA-55-7815
-    (P(mut)~$= 0.965$, FC Fuzzy Choquet, Inconclusive).
+    (P(mut)~$= 0.965$, FC-MIL, Inconclusive).
     \textbf{Top left}: Pattern overlay---micropapillary-dominant (79.44\%, green)
     with acinar clusters (17.14\%, red).
     \textbf{Top right}: ABMIL attention map.
@@ -1425,7 +1426,7 @@ the Combined model (85.8\%) outperforms the Embeddings-only model
 (78.2\%) by $+7.6$\,pp.
 \textbf{KRAS is the only gene among the six where adding pattern
 information measurably improves the prediction.}
-This demonstrates the practical value of the Fuzzy Choquet MIL
+This demonstrates the practical value of FC-MIL
 (Artefact~3): it can exploit subtle inter-pattern interactions
 that neither visual texture alone nor any single pattern can
 capture.
@@ -1435,7 +1436,7 @@ capture.
 
 Figure~\ref{fig:attn_stk11_tp} shows the LCHAI~v2.0 output for slide
 TCGA-49-AAR0, an STK11-mutant case predicted with low mutation
-probability (P(mut)~$= 0.046$, method: P proposed concat,
+probability (P(mut)~$= 0.046$, method: PI-ABMIL,
 label: Inconclusive).
 The slide is overwhelmingly micropapillary-classified (98.68\%) with negligible
 representation of other patterns (acinar 0.89\%, solid 0.41\%).
@@ -1443,7 +1444,7 @@ The SHAP decomposition shows 90\% embedding / 10\% pattern
 contribution (fuzzy classification: \emph{Embedding-Dominated}),
 indicating that the pattern channel provides
 minimal signal for STK11 on this near-homogeneous slide---consistent with
-the observation that condition~P outperforms B2 for this gene
+the observation that condition~PI outperforms B2 for this gene
 in the cross-validation benchmark on more heterogeneous slides.
 
 \begin{figure}[ht!]
@@ -1466,7 +1467,7 @@ in the cross-validation benchmark on more heterogeneous slides.
 \end{minipage}
 \caption[LCHAI~v2.0 interpretability: STK11 (TCGA-49-AAR0)]{%
     LCHAI~v2.0 interpretability for STK11-mutant slide TCGA-49-AAR0
-    (P(mut)~$= 0.046$, P proposed concat, Inconclusive).
+    (P(mut)~$= 0.046$, PI-ABMIL, Inconclusive).
     \textbf{Top left}: Pattern overlay---near-homogeneous micropapillary (98.68\%).
     \textbf{Top right}: ABMIL attention map---sparse and diffuse.
     \textbf{Bottom left}: SHAP decomposition---90\% embedding / 10\% pattern.
@@ -1504,7 +1505,7 @@ alone.
 
 Figure~\ref{fig:attn_keap1_tp} presents the KEAP1 analysis for slide
 TCGA-49-AAR9, a KEAP1-mutant case predicted with low mutation
-probability (P(mut)~$= 0.247$, method: P proposed concat,
+probability (P(mut)~$= 0.247$, method: PI-ABMIL,
 label: Inconclusive).
 The slide exhibits a solid-classified dominant profile (64.14\%) with
 micropapillary (20.68\%), acinar (14.18\%), and minor lepidic (0.28\%) content.
@@ -1534,7 +1535,7 @@ outweigh embeddings.
 \end{minipage}
 \caption[LCHAI~v2.0 interpretability: KEAP1 (TCGA-49-AAR9)]{%
     LCHAI~v2.0 interpretability for KEAP1-mutant slide TCGA-49-AAR9
-    (P(mut)~$= 0.247$, P proposed concat, Inconclusive).
+    (P(mut)~$= 0.247$, PI-ABMIL, Inconclusive).
     \textbf{Top left}: Pattern overlay---solid-dominant (64.14\%, dark red)
     with micropapillary (20.68\%, green) and acinar (14.18\%, red).
     \textbf{Top right}: ABMIL attention map---broad and diffuse.
@@ -1581,7 +1582,7 @@ Footprint}
 
 Figure~\ref{fig:attn_rbm10_tp} presents the RBM10 analysis for slide
 TCGA-78-7148, predicted with very low mutation probability
-(P(mut)~$= 0.017$, method: FC Fuzzy Choquet, label: Inconclusive).
+(P(mut)~$= 0.017$, method: FC-MIL, label: Inconclusive).
 The slide is 88.69\% micropapillary-classified with minor acinar (8.15\%) and solid
 (2.57\%) content.
 The SHAP decomposition shows 79\% embedding / 21\% pattern
@@ -1610,7 +1611,7 @@ indicating no single pattern carries discriminative signal for RBM10.
 \end{minipage}
 \caption[LCHAI~v2.0 interpretability: RBM10 (TCGA-78-7148)]{%
     LCHAI~v2.0 interpretability for RBM10-mutant slide TCGA-78-7148
-    (P(mut)~$= 0.017$, FC Fuzzy Choquet, Inconclusive).
+    (P(mut)~$= 0.017$, FC-MIL, Inconclusive).
     \textbf{Top left}: Pattern overlay---micropapillary-dominant (88.69\%, green)
     with acinar foci (8.15\%, red).
     \textbf{Top right}: ABMIL attention map---scattered, no clear focus.
@@ -1670,7 +1671,7 @@ Each slide carries a confirmed mutation in the target gene (MAF ground
 truth).
 Out.\ = TP (true positive, $\text{P(mut)} > 0.5$) or FN (false
 negative).
-B2 = embeddings-only ABMIL, FC = Fuzzy Choquet, P = proposed concat.
+B2 = embeddings-only ABMIL, FC = FC-MIL (ours), PI = PI-ABMIL (ours).
 Co-mut.\ = other genes mutated in the same slide (from MAF).}
 \label{tab:enrichment_summary}
 \begin{tabular}{@{}l l l c c l c c l@{}}
@@ -1682,8 +1683,8 @@ Co-mut.\ = other genes mutated in the same slide (from MAF).}
 TP53  & 99-8025 & Missense       & .951 & 61/39 & Micropap.\ (91.5\%) & B2 & TP & KRAS \\
 EGFR  & 86-8280 & Mutation       & .076 & 76/24 & Micropap.\ (94.94\%) & B2 & FN & TP53 \\
 KRAS  & 55-7815 & Missense       & .965 & 59/41 & Micropap.\ (79.44\%) & FC & TP & KEAP1, RBM10 \\
-STK11 & 49-AAR0 & Missense       & .046 & 90/10 & Micropap.\ (98.68\%) & P  & FN & TP53, KEAP1 \\
-KEAP1 & 49-AAR9 & Missense       & .247 & 40/60 & Solid (64.14\%) & P  & FN & TP53 \\
+STK11 & 49-AAR0 & Missense       & .046 & 90/10 & Micropap.\ (98.68\%) & PI & FN & TP53, KEAP1 \\
+KEAP1 & 49-AAR9 & Missense       & .247 & 40/60 & Solid (64.14\%) & PI & FN & TP53 \\
 RBM10 & 78-7148 & Splice\_Site   & .017 & 79/21 & Micropap.\ (88.69\%) & FC & FN & KRAS, STK11 \\
 \hline
 \end{tabular}
@@ -1869,7 +1870,7 @@ improving predictive accuracy.
 \subsection{Choquet Shapley Values and Interaction Indices}
 \label{sec:eval:interp:choquet}
 
-The Fuzzy Choquet MIL (Artefact~3) provides intrinsic
+FC-MIL (Artefact~3) provides intrinsic
 interpretability through its learned 2-additive fuzzy measure:
 the Shapley values ($\phi_k$) and pairwise interaction indices
 ($I_{kl}$) are built-in model parameters, not post-hoc
@@ -1880,7 +1881,7 @@ all six genes.
 \paragraph{When does Choquet analysis provide meaningful insight?}
 The Choquet integral aggregates pattern-level information.
 Its analysis is therefore most informative for genes where:
-(a)~the Fuzzy Choquet method (FC) is the optimal prediction method,
+(a)~FC-MIL (FC) is the optimal prediction method,
 and (b)~per-slide ablation confirms that patterns \emph{constructively}
 contribute to the prediction ($\Delta_{\text{pat}} > 0$,
 Section~\ref{sec:meth:interp:ablation}).
@@ -2000,7 +2001,7 @@ RBM10 & Micropapillary $\times$ Cribriform & $-0.003$ & (near zero) \\
 \includegraphics[width=\textwidth]{chapters/figures/choquet_kras_55_7815.png}
 \caption[Choquet Shapley analysis: KRAS (TCGA-55-7815)]{%
     Choquet Shapley analysis for KRAS on slide TCGA-55-7815
-    (P(mut)~$= 0.965$, FC Fuzzy Choquet).
+    (P(mut)~$= 0.965$, FC-MIL).
     \textbf{Left}: Singleton Shapley values (all near $1/6$, dashed
     line); no single pattern dominates.
     \textbf{Right}: Pairwise interaction indices; the
@@ -2016,7 +2017,7 @@ RBM10 & Micropapillary $\times$ Cribriform & $-0.003$ & (near zero) \\
 \includegraphics[width=\textwidth]{chapters/figures/choquet_rbm10_78_7148.png}
 \caption[Choquet Shapley analysis: RBM10 (TCGA-78-7148)]{%
     Choquet Shapley analysis for RBM10 on slide TCGA-78-7148
-    (P(mut)~$= 0.017$, FC Fuzzy Choquet).
+    (P(mut)~$= 0.017$, FC-MIL).
     \textbf{Left}: Singleton values are essentially uniform (all
     within $0.001$ of $1/6$).
     \textbf{Right}: Interaction indices are all near zero
@@ -2230,7 +2231,7 @@ $p < 0.05$ versus $\geq$1 baseline ($\checkmark$, SphereFace).
 
 \textbf{Answer: Not globally in terms of AUROC; yes for specific genes and
 in terms of interpretability.}
-The proposed pattern-informed ABMIL (P) achieves a mean AUROC identical to
+PI-ABMIL (PI) achieves a mean AUROC identical to
 the embedding-only ABMIL (B2): 0.658.
 However, gene-level analysis reveals consistent improvements for STK11
 ($+0.011$) and KEAP1 ($+0.013$)---precisely the genes with diffuse,
@@ -2243,8 +2244,8 @@ enabling the six-level interpretability framework
 improvements where biologically justified.
 
 \textbf{Success criterion:} Partially met.
-P $\geq$ B2 mean AUROC ($\checkmark$, tied at 0.658);
-P $>$ B2 for $\geq$2 genes with biological rationale ($\checkmark$,
+PI $\geq$ B2 mean AUROC ($\checkmark$, tied at 0.658);
+PI $>$ B2 for $\geq$2 genes with biological rationale ($\checkmark$,
 STK11 and KEAP1);
 clear overall AUROC improvement ($\times$).
 
@@ -2253,13 +2254,13 @@ clear overall AUROC improvement ($\times$).
 
 \textbf{Answer: Yes, for genes whose discriminative signal is
 interaction-structured.}
-The Fuzzy Choquet MIL achieves the highest AUROC for KRAS (0.609) and RBM10
+FC-MIL achieves the highest AUROC for KRAS (0.609) and RBM10
 (0.661), both genes where co-occurrence of specific pattern pairs carries
 predictive signal.
 For KEAP1---the most commonly cited candidate for interaction modelling---FC
-(0.589) is outperformed by B2 (0.597) and P (0.610), confirming that KEAP1's
+(0.589) is outperformed by B2 (0.597) and PI-ABMIL (0.610), confirming that KEAP1's
 diffuseness is a distributional rather than an interaction phenomenon.
-The learned Shapley values align with known biological associations
+The learned Shapley values of FC-MIL align with known biological associations
 (solid $\to$ TP53; diffuse $\to$ KEAP1), and the interaction indices reveal
 synergistic pattern co-occurrences for KRAS.
 The interpretability is intrinsic, requiring no post-hoc methods.
@@ -2304,8 +2305,8 @@ KEAP1 (60\%), KRAS (41\%), TP53 (39\%), EGFR (24\%), RBM10 (21\%),
 and STK11 (10\%).
 
 \textbf{Level~4 (Choquet Shapley values):}
-The learned Shapley values and interaction indices from the
-Fuzzy Choquet MIL align with known biological associations
+The learned Shapley values and interaction indices from
+FC-MIL align with known biological associations
 (e.g., cribriform and solid receive the highest Shapley values for
 KRAS; the lepidic$\times$solid interaction is the strongest synergy;
 near-uniform values for KEAP1 confirm the absence of a
@@ -2356,7 +2357,7 @@ Scarcity?}
 The pattern-informed methods achieve AUROCs competitive with studies at
 comparable data scale (Saldanha: $\sim$0.65 for TP53; this thesis:
 0.717--0.718).
-The Fuzzy Choquet MIL is a hybrid dual-pathway model ($\sim$266{,}000
+FC-MIL is a hybrid dual-pathway model ($\sim$266{,}000
 parameters) whose Choquet branch adds a 21-parameter interpretable fuzzy
 measure operating on 6 pattern features alongside the shared ABMIL
 embedding pathway.
@@ -2475,7 +2476,7 @@ This limits statistical power: the minimum detectable effect at $\alpha =
 0.05$ with 80\% power is approximately $d \approx 1.2$, meaning that
 genuine differences smaller than one standard deviation cannot be
 reliably detected.
-The non-significant differences between P and B2, or between FC and B2,
+The non-significant differences between PI and B2, or between FC and B2,
 should therefore be interpreted as \emph{inconclusive} rather than as
 evidence of equivalence.
 
@@ -2568,10 +2569,10 @@ that fuzzy-encoded domain knowledge can simultaneously achieve
 (b)~multi-level clinically verifiable explanations.
 
 \textbf{Part~(a) --- Competitive performance: Supported.}
-The pattern-informed ABMIL (P) achieves mean AUROC 0.658, equal to the
+PI-ABMIL (PI) achieves mean AUROC 0.658, equal to the
 embedding-only baseline B2 (0.658), confirming that injecting pattern
 knowledge preserves discriminative accuracy.
-The Fuzzy Choquet MIL (FC) achieves mean AUROC 0.653 and leads for
+FC-MIL (FC) achieves mean AUROC 0.653 and leads for
 KRAS (0.609) and RBM10 (0.661), demonstrating gene-specific benefit.
 Both results are competitive with similarly-scaled published studies
 (Saldanha et al.\ 0.65, Logan et al.\ 0.69 for TP53).
@@ -2618,17 +2619,17 @@ The systematic pipeline improvements contributed the largest absolute gains
 algorithmic innovation for angular margin losses on small datasets.
 
 \textbf{Mutation prediction (Artifacts 2 and 3):}
-Pattern-informed ABMIL matches embedding-only ABMIL globally (mean AUROC
+PI-ABMIL matches embedding-only ABMIL globally (mean AUROC
 0.658) while adding interpretability and providing targeted improvements
 for STK11 ($+$0.011) and KEAP1 ($+$0.013)---the two genes with diffuse,
 multi-pattern morphological correlates.
-The Fuzzy Choquet MIL achieves mean AUROC 0.653 and leads for KRAS and
+FC-MIL achieves mean AUROC 0.653 and leads for KRAS and
 RBM10, with built-in interpretability through Shapley values and interaction
 indices.
 No single method dominates across all genes, and the gene-dependent pattern
 of results directly reflects the biological heterogeneity of
 mutation--morphology associations: embedding-only ABMIL for genes with
-sharp morphological correlates (TP53, EGFR), pattern-informed concat for
+sharp morphological correlates (TP53, EGFR), PI-ABMIL for
 genes with diffuse multi-pattern correlates (STK11, KEAP1), and Choquet
 aggregation for genes with interaction-structured correlates (KRAS, RBM10).
 The results are competitive with published methods at comparable data

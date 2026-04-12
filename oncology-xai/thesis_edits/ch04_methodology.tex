@@ -16,7 +16,7 @@ The exposition follows the Design Science Research principle of providing a comp
 The methodology is organised around the two sequential tasks of the pipeline.
 Section~\ref{sec:meth:tile_pipeline} describes the tile-level preprocessing and feature extraction pipeline that is common to all downstream methods.
 Section~\ref{sec:meth:pattern_classifier} formalises the pattern classification task and the design of FuzzyArcLoss~V2 (Artefact~1), including its mathematical derivation from first principles, the fuzzy membership formulation, and the hyperparameter optimisation strategy.
-Section~\ref{sec:meth:mutation_prediction} presents the mutation prediction framework, detailing the five experimental conditions: the XGBoost baseline (B1), ABMIL on embeddings (B2), ABMIL on patterns (B3), the proposed pattern-informed ABMIL (P), the crisp ablation (A), and the Fuzzy Choquet MIL (FC, Artefact~3).
+Section~\ref{sec:meth:mutation_prediction} presents the mutation prediction framework, detailing the five experimental conditions: the XGBoost baseline (B1), ABMIL on embeddings (B2), ABMIL on patterns (B3), PI-ABMIL (PI, Artefact~2, ours), the crisp ablation (A), and FC-MIL (FC, Artefact~3, ours).
 Section~\ref{sec:meth:interpretability} describes the interpretability framework.
 Section~\ref{sec:meth:evaluation_protocol} specifies the evaluation protocol, including cross-validation, statistical testing, and metric selection.
 
@@ -434,21 +434,21 @@ Let $\mathbf{o}_i \in \{0,1\}^6$ be the one-hot encoding of the predicted patter
 B1 & XGBoost baseline & N/A (slide-level features) & 7 \\
 B2 & ABMIL --- embeddings & $\mathbf{h}_i = \mathbf{x}_i$ & 512 \\
 B3 & ABMIL --- patterns & $\mathbf{h}_i = \mathbf{p}_i$ & 6 \\
-P  & Proposed (concat soft) & $\mathbf{h}_i = [\mathbf{x}_i \,\|\, \mathbf{p}_i]$ & 518 \\
+PI  & PI-ABMIL (concat soft, ours) & $\mathbf{h}_i = [\mathbf{x}_i \,\|\, \mathbf{p}_i]$ & 518 \\
 A  & Ablation (one-hot) & $\mathbf{h}_i = [\mathbf{x}_i \,\|\, \mathbf{o}_i]$ & 518 \\
-FC & Fuzzy Choquet (hybrid) & $\mathbf{h}_i = (\mathbf{x}_i, \mathbf{p}_i)$ (dual pathway) & 512+6 \\
+FC & FC-MIL (hybrid, ours) & $\mathbf{h}_i = (\mathbf{x}_i, \mathbf{p}_i)$ (dual pathway) & 512+6 \\
 \hline
 \end{tabular}
 \end{table}
 
-\textbf{The key comparison} is between condition P (proposed) and condition B2 (standard ABMIL).
-If P outperforms B2, the fuzzy pattern probabilities contribute information beyond what the CTransPath embeddings encode implicitly.
-The comparison between P and A tests whether the continuous (fuzzy) representation $\mathbf{p}_i$ is more informative than the discrete (crisp) representation $\mathbf{o}_i$.
+\textbf{The key comparison} is between condition PI (PI-ABMIL) and condition B2 (standard ABMIL).
+If PI outperforms B2, the fuzzy pattern probabilities contribute information beyond what the CTransPath embeddings encode implicitly.
+The comparison between PI and A tests whether the continuous (fuzzy) representation $\mathbf{p}_i$ is more informative than the discrete (crisp) representation $\mathbf{o}_i$.
 
 \subsection{Attention-Based MIL Architecture}
 \label{sec:meth:mutation:abmil}
 
-For conditions B2, B3, P, and A, the ABMIL architecture consists of three modules: a tile-level transformation, an attention mechanism, and a slide-level classifier.
+For conditions B2, B3, PI, and A, the ABMIL architecture consists of three modules: a tile-level transformation, an attention mechanism, and a slide-level classifier.
 
 \subsubsection{Tile-Level Transformation}
 
@@ -624,12 +624,11 @@ two MIL architectures evaluated in the mutation prediction benchmark.
 \begin{table}[ht!]
 \centering
 \small
-\caption{Parameter count comparison: ABMIL (condition~P) vs Fuzzy
-Choquet MIL (condition~FC).}
+\caption{Parameter count comparison: PI-ABMIL (condition~PI, ours) vs FC-MIL (condition~FC, ours).}
 \label{tab:param_count}
 \begin{tabular}{l r r}
 \hline
-\textbf{Component} & \textbf{ABMIL (P)} & \textbf{Choquet (FC)} \\
+\textbf{Component} & \textbf{PI-ABMIL (PI)} & \textbf{FC-MIL (FC)} \\
 \hline
 Encoder (Linear + LayerNorm) & 133{,}376 & 131{,}840 \\
 Gated Attention ($\mathbf{V}$, $\mathbf{U}$, $\mathbf{w}$) & 65{,}920 & 65{,}920 \\
@@ -649,7 +648,7 @@ The parsimony argument therefore applies to the \emph{interpretable
 component} of the model---the 21-parameter fuzzy measure---rather than
 to the model as a whole.
 The embedding pathway is shared with ABMIL to ensure that any
-performance difference between conditions~P and~FC is attributable to
+performance difference between conditions~PI and~FC is attributable to
 the aggregation mechanism (concatenation vs Choquet integral), not to
 differences in model capacity.
 
@@ -695,14 +694,14 @@ The interpretability framework operates at six levels, providing what this thesi
 \subsection{Level 1: Spatial Attention Maps}
 \label{sec:meth:interp:attention}
 
-For ABMIL-based conditions (B2, B3, P, A), the attention weights $\{a_i\}$ from Equation~\ref{eq:gated_attn} are overlaid onto the WSI as a heatmap.
+For ABMIL-based conditions (B2, B3, PI, A), the attention weights $\{a_i\}$ from Equation~\ref{eq:gated_attn} are overlaid onto the WSI as a heatmap.
 Tiles with high attention weights are highlighted, indicating regions the model considers most informative for the mutation prediction.
 The heatmap uses a continuous colour scale from blue (low attention) to red (high attention).
 
 \subsection{Level 2: Pattern Attribution}
 \label{sec:meth:interp:patterns}
 
-For conditions that incorporate pattern information (B3, P, A, FC), each tile's predicted pattern class $\hat{y}_i$ is overlaid onto the WSI as a categorical colour map.
+For conditions that incorporate pattern information (B3, PI, A, FC), each tile's predicted pattern class $\hat{y}_i$ is overlaid onto the WSI as a categorical colour map.
 This allows the pathologist to assess whether the attended regions (Level~1) correspond to clinically expected patterns (e.g., TP53-attended tiles should be predominantly solid or micropapillary).
 
 When Levels~1 and~2 are combined, the resulting visualisation shows both \emph{where} the model attends and \emph{what} the model sees at those locations, providing a clinically verifiable chain of reasoning:
@@ -718,12 +717,12 @@ associated with dedifferentiation at the tumour boundary.''
 
 For condition B1 (XGBoost), TreeSHAP~\cite{lundberg2020treeshap} provides exact Shapley values for each of the seven slide-level features.
 For ABMIL conditions, DeepSHAP attributes the prediction to individual dimensions of the tile representation $\mathbf{h}_i$.
-In the proposed condition P, the SHAP decomposition can distinguish contributions from the CTransPath embedding dimensions (positions 1--512) versus the pattern probability dimensions (positions 513--518), quantifying the relative importance of visual features versus pattern knowledge for each gene.
+In condition PI (PI-ABMIL), the SHAP decomposition can distinguish contributions from the CTransPath embedding dimensions (positions 1--512) versus the pattern probability dimensions (positions 513--518), quantifying the relative importance of visual features versus pattern knowledge for each gene.
 
 \subsection{Level 4: Choquet Shapley Values (Artefact 3 Only)}
 \label{sec:meth:interp:choquet_shapley}
 
-For the Fuzzy Choquet condition (FC), the learned Shapley values and interaction indices provide a fourth level of interpretability that is \emph{intrinsic} to the model rather than post-hoc.
+For the FC-MIL condition (FC), the learned Shapley values and interaction indices provide a fourth level of interpretability that is \emph{intrinsic} to the model rather than post-hoc.
 These values can be directly compared against known biological associations (Table~\ref{tab:expected_associations}) to assess clinical plausibility.
 
 \begin{table}[ht!]
@@ -766,8 +765,8 @@ channel ablation} (cf.\ Section~\ref{sec:bg:channel_ablation}) by
 running three \emph{separately trained} models on the same tile set:
 
 \begin{enumerate}
-    \item \textbf{Combined} ($f_{\text{P}}$): the proposed concat model
-    (condition~P), operating on the full 518-d representation
+    \item \textbf{Combined} ($f_{\text{PI}}$): the PI-ABMIL model
+    (condition~PI), operating on the full 518-d representation
     $\mathbf{h}_i = [\mathbf{x}_i \,\|\, \mathbf{p}_i]$.
     \item \textbf{Embeddings-only} ($f_{\text{B2}}$): the ABMIL model
     trained on CTransPath embeddings alone (condition~B2),
@@ -782,7 +781,7 @@ probabilities $\{\mathbf{p}_i\}$, the three models produce three
 mutation probabilities:
 \begin{equation}
 \label{eq:ablation_perslide}
-P_{\text{comb}} = \sigma(f_{\text{P}}(\{\mathbf{h}_i\})), \quad
+P_{\text{comb}} = \sigma(f_{\text{PI}}(\{\mathbf{h}_i\})), \quad
 P_{\text{emb}} = \sigma(f_{\text{B2}}(\{\mathbf{x}_i\})), \quad
 P_{\text{pat}} = \sigma(f_{\text{B3}}(\{\mathbf{p}_i\})),
 \end{equation}
@@ -1242,8 +1241,8 @@ $K = 5$ was chosen over $K = 10$ because the latter would produce folds
 with only $\sim$3--4 positive cases for RBM10---below the minimum for
 reliable AUROC estimation---and $\sim$7 for STK11, which is marginal.
 
-All six experimental conditions (B1: XGBoost on pattern features; B2: ABMIL on embeddings; B3: ABMIL on patterns; P: Pattern-Informed ABMIL; A: crisp ablation; FC: Fuzzy Choquet MIL) share the same fold splits.
-Conditions B2, B3, P and A evaluate Artefact~2 under different input representations, while condition FC evaluates Artefact~3.
+All six experimental conditions (B1: XGBoost on pattern features; B2: ABMIL on embeddings; B3: ABMIL on patterns; PI: PI-ABMIL, ours; A: crisp ablation; FC: FC-MIL, ours) share the same fold splits.
+Conditions B2, B3, PI and A evaluate Artefact~2 under different input representations, while condition FC evaluates Artefact~3.
 
 \subsection{Metrics}
 \label{sec:meth:eval:metrics}
@@ -1298,12 +1297,12 @@ A win rate of $\geq 13/15$ (86.7\%) provides strong evidence of consistent super
 
 The experimental conditions form a structured ablation:
 \begin{enumerate}
-    \item \textbf{Does pattern information help at all?} $P > B2$ and $B3 > \text{random}$.
-    \item \textbf{Are embeddings necessary alongside patterns?} $P > B3$ and $B2 > B3$.
-    \item \textbf{Are soft (fuzzy) probabilities better than hard (crisp) labels?} $P > A$.
+    \item \textbf{Does pattern information help at all?} $\text{PI} > B2$ and $B3 > \text{random}$.
+    \item \textbf{Are embeddings necessary alongside patterns?} $\text{PI} > B3$ and $B2 > B3$.
+    \item \textbf{Are soft (fuzzy) probabilities better than hard (crisp) labels?} $\text{PI} > A$.
     \item \textbf{Is MIL necessary beyond slide-level aggregation?} $B2 > B1$.
-    \item \textbf{Does the Choquet branch add value over standard attention?} $FC$ vs $P$ per gene. Because FC shares the embedding pathway with ABMIL, this isolates the contribution of the Choquet aggregation. Shapley interaction analysis provides a qualitative plausibility check.
-    \item \textbf{Is the hybrid Choquet model competitive with concatenation?} $FC$ vs $P$, with the advantage that FC provides intrinsic interpretability (Shapley values and interaction indices) absent from~P.
+    \item \textbf{Does the Choquet branch add value over standard attention?} $\text{FC}$ vs $\text{PI}$ per gene. Because FC shares the embedding pathway with ABMIL, this isolates the contribution of the Choquet aggregation. Shapley interaction analysis provides a qualitative plausibility check.
+    \item \textbf{Is the hybrid Choquet model competitive with concatenation?} $\text{FC}$ vs $\text{PI}$, with the advantage that FC provides intrinsic interpretability (Shapley values and interaction indices) absent from~PI.
 \end{enumerate}
 
 Each comparison addresses a specific component of the methodology, enabling attribution of performance gains (or losses) to individual design decisions.

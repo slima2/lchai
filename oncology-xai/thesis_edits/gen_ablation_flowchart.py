@@ -99,7 +99,7 @@ ax.text(5, 1.1,
 
 ax.text(5, 0.65,
         "Note: $P(\\mathrm{mut})$ in the gene header comes from the gene-optimal model,\n"
-        "which may be any of these three or a different architecture (Fuzzy Choquet).",
+        "which may be any of these three or a different architecture (FC-MIL).",
         ha="center", fontsize=6.5, color="#94a3b8", style="italic")
 
 fig.tight_layout()

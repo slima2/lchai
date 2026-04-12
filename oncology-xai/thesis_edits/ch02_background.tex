@@ -637,7 +637,7 @@ For KRAS and RBM10, where FC is the primary prediction method,
 the panel is labelled ``primary method''; for the remaining genes
 (TP53, EGFR, STK11, KEAP1), the panel is labelled ``complementary
 analysis,'' enabling a clinician to inspect pattern-level importance
-even when ABMIL or Proposed concat is the selected predictor.
+even when ABMIL or PI-ABMIL is the selected predictor.
 
 
 \subsection{Application to MIL Aggregation}
@@ -1092,7 +1092,7 @@ desired ends. &
 Artefact construction follows an explicit search over: 18 loss function
 variants (ArcFace family, FuzzyArcLoss variants V1/V2/V3, combined
 margins); 6 experimental conditions (XGBoost, ABMIL-emb, ABMIL-pat,
-proposed concat, one-hot ablation, Fuzzy Choquet); backbone encoders
+PI-ABMIL (ours), one-hot ablation, FC-MIL (ours)); backbone encoders
 (CTransPath, with extension paths to UNI/UNI2-h); and hyperparameters
 via Optuna Bayesian search (50 trials).
 Design choices are justified by ablation evidence and by constraints of
