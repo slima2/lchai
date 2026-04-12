@@ -457,7 +457,20 @@ FC-MIL & FC-MIL (hybrid, ours) & $\mathbf{h}_i = (\mathbf{x}_i, \mathbf{p}_i)$ (
 \end{tabular}
 \end{table}
 
-\textbf{The key comparison} is between PI-ABMIL and condition B2 (standard ABMIL).
+\textbf{Why B2 is the primary baseline.}
+Condition B2 (ABMIL on CTransPath embeddings alone) represents the
+strongest \emph{non-pattern-informed} approach: it uses the same
+attention architecture, the same pretrained encoder, and the same
+training protocol as the proposed methods (PI-ABMIL, FC-MIL), differing
+only in the absence of explicit pattern information.
+By holding everything else constant, the delta between any
+pattern-informed condition and B2 isolates the \emph{incremental value}
+of injecting domain knowledge (histological patterns) into the pipeline.
+B1 (XGBoost) is a weaker baseline that establishes a floor;
+B2 establishes the ceiling that pattern information must exceed to
+justify the added complexity.
+
+\textbf{The key comparison} is therefore between PI-ABMIL and B2.
 If PI-ABMIL outperforms B2, the fuzzy pattern probabilities contribute information beyond what the CTransPath embeddings encode implicitly.
 The comparison between PI-ABMIL and A tests whether the continuous (fuzzy) representation $\mathbf{p}_i$ is more informative than the discrete (crisp) representation $\mathbf{o}_i$.
 

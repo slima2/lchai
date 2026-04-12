@@ -550,8 +550,12 @@ AUROC across conditions with fold-level variance; the heatmap
 (Figure~\ref{fig:auroc_heatmap}) enables direct cross-condition and
 cross-gene comparison of all 36 mean values simultaneously.
 Figure~\ref{fig:auroc_difference} highlights the delta AUROC of each
-condition relative to the B2 (embedding-only) baseline, revealing that
-most conditions cluster within $\pm 0.02$ of B2 for the well-predicted
+condition relative to B2 (embedding-only ABMIL), chosen as the
+primary baseline because it uses the same architecture, encoder, and
+training protocol as the proposed methods but without any pattern
+information---so the delta isolates the incremental value of domain
+knowledge (Section~\ref{sec:meth:mutation:representations}).
+Most conditions cluster within $\pm 0.02$ of B2 for the well-predicted
 genes (TP53, EGFR) but diverge for the difficult genes.
 The radar plot (Figure~\ref{fig:auroc_radar}) shows the gene-level
 AUROC profile of four key conditions, illustrating that
