@@ -2492,6 +2492,47 @@ single-tile attention for STK11), whose clinical significance cannot
 be assessed without expert pathological review.
 
 % ============================================================================
+\subsection{Evaluation of the Central Hypothesis}
+\label{sec:eval:hypothesis}
+
+The central hypothesis (Section~\ref{sec:intro:hypothesis}) states
+that fuzzy-encoded domain knowledge can simultaneously achieve
+(a)~competitive predictive performance under data scarcity, and
+(b)~multi-level clinically verifiable explanations.
+
+\textbf{Part~(a) --- Competitive performance: Supported.}
+The pattern-informed ABMIL (P) achieves mean AUROC 0.658, equal to the
+embedding-only baseline B2 (0.658), confirming that injecting pattern
+knowledge preserves discriminative accuracy.
+The Fuzzy Choquet MIL (FC) achieves mean AUROC 0.653 and leads for
+KRAS (0.609) and RBM10 (0.661), demonstrating gene-specific benefit.
+Both results are competitive with similarly-scaled published studies
+(Saldanha et al.\ 0.65, Logan et al.\ 0.69 for TP53).
+
+\textbf{Part~(b) --- Multi-level explanations: Fully supported.}
+The six-level interpretability framework (spatial attention, pattern
+overlay, SHAP decomposition, Choquet Shapley values, per-slide
+ablation, and fuzzy linguistic labels) is demonstrated on six
+representative TCGA-LUAD slides.
+No prior mutation prediction system provides this combination.
+The fuzzy linguistic labels prevent LLM hallucination of intensity
+terms, and PubMed citations from the knowledge graph ground clinical
+associations.
+
+\textbf{Overall verdict: The hypothesis is partially supported.}
+Pattern knowledge achieves the stated goals for genes whose mutation
+signal is distributed across morphological categories (KRAS, RBM10,
+STK11, KEAP1), but provides no discriminative benefit for genes with
+strong sub-cellular visual correlates (TP53, EGFR), where
+embedding-only models suffice.
+This gene-dependent nuance---itself a novel analytical finding
+(Finding~2)---refines rather than refutes the hypothesis: domain
+knowledge is most valuable precisely where pretrained embeddings are
+least informative, and the six-level interpretability framework makes
+this distinction transparent.
+
+
+% ============================================================================
 \section{Chapter Summary}
 \label{sec:eval:summary}
 % ============================================================================

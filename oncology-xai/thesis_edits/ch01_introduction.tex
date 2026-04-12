@@ -41,11 +41,37 @@ therefore not directly applicable in data-scarce research environments.
 LUAD is classified by the World Health Organisation (WHO) into five predominant growth patterns---lepidic, acinar, papillary, micropapillary, and solid---each with documented statistical associations with specific molecular subtypes~\cite{travis2011iaslc, tsao2015subtype}.  This thesis adopts the six ANORAK-annotated growth patterns (the five WHO patterns plus cribriform) as domain knowledge that has never been explicitly incorporated as a \emph{structured computational prior} into modern mutation prediction pipelines.  This thesis explores whether doing so can compensate for data scarcity while simultaneously providing the interpretable reasoning pathway that end-to-end models lack.
 
 % ============================================================
+\section{Hypothesis}
+\label{sec:intro:hypothesis}
+% ============================================================
+
+This thesis investigates the following central hypothesis:
+
+\begin{quote}
+\textbf{H:} \emph{Structured domain knowledge---specifically,
+expert-defined histological growth patterns encoded through fuzzy set
+theory---can be injected into a deep learning mutation prediction
+pipeline to simultaneously
+(a)~achieve competitive predictive performance under data scarcity
+($<$700 public slides), and
+(b)~provide multi-level, clinically verifiable explanations that no
+end-to-end black-box approach offers.}
+\end{quote}
+
+The hypothesis is \emph{falsifiable}: it would be rejected if the
+pattern-informed models performed significantly worse than
+embedding-only baselines across all genes, or if the interpretability
+outputs were clinically meaningless.
+The seven research questions below operationalise this hypothesis
+into testable sub-questions.
+
+% ============================================================
 \section{Research Questions}
 \label{sec:intro:rq}
 % ============================================================
 
-Guided by the design science research (DSR) paradigm~\cite{hevner2004design, peffers2007dsrm}, which focuses on the construction and evaluation of artefacts that address identified problems, this thesis formulates the following research questions from a computer science and engineering perspective:
+Guided by the design science research (DSR) paradigm~\cite{hevner2004design, peffers2007dsrm}, which focuses on the construction and evaluation of artefacts that address identified problems, this thesis formulates the following research questions from a computer science and engineering perspective.
+Each RQ addresses a specific aspect of the central hypothesis (Section~\ref{sec:intro:hypothesis}):
 
 \begin{description}
     \item[\textbf{RQ1} (Fuzzy representation learning).]  \emph{How can fuzzy set theory be integrated into angular margin loss functions to produce an adaptive, per-sample margin modulation mechanism for histopathological pattern classification, and does the resulting loss function outperform fixed-margin baselines under conditions of small training sets and fuzzy inter-class boundaries?}
