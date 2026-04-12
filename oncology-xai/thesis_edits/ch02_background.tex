@@ -27,8 +27,8 @@ Digital pathology replaces the microscope with a high-resolution scanner that ca
 
 A single WSI may contain upwards of $10^{10}$ pixels, with file sizes routinely exceeding 1~GB in formats such as Aperio SVS or generic TIFF~\cite{janowczyk2016deep}.
 Due to these dimensions, WSIs are stored in a pyramidal, multi-resolution structure that permits efficient access at different zoom levels.
-At the highest resolution (typically $0.25\,\mu\text{m/pixel}$ at $40\times$), individual cell nuclei, cytoplasmic details, and stromal fibres are discernible.
-At lower magnifications ($10\times$, $5\times$), the tissue architecture---gland formation, papillary structures, solid sheets---becomes the dominant visual feature.
+At the highest resolution (typically $0.25\,\mu\text{m/pixel}$ at $40\times$), individual cells, their internal structures, and the connective tissue between them are discernible.
+At lower magnifications ($10\times$, $5\times$), the overall tissue organisation---whether cells form gland-like tubes, finger-like projections, or dense solid sheets---becomes the dominant visual feature.
 
 From a computational perspective, the gigapixel scale of WSIs precludes direct input into standard deep learning architectures whose memory requirements scale with image resolution.
 The prevalent strategy is to partition each WSI into non-overlapping \emph{tiles} (also called patches) of fixed size, commonly $224 \times 224$ or $256 \times 256$ pixels at $20\times$ magnification~\cite{lu2021data,chen2024uni}.
@@ -1071,8 +1071,10 @@ interaction indices;
 grounding mutations in NCIt+MONDO with PMID provenance (RQ6, RQ7);
 (v)~\textbf{Analytical insight}: gene-dependent utility of fuzzy
 representations connects fuzzy formalism to cancer biology;
-(vi)~\textbf{LCHAI~v2.0}: integrative clinical prototype demonstrating
-translational potential of all artefacts. \\[4pt]
+(vi)~\textbf{LCHAI~v2.0}: integrative clinical prototype with unified
+Analysis tab, fuzzy linguistic labels (anti-hallucination), active
+learning, and four-level fuzzy coherence (training, representation,
+aggregation, interpretation). \\[4pt]
 
 5. Research rigour &
 Rigorous methods in both construction and evaluation. &
@@ -1105,7 +1107,8 @@ Communication is achieved through:
 (ii)~evaluation chapter figures (bar charts, heatmaps, attention maps)
 interpretable to technical readers;
 (iii)~the LCHAI~v2.0 interface that translates outputs into
-clinician-facing explanations grounded in canonical biomedical entities
+clinician-facing explanations with fuzzy linguistic labels and
+PubMed-cited LLM narratives grounded in a biomedical knowledge graph
 (morphology $\to$ mutation $\to$ treatment pathway); and
 (iv)~three peer-reviewed publications~\cite{lima2020skin,lima2025fuzzy,
 lima2025enhancing} and a public code
@@ -1168,28 +1171,31 @@ Table~\ref{tab:literature_comparison} summarises the quantitative landscape.
 \caption{Comparison of mutation prediction methods in NSCLC. AUROC values are reported where available. $N$ denotes the number of slides or patients. Daggers ($\dagger$) indicate values approximated from published figures.}
 \label{tab:literature_comparison}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{l c l r l c c c}
+\begin{tabular}{l c l r l c c c c c c}
 \hline
 \textbf{Study} & \textbf{Year} & \textbf{Journal} & \textbf{$N$} &
-\textbf{Method} & \textbf{TP53} & \textbf{EGFR} & \textbf{KRAS} \\
+\textbf{Method} & \textbf{TP53} & \textbf{EGFR} & \textbf{KRAS} &
+\textbf{STK11} & \textbf{KEAP1} & \textbf{RBM10} \\
 \hline
-Coudray et al.    & 2018 & Nat.~Med.       &    382 & Inception-v3 e2e & 0.733--0.86\textsuperscript{*} & 0.826 & 0.733 \\
-Kather et al.     & 2020 & Nat.~Cancer     & 17{,}355 & ShuffleNet+att. & 0.65--0.72$^\dagger$ & 0.63--0.68$^\dagger$ & 0.60--0.65$^\dagger$ \\
-Saldanha et al.   & 2023 & npj Prec.~Onc. &    676 & RetCCL+attMIL    & 0.65$^\dagger$ & 0.67$^\dagger$ & 0.61$^\dagger$ \\
-Logan et al.      & 2022 & medRxiv         &    747 & CNN+subtypes     & 0.692 & 0.681 & --- \\
-Zhao et al.       & 2025 & Lancet Onc.     & 3{,}637 & DeepGEM MIL    & 0.82--0.96 & 0.82--0.96 & 0.82--0.96 \\
-Campanella et al. & 2025 & Nat.~Med.       & 8{,}461 & EAGLE (EGFR)   & ---   & 0.890  & --- \\
-Wang et al.       & 2024 & Nature          & 60{,}530 & CHIEF          & $>$0.70 & $>$0.70 & --- \\
+Coudray et al.    & 2018 & Nat.~Med.       &    382 & Inception-v3 e2e & 0.733--0.86\textsuperscript{*} & 0.826 & 0.733 & 0.733\textsuperscript{*} & --- & --- \\
+Kather et al.     & 2020 & Nat.~Cancer     & 17{,}355 & ShuffleNet+att. & 0.65--0.72$^\dagger$ & 0.63--0.68$^\dagger$ & 0.60--0.65$^\dagger$ & --- & --- & --- \\
+Saldanha et al.   & 2023 & npj Prec.~Onc. &    676 & RetCCL+attMIL    & 0.65$^\dagger$ & 0.67$^\dagger$ & 0.61$^\dagger$ & 0.63$^\dagger$ & 0.58$^\dagger$ & --- \\
+Logan et al.      & 2022 & medRxiv         &    747 & CNN+subtypes     & 0.692 & 0.681 & --- & --- & --- & --- \\
+Zhao et al.       & 2025 & Lancet Onc.     & 3{,}637 & DeepGEM MIL    & 0.82--0.96 & 0.82--0.96 & 0.82--0.96 & 0.82--0.96 & --- & --- \\
+Campanella et al. & 2025 & Nat.~Med.       & 8{,}461 & EAGLE (EGFR)   & ---   & 0.890  & --- & --- & --- & --- \\
+Wang et al.       & 2024 & Nature          & 60{,}530 & CHIEF          & $>$0.70 & $>$0.70 & --- & --- & --- & --- \\
 \hline
 \textbf{This thesis} & 2026 & --- & \textbf{687}
-  & Pattern-ABMIL  & \textbf{0.717} & \textbf{0.694} & 0.590 \\
-  & & & & Fuzzy Choquet   & 0.716 & 0.684 & \textbf{0.609} \\
+  & Pattern-ABMIL  & \textbf{0.717} & \textbf{0.694} & 0.590 & \textbf{0.695} & \textbf{0.610} & 0.640 \\
+  & & & & Fuzzy Choquet   & 0.716 & 0.684 & \textbf{0.609} & 0.658 & 0.589 & \textbf{0.661} \\
 \hline
 \end{tabular}%
 }
 \begin{flushleft}
 \footnotesize
 \textsuperscript{*}Range across six genes. $^\dagger$Approximate values from figures.
+Saldanha et al.\ STK11/KEAP1 values estimated from supplementary bar charts.
+Most published studies do not report STK11, KEAP1, or RBM10 individually.
 \end{flushleft}
 \end{table}
 
