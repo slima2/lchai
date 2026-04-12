@@ -647,9 +647,8 @@ The benchmark runner orchestrates the complete evaluation:
         50 epochs.
         \item For condition FC: train the Fuzzy Choquet MIL model for
         50 epochs.
-        \item Evaluate on the test fold: compute AUROC and F1
-        at threshold 0.5 (AUPRC is additionally computed for the
-        XGBoost baseline).
+        \item Evaluate on the test fold: compute AUROC, AUPRC,
+        and F1 at threshold 0.5.
         \item Save per-fold predictions and metrics as JSON.
     \end{enumerate}
     \item \textbf{Aggregate:} Compute mean $\pm$ std across 5 folds

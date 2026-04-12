@@ -1258,7 +1258,9 @@ STK11 at 9.9\%);
 and F1 score at the 0.5 probability threshold, with the caveat that
 threshold optimisation (e.g., Youden's $J$) would be needed for
 clinical deployment.
-AUPRC is reported for the XGBoost baseline (B1).
+AUPRC is computed for all six experimental conditions to expose
+the gap between ranking ability and precision-recall performance,
+especially for low-prevalence genes (see Figure~\ref{fig:auprc_by_gene}).
 The primary comparison across all six conditions relies on AUROC,
 as the models are not calibrated and F1 at a fixed threshold of 0.5
 does not reflect their true discriminative ability
