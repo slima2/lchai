@@ -29,7 +29,7 @@ This thesis makes the following contributions, organised by the three computatio
 A novel angular margin loss function that introduces per-sample fuzzy membership modulation for histopathological pattern classification.
 Unlike fixed-margin losses (ArcFace, CosFace, SphereFace) that apply the same penalty to all training samples, FuzzyArcLoss~V2 adapts the margin strength based on classification confidence through an explicit fuzzy membership function (Equation~\ref{eq:membership_v2}).
 The method achieves 92.31\% macro-F1 on six LUAD histological patterns (15 runs, $p = 0.001$ vs SphereFace), with particular improvement on the minority cribriform class (83.6\% F1).
-The systematic identification and correction of 20 pipeline issues---contributing $+$18 percentage points to performance across all loss functions---provides practical guidance for the application of angular margin losses to small histopathological datasets.
+The systematic identification and correction of 20 pipeline issues established a correct experimental baseline, raising all loss functions uniformly by $+$18 percentage points and ensuring that the subsequent comparisons reflect genuine algorithmic merit rather than implementation artefacts.
 
 \textbf{Contribution 2: Pattern-Informed ABMIL (Artefact 2).}
 A multiple instance learning architecture that fuses CTransPath visual embeddings with fuzzy pattern membership probabilities, injecting validated histological domain knowledge as a structured prior.
@@ -171,27 +171,19 @@ told this directly through the pattern probabilities, and must only
 learn how the distribution of known patterns aggregates to predict
 each gene.
 
-On the other hand, the pattern-informed ABMIL (P) does not achieve
+On the other hand, PI-ABMIL does not achieve
 a clear AUROC improvement over the embedding-only baseline (B2) at
 the global level (both 0.658).
 The CTransPath embeddings, pretrained on 15 million histopathology
 tiles, already encode morphological information that subsumes the
-six-pattern taxonomy.
-At the aggregate level, the pattern channel is therefore marginally
-redundant for prediction purposes.
-Gene-level SHAP decompositions show that patterns receive
-substantial attribution (39\% for TP53, 41\% for KRAS, 60\% for
-KEAP1), but the per-slide feature channel ablation
-(Section~\ref{sec:meth:interp:ablation}) reveals that high SHAP
-attribution does not imply positive contribution:
-patterns measurably improve prediction only for KRAS ($+7.6$\,pp),
-while actively degrading it for TP53 ($-16.1$\,pp) and
-KEAP1 ($-44.7$\,pp).
+six-pattern taxonomy; at the aggregate level, the pattern channel is
+marginally redundant for prediction purposes.
+The per-slide ablation analysis (Contribution~5) confirms this
+nuance: patterns help only for KRAS while actively degrading
+predictions for TP53 and KEAP1.
 Crucially, the pattern channel remains essential for
-\emph{interpretability}, where it provides the critical link between
-attention weights and named histological categories---even when
-patterns hurt prediction, their presence enables the system to
-\emph{explain why} they hurt.
+\emph{interpretability}---even when patterns hurt prediction, their
+presence enables the system to \emph{explain why} they hurt.
 
 This observation points to a nuanced and practically important
 conclusion: \emph{domain knowledge helps most when the downstream
@@ -227,7 +219,7 @@ By enriching the embedding representation with six clinically
 validated histological patterns, the approach adds an interpretable
 prediction pathway that a pathologist can inspect and validate
 \emph{without sacrificing discriminative power}---the pattern-informed
-ABMIL (condition~P) matches the embedding-only baseline (B2) in mean
+PI-ABMIL matches the embedding-only baseline (B2) in mean
 AUROC (both 0.658).
 When the model predicts TP53 mutation with probability 0.951
 (slide TCGA-99-8025), the pathologist can inspect the attended region
@@ -313,18 +305,13 @@ critique, and contextualise each prediction---a prerequisite for
 clinical adoption that no competing method satisfies.
 
 \paragraph{Gene-dependent optimal method selection.}
-A novel analytical finding of this thesis is that the relative utility
-of fuzzy pattern representations is \emph{gene-dependent}: embedding-only
-ABMIL (B2) is optimal for TP53 and EGFR, whose morphological correlates
-manifest as sub-cellular texture captured by CTransPath; the Fuzzy
-FC-MIL is optimal for KRAS and RBM10, where inter-pattern
-interactions carry the discriminative signal; and PI-ABMIL (ours) is optimal for STK11 and KEAP1, whose diffuse multi-pattern
-correlates benefit from explicit pattern injection alongside embeddings.
-DeepGEM applies a single architecture uniformly to all genes, forgoing
-this biologically grounded specificity.
-LCHAI~v2.0 implements gene-dependent method selection based on this
-finding, using the optimal model per gene as determined by the K-fold
-benchmark---a design principle absent from all competing systems.
+As detailed in Contribution~5, the optimal method is gene-dependent:
+B2 for TP53/EGFR, PI-ABMIL for STK11/KEAP1, and FC-MIL for
+KRAS/RBM10.
+LCHAI~v2.0 implements this finding through per-gene method selection
+based on the K-fold benchmark---a design principle absent from
+competing systems such as DeepGEM, which applies a single
+architecture uniformly to all genes.
 
 \paragraph{Intrinsic interpretability and reproducibility.}
 The Fuzzy Choquet MIL achieves mean AUROC 0.653 across six genes
@@ -431,7 +418,7 @@ For this thesis, the genotype--phenotype mismatch has three important
 implications.
 First, it justifies the \emph{Conclusive / Inconclusive} labelling
 framework: genes whose cross-validation AUROC falls below 0.70
-are honestly flagged as unreliable, directing clinicians to
+are flagged as unreliable, directing clinicians to
 molecular testing rather than trusting the morphological prediction.
 Second, it validates the multi-layered interpretability approach:
 when a false negative occurs (e.g., EGFR on TCGA-86-8280), the
@@ -552,10 +539,12 @@ ANORAK annotation scheme (lepidic, acinar, papillary, micropapillary,
 solid, cribriform), aligned with the official Zenodo documentation
 (\url{https://zenodo.org/records/10016027}).
 On the ANORAK validation set, the confusion matrix
-(Figure~\ref{fig:confusion_matrix}) shows that acinar, solid, and
-lepidic achieve 100\% recall, while cribriform (63\%) and
-micropapillary (77\%) are the most confused classes---consistent with
-known inter-observer variability~\cite{anorak2024}.
+(Figure~\ref{fig:confusion_matrix}) shows that acinar (36/36),
+solid (21/21), and lepidic (16/16) are perfectly classified,
+while cribriform (12/19 correct, F1\,=\,0.63) and
+micropapillary (10/13 correct, F1\,=\,0.77) are the most confused
+classes---consistent with known inter-observer
+variability~\cite{anorak2024}.
 However, a preliminary expert review of five TCGA slides revealed
 systematic disagreement: the expert identified acinar morphology in
 subregions where the model predicted micropapillary
@@ -1003,6 +992,14 @@ prediction that the gene's model has limited discriminative power.
 No prior mutation prediction system provides this level of
 quantitative failure explanation---the ability not only to predict but
 to explain its own limitations.
+A complementary limitation, documented in
+Section~\ref{sec:disc:lim:method}, is that the Conclusive/Inconclusive
+threshold based solely on AUROC can overstate clinical readiness:
+the AUPRC analysis reveals that even EGFR (Conclusive, AUROC~0.701)
+has AUPRC~$\approx$0.36, indicating limited precision at clinical
+thresholds despite acceptable ranking ability.
+Incorporating AUPRC into the confidence criterion is recommended
+as a short-term improvement.
 
 \paragraph{Practical clinical value.}
 While LCHAI is not intended to replace molecular testing, the
@@ -1034,8 +1031,8 @@ the ANORAK paper ($\rho = 0.35$--$0.44$)~\cite{anorak2024},
 indicating that the boundary between these two patterns is
 inherently subjective even among expert pathologists.
 This discrepancy does \emph{not} invalidate the tile-level
-classifier on its training domain (where acinar achieves 100\%
-recall and micropapillary 77\% in the confusion matrix,
+classifier on its training domain (where acinar achieves perfect
+classification and the overall Macro-F1 is 89.2\%,
 Figure~\ref{fig:confusion_matrix}), but it underscores the need for
 multi-cohort validation and the active learning mechanism
 implemented in LCHAI~v2.0.
