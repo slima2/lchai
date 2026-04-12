@@ -632,12 +632,19 @@ two out of three positive predictions would be incorrect.
 Two important implications follow:
 \begin{enumerate}
     \item \textbf{The method comparisons remain valid.}
-    Because the prevalence-driven gap affects \emph{all six conditions
-    equally} for each gene, the relative ranking between methods---the
-    basis of Findings~1--6---is preserved under AUPRC.
-    No method can escape the class imbalance; the question ``which
-    method best handles gene $g$?'' has the same answer whether
-    measured by AUROC or AUPRC.
+    For any given gene, the set of positive slides is \emph{identical}
+    across all six experimental conditions---only the model differs,
+    not the data.
+    The prevalence-driven AUPRC penalty therefore shifts all methods
+    downward by a similar amount: if PI-ABMIL outranks B2 under AUROC,
+    it will also outrank B2 under AUPRC, because both face the same
+    positive-to-negative ratio.
+    What changes between metrics is the \emph{absolute value}
+    (e.g., 0.695 $\to$ $\approx$0.32), not the \emph{relative ranking}
+    between methods.
+    Since Findings~1--6 are based on relative rankings
+    (``which method best handles gene $g$?''), they hold under either
+    metric.
 
     \item \textbf{The Conclusive/Inconclusive threshold may be
     optimistic for moderate-prevalence genes.}
