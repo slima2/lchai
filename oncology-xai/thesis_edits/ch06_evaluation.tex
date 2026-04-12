@@ -2066,6 +2066,23 @@ into the LLM prompt, preventing the model from inventing intensity
 characterisations (Section~\ref{sec:meth:interp:fuzzy_labels}).
 
 
+\subsection{Active Learning: Demonstration Without Formal Evaluation}
+\label{sec:eval:active_learning}
+
+The active learning mechanism
+(Section~\ref{sec:meth:active_learning}) was implemented and
+demonstrated within LCHAI~v2.0: a pathologist can draw a lasso around
+misclassified tiles, assign the correct pattern, and trigger delta
+retraining of the classification head in $\sim$30 seconds.
+However, a formal pre/post evaluation (e.g., comparing pattern
+classification accuracy before and after expert corrections across
+multiple slides) was not conducted in this thesis.
+This is a recognised limitation: the active learning feature is
+presented as an implemented capability of the LCHAI system rather than
+as a quantitatively evaluated contribution.
+A formal evaluation with multiple expert annotators is identified as
+future work (Section~\ref{sec:disc:future:short}).
+
 \subsection{LCHAI System Demonstration}
 \label{sec:eval:lchai}
 

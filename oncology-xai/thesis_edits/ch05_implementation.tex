@@ -1042,6 +1042,66 @@ A colour legend at the bottom maps each pattern to its assigned colour.
 \label{fig:lchai_v2_viewer}
 \end{figure}
 
+\textbf{Active Learning: Pattern Correction Mode.}
+The Viewer tab includes a built-in expert correction tool for the
+active learning mechanism described in
+Section~\ref{sec:meth:active_learning}.
+Clicking ``Correct Patterns'' activates a lasso drawing mode: the
+pathologist clicks and drags to draw a polygon over misclassified tiles.
+All tiles whose centre falls within the polygon are selected
+(highlighted in red, Figure~\ref{fig:lchai_v2_active_learning}).
+The pathologist then selects the correct pattern from a dropdown of
+the six ANORAK classes and clicks ``Save \& Retrain.''
+
+The system submits the corrections to the \texttt{active-learning-service}
+microservice, which:
+\begin{enumerate}
+    \item Persists corrections in the database with provenance metadata.
+    \item Downloads the pre-computed tile embeddings
+    (\texttt{tile\_data.npz}) from object storage.
+    \item Runs delta training: head-only fine-tuning of the
+    FuzzyArcLoss~V2 classification head for 10 epochs.
+    \item Saves the updated model as a new version in MinIO.
+    \item Re-runs the full inference pipeline with the corrected
+    classifier, producing updated pattern overlays and mutation
+    predictions.
+\end{enumerate}
+
+A real-time progress bar tracks the retraining status.
+The pathologist can draw multiple lassos to accumulate corrections
+before submitting, and the feedback loop allows further corrections
+after reviewing the updated overlay.
+Figure~\ref{fig:active_learning_workflow} illustrates the complete
+workflow.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/lchai_v2_active_learning_correction.png}
+\caption[LCHAI~v2.0 Viewer --- Active Learning correction mode]{%
+    LCHAI~v2.0 Viewer tab in pattern correction mode.
+    The pathologist has drawn a lasso around 152 micropapillary-classified
+    tiles and selected ``acinar'' as the correct pattern.
+    Selected tiles are highlighted in red.
+    The sidebar shows the correction panel with pattern dropdown,
+    tile count, and ``Save \& Retrain'' button.
+    A ``Delta Training in Progress'' indicator is visible at the top.}
+\label{fig:lchai_v2_active_learning}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/active_learning_workflow.png}
+\caption[Active Learning correction workflow]{%
+    Active Learning expert correction workflow.
+    The pathologist (1)~identifies misclassified tiles in the pattern
+    overlay, (2)~draws a lasso to select them, (3)~assigns the correct
+    pattern, (4)~submits corrections, (5)~delta training runs
+    ($\sim$30 seconds, head-only), and (6)~updated overlays and
+    mutation predictions are displayed.
+    The feedback loop allows iterative refinement.}
+\label{fig:active_learning_workflow}
+\end{figure}
+
 \subsubsection{Graph Tab}
 \label{sec:impl:lchai:ui:graph}
 

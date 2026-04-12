@@ -1003,6 +1003,33 @@ Figure~\ref{fig:confusion_matrix}), but it underscores the need for
 multi-cohort validation and the active learning mechanism
 implemented in LCHAI~v2.0.
 
+\textbf{Active learning as a domain adaptation mechanism.}
+The human-in-the-loop pattern correction feature
+(Section~\ref{sec:meth:active_learning}) addresses this domain shift
+pragmatically: when a pathologist identifies a misclassified region in
+the Viewer tab, they draw a lasso around the affected tiles, assign
+the correct pattern, and trigger delta retraining of the classification
+head ($\sim$3{,}000 parameters, $\sim$30 seconds on CPU).
+The head-only fine-tuning strategy is a practical compromise: it avoids
+catastrophic forgetting of the backbone's pre-trained features while
+being fast enough for interactive clinical use.
+The updated model immediately re-analyses the slide, producing corrected
+pattern overlays and mutation predictions.
+
+A limitation of the current implementation is that corrections are
+\emph{per-slide}: they improve the classifier for the corrected slide
+and morphologically similar cases, but are not aggregated across
+multiple experts or slides into a shared correction corpus.
+A future extension could accumulate expert annotations from multiple
+institutions (e.g., SOLCA Ecuador and HFR Switzerland) into a federated
+correction set, enabling systematic domain adaptation to clinical
+slide preparation protocols that differ from the Zenodo training set.
+Formal evaluation of active learning---comparing pattern classification
+accuracy before and after expert corrections, measuring inter-annotator
+agreement, and tracking model drift across correction cycles---is
+identified as a short-term future work item
+(Section~\ref{sec:disc:future:short}).
+
 In conclusion, the principal contribution of this thesis is not
 predicting mutations with clinical-grade accuracy---that would
 require cohorts of 60{,}000+ slides as in CHIEF or

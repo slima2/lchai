@@ -958,6 +958,74 @@ This level extends fuzzy logic to a fourth pipeline layer:
 (i)~training, (ii)~representation, (iii)~aggregation,
 (iv)~interpretation.
 
+\subsection{Human-in-the-Loop Pattern Correction (Active Learning)}
+\label{sec:meth:active_learning}
+
+The pattern classifier (Artefact~1) is trained on the Zenodo ANORAK
+dataset, which may not fully represent the morphological diversity
+encountered on clinical or TCGA slides.
+LCHAI~v2.0 addresses this potential domain shift through a
+\emph{human-in-the-loop} active learning mechanism that enables expert
+pathologists to correct tile-level pattern classifications and trigger
+incremental model refinement.
+
+\textbf{Correction protocol.}
+The pathologist views the tile-level pattern overlay in the Viewer tab,
+identifies misclassified regions, draws a lasso polygon around the
+affected tiles, and assigns the correct pattern from the six ANORAK
+classes via a dropdown selector.
+All corrections are persisted in the database with provenance metadata
+(expert identity, timestamp, original vs corrected labels).
+
+\textbf{Delta training formulation.}
+Upon submission, the system performs \emph{head-only fine-tuning}:
+the CTransPath backbone ($\sim$23M parameters) and the projection head
+($768 \to 512$) are frozen, and only the FuzzyArcLoss~V2 cosine
+classification head ($\mathbf{W} \in \mathbb{R}^{6 \times 512}$,
+$\sim$3{,}072 parameters) is updated.
+The training data consists of the corrected tile embeddings
+(expert-provided labels) augmented with a \emph{buffer} of original
+tiles ($\text{buffer\_ratio} = 0.3$) sampled from the same slide to
+prevent catastrophic forgetting.
+Training proceeds for 10 epochs with $\text{lr} = 10^{-5}$.
+
+\textbf{Rationale for head-only fine-tuning.}
+Fine-tuning the full backbone on a handful of corrected tiles
+($\sim$50--500) would cause severe overfitting due to the
+$23\text{M} \gg 500$ parameter-to-sample ratio.
+By restricting updates to the 3{,}072-parameter classification head,
+the effective model capacity is proportionate to the correction set
+size, and the pre-trained embedding space is preserved.
+This design enables delta training to complete in $\sim$30 seconds on
+CPU, making it practical for interactive clinical use without GPU
+access.
+
+\textbf{Version management.}
+The updated checkpoint is stored as a new version in object storage
+(MinIO/S3) with a timestamp suffix (e.g.,
+\texttt{model\_v2.0.1\_20260411.pth}).
+The original checkpoint is never overwritten, enabling rollback and
+audit of all model versions.
+After saving, the system automatically re-runs the inference pipeline
+with the updated classifier, producing new pattern overlays and
+mutation predictions.
+
+Figure~\ref{fig:active_learning_delta} illustrates the delta training
+architecture.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/active_learning_delta_training.png}
+\caption[Delta training architecture for active learning]{%
+    Delta training architecture.
+    The CTransPath backbone and projection head are \textbf{frozen};
+    only the FuzzyArcLoss~V2 cosine head ($\sim$3{,}072 parameters)
+    is fine-tuned on the corrected tile embeddings plus a 30\% buffer
+    of original tiles.
+    The updated checkpoint is stored as a new version in MinIO.}
+\label{fig:active_learning_delta}
+\end{figure}
+
 
 \section{Multi-Ontology Knowledge Graph and Explanation Layer}
 \label{sec:meth:ontology_method}
