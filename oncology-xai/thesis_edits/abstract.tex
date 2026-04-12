@@ -17,11 +17,14 @@ state-of-the-art methods require tens of thousands of proprietary
 slides and provide no explanation of why a mutation is predicted---a
 critical barrier to clinical trust.
 
-This thesis asks: \emph{Can structured domain knowledge, encoded
-through fuzzy set theory, be injected into a deep learning pipeline
-to achieve competitive mutation prediction with fewer than 700
-public slides while making the model's reasoning transparent?}
-Seven research questions operationalise this goal across four
+This thesis investigates the hypothesis that \emph{structured domain
+knowledge---expert-defined histological growth patterns encoded
+through fuzzy set theory---can be injected into a deep learning
+pipeline to simultaneously (a)~achieve competitive mutation prediction
+under data scarcity ($<$700 public slides) and (b)~provide
+multi-level, clinically verifiable explanations that no end-to-end
+black-box approach offers.}
+Seven research questions operationalise this hypothesis across four
 dimensions: pattern classification, mutation prediction,
 interpretability, and knowledge-grounded explanation.
 Following a design science research framework, three computational
@@ -131,6 +134,13 @@ Fuzzy logic is applied coherently across four levels of the pipeline:
 training (FuzzyArcLoss~V2), representation (soft probability
 vectors), aggregation (Choquet integral), and interpretation
 (fuzzy linguistic labels on XAI outputs).
+The central hypothesis is \emph{partially supported}: pattern
+knowledge achieves competitive performance and enables
+interpretability absent from all prior work, but the benefit is
+gene-dependent---embedding-only models suffice for TP53 and EGFR,
+while pattern-informed and Choquet models are optimal for KRAS,
+RBM10, STK11, and KEAP1.
+This gene-dependent nuance is itself an original analytical finding.
 While the system is not intended to replace molecular testing,
 it can serve as a triage tool to prioritise patients for expedited
 sequencing, as an educational resource for residents learning
