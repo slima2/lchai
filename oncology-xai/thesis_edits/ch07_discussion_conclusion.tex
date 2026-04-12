@@ -95,10 +95,24 @@ with diffuse or heterogeneous morphological correlates---KEAP1
 pattern boundaries carries diagnostic information that hard labels
 discard.
 For genes with well-defined morphological correlates (TP53, EGFR,
-KRAS, STK11), fuzzy and crisp representations perform equivalently
+STK11), fuzzy and crisp representations perform equivalently within
+the PI-ABMIL concatenation framework
 (differences $\leq$0.004, within fold variance).
+KRAS presents a particularly instructive case: fuzzy and crisp are
+also equivalent under concatenation ($-$0.004), yet FC-MIL---which
+aggregates the \emph{same} fuzzy pattern scores through the Choquet
+integral rather than concatenating them---achieves the highest AUROC
+for KRAS (0.609).
+This demonstrates that the \emph{mechanism} of integrating pattern
+information matters as much as the representation itself:
+concatenation and Choquet aggregation extract different aspects of
+the fuzzy pattern signal, and for genes whose predictive value lies
+in inter-pattern co-occurrence (KRAS, RBM10) rather than boundary
+uncertainty (KEAP1, RBM10), the Choquet integral is the appropriate
+integration mechanism.
 This result connects the biological nature of the
 mutation--morphology relationship to the appropriate representation
+\emph{and aggregation mechanism}
 formalism, offering guidance for future work on pattern-informed
 mutation prediction.
 The per-slide feature channel ablation
