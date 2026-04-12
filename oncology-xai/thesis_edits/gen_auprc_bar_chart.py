@@ -23,7 +23,7 @@ n_genes = len(genes)
 colors = ["#7EC8E3", "#1B3A5C", "#2E8B57", "#E05252", "#B0A0D0", "#F5A623"]
 hatches = ["", "", "", "", "//", ""]
 
-fig, ax = plt.subplots(figsize=(16, 6))
+fig, ax = plt.subplots(figsize=(18, 7))
 
 group_width = 0.75
 bar_width = group_width / n_cond
@@ -33,19 +33,29 @@ for i, cond in enumerate(conditions):
     means = [data[cond][g][0] for g in genes]
     stds  = [data[cond][g][1] for g in genes]
     offset = (i - (n_cond - 1) / 2) * bar_width
-    ax.bar(
+    bars = ax.bar(
         x_base + offset, means, bar_width * 0.9,
         yerr=stds, capsize=2, label=cond,
         color=colors[i], hatch=hatches[i],
         edgecolor="white", linewidth=0.5,
         error_kw={"linewidth": 0.8, "capthick": 0.8},
     )
+    for bar, m, s in zip(bars, means, stds):
+        label = f".{int(m*1000):03d}±.{int(s*1000):02d}"
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + s + 0.005,
+            label,
+            ha="center", va="bottom", fontsize=5.5,
+            rotation=90, color="#333333",
+            fontfamily="monospace",
+        )
 
 ax.set_xticks(x_base)
 ax.set_xticklabels(genes, fontsize=12, fontweight="bold")
 ax.set_ylabel("AUPRC (mean ± std)", fontsize=12)
 ax.set_title("AUPRC per Gene — 5-fold Stratified CV on TCGA-LUAD", fontsize=14, fontweight="bold")
-ax.set_ylim(0.0, 0.85)
+ax.set_ylim(0.0, 0.92)
 ax.legend(loc="upper left", fontsize=9, ncol=3, framealpha=0.9)
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
