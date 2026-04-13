@@ -6,10 +6,44 @@
 \label{sec:intro:motivation}
 % ============================================================
 
-Lung cancer is the leading cause of cancer mortality worldwide, with lung adenocarcinoma (LUAD) representing its most prevalent histological subtype~\cite{sung2021global}.  
-Treatment of LUAD has been transformed by the identification of actionable oncogenic driver mutations---most prominently in \emph{EGFR}, \emph{KRAS}, \emph{TP53}, \emph{STK11}, \emph{KEAP1} and \emph{RBM10}---which dictate eligibility for targeted therapies and immunotherapy~\cite{herbst2018lung}.  Determining the mutational status of a tumour currently requires molecular testing via next-generation sequencing (NGS) or polymerase chain reaction (PCR), procedures that are expensive (\$300--\$5{,}000 per panel), time-consuming (5--14 days turnaround) and inaccessible in many healthcare settings globally~\cite{vanderlaan2018molecular}.
+This thesis addresses a weakly supervised classification problem at
+the intersection of computer vision, fuzzy logic, and biomedical
+informatics.
+The input is a gigapixel whole-slide image (WSI) of a tissue
+biopsy---typically $10^9$--$10^{10}$ pixels, comparable in file size
+to a feature film---and the output is a binary prediction for each of
+several target genes: \emph{mutated} or \emph{wild-type} (normal).
+The only supervision available is a single patient-level label per
+gene; no annotation indicates \emph{which} regions of the image carry
+the mutation signal.
+This is the canonical multiple-instance learning (MIL) setting,
+where each image is a ``bag'' of thousands of ``instances'' (tiles)
+and only the bag-level label is known.
 
-Simultaneously, for every LUAD patient a haematoxylin-and-eosin (H\&E) stained tissue slide is routinely prepared and examined by a pathologist.  The central premise of \emph{computational pathology} is that these slides encode morphological information that correlates with the underlying molecular state of the tumour.  A growing body of literature has demonstrated that deep learning models can predict oncogenic mutations directly from digitised whole-slide images (WSIs) with clinically meaningful accuracy~\cite{coudray2018classification, kather2020pancancer, saldanha2023npj}.
+The application domain is lung adenocarcinoma
+(LUAD)~\cite{sung2021global}, the most common subtype of lung
+cancer.
+In clinical oncology, knowing which genes are mutated determines
+which drugs a patient can receive: for example, patients with
+\emph{EGFR} mutations benefit from targeted inhibitors that are
+ineffective for wild-type patients~\cite{herbst2018lung}.
+The gold standard for mutation detection is DNA sequencing, which
+requires specialised laboratory infrastructure, trained personnel,
+and turnaround times of 7--21
+days~\cite{vanderlaan2018molecular}---a critical delay during which
+patients cannot receive optimal treatment.
+In resource-limited settings, sequencing may not be available at
+all~\cite{sung2021global}.
+
+\emph{Computational pathology} offers an alternative: since every
+patient already has a stained tissue slide examined by a pathologist,
+a model that can ``read'' mutation signals from the slide image could
+provide a rapid preliminary prediction without additional laboratory
+procedures.
+Deep learning methods have demonstrated that this is
+feasible~\cite{coudray2018classification, kather2020pancancer,
+saldanha2023npj}, but existing approaches exhibit two fundamental
+limitations that motivate this thesis:
 
 However, existing approaches to mutation prediction from histopathology exhibit two fundamental limitations that motivate this thesis:
 
