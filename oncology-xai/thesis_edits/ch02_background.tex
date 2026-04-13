@@ -83,7 +83,7 @@ This architectural efficiency is critical for pathology, where tile counts per s
 \subsection{CTransPath: A Pathology-Specific Foundation Model}
 \label{sec:bg:ctranspath}
 
-CTransPath~\cite{wang2022ctranspath} is a hybrid convolutional-transformer model pretrained on approximately 15 million histopathology image tiles from The Cancer Genome Atlas (TCGA) and the Pathology AI Platform (PAIP) using a semantically relevant contrastive learning objective.
+CTransPath~\cite{wang2022ctranspath} is a hybrid convolutional-transformer model pretrained on approximately 15 million histopathology image tiles from The Cancer Genome Atlas (TCGA)~\cite{tcga2014luad} and the Pathology AI Platform (PAIP) using a semantically relevant contrastive learning objective.
 Its architecture combines a CNN stem for local feature extraction with Swin Transformer blocks for global context modelling.
 
 The pretraining objective is a modified contrastive loss that pulls together semantically similar tiles (from the same tissue region or cancer type) while pushing apart dissimilar ones.
@@ -230,7 +230,7 @@ Applies both an additive angular margin $m_1$ and a cosine margin $m_2$ simultan
 \mathcal{L}_{\text{Combined}} = -\log \frac{e^{s (\cos(\theta_y + m_1) - m_2)}}{e^{s (\cos(\theta_y + m_1) - m_2)} + \sum_{k \neq y} e^{s \cos\theta_k}},
 \end{equation}
 with $m_1 = 0.3$ and $m_2 = 0.2$.
-This formulation combines ArcFace and CosFace margins in a single loss, providing complementary angular and cosine-domain penalties.
+This formulation combines ArcFace and CosFace margins in a single loss, providing complementary angular and cosine-domain penalties~\cite{deng2019arcface}.
 
 All four fixed-margin losses share the principle of enforcing inter-class separability and intra-class compactness on the angular (hyperspherical) embedding space.
 They differ only in how the margin distorts the geometry during training.
@@ -309,7 +309,7 @@ The most common choices are:
 
 More generally, \emph{triangular norms} (t-norms) $T: [0,1]^2 \to [0,1]$ provide a family of conjunction operators satisfying commutativity, associativity, monotonicity, and the boundary condition $T(a, 1) = a$.
 Examples include the product t-norm $T_P(a, b) = ab$ and the {\L}ukasiewicz t-norm $T_L(a, b) = \max(0, a + b - 1)$.
-The choice of t-norm affects how fuzzy memberships interact during aggregation and inference.
+The choice of t-norm affects how fuzzy memberships interact during aggregation and inference~\cite{grabisch2009aggregation}.
 
 \subsection{Fuzzy Inference Systems}
 \label{sec:bg:fuzzy:inference}
@@ -578,7 +578,7 @@ In the context of this thesis, it provides a principled fuzzy aggregation mechan
 \subsection{Fuzzy Measures}
 \label{sec:bg:choquet:measures}
 
-A \emph{fuzzy measure} (also called a capacity) on a finite set $N = \{1, 2, \ldots, n\}$ is a set function $g: 2^N \to [0, 1]$ satisfying:
+A \emph{fuzzy measure} (also called a capacity)~\cite{sugeno1974theory} on a finite set $N = \{1, 2, \ldots, n\}$ is a set function $g: 2^N \to [0, 1]$ satisfying:
 \begin{enumerate}
     \item $g(\emptyset) = 0$ and $g(N) = 1$ (boundary conditions),
     \item $A \subseteq B \implies g(A) \leq g(B)$ (monotonicity).
@@ -607,9 +607,9 @@ where $\sigma$ is a permutation such that $x_{\sigma(1)} \leq x_{\sigma(2)} \leq
 \subsection{Second-Order Approximation and Shapley Interaction Indices}
 \label{sec:bg:choquet:secondorder}
 
-A general fuzzy measure on $n$ elements requires $2^n - 2$ parameters (one per non-empty proper subset), which is intractable for even moderate $n$.
+A general fuzzy measure on $n$ elements requires $2^n - 2$ parameters (one per non-empty proper subset)~\cite{grabisch2009aggregation}, which is intractable for even moderate $n$.
 The \emph{$k$-additive} approximation~\cite{grabisch1997kapprox} restricts the measure to interactions of order at most $k$.
-In this thesis, a 2-additive fuzzy measure is used, parameterised by the Shapley values $\phi_i = g(\{i\})$ and pairwise interaction indices $I_{ij}$:
+In this thesis, a 2-additive fuzzy measure is used, parameterised by the Shapley values~\cite{shapley1953value} $\phi_i = g(\{i\})$ and pairwise interaction indices $I_{ij}$:
 \begin{equation}
 \label{eq:2additive}
 g(A) = \sum_{i \in A} \phi_i + \sum_{\{i,j\} \subseteq A} I_{ij},
@@ -618,13 +618,13 @@ which requires only $n + \binom{n}{2}$ parameters.
 For $n = 6$ histological pattern classes, this yields 21 semantically interpretable parameters---a tractable number even for the limited training set of approximately 350 slides.
 Note that the full Fuzzy Choquet MIL model has $\sim$266{,}000 trainable parameters (shared ABMIL encoder + Choquet branch); the ``21 parameters'' refer exclusively to the interpretable fuzzy measure component, not to the model as a whole.
 
-\textbf{Interpretability advantage:} The Shapley values $\phi_i$ quantify the marginal contribution of each pattern to the fuzzy measure, while the interaction indices $I_{ij}$ reveal whether co-occurrence of two patterns is synergistic (e.g., solid + micropapillary predicting TP53 more than either alone) or redundant.
+\textbf{Interpretability advantage:} The Shapley values $\phi_i$ quantify the marginal contribution of each pattern to the fuzzy measure, while the interaction indices $I_{ij}$~\cite{grabisch2009aggregation} reveal whether co-occurrence of two patterns is synergistic (e.g., solid + micropapillary predicting TP53 more than either alone) or redundant.
 These quantities are extractable without post-hoc explanation methods, providing built-in interpretability.
 
 \textbf{Important: relationship to $P(\text{mut})$.}
 The Shapley values are \emph{weights} in $[0,1]$ that sum to~1; they are \emph{not} in the same units as the mutation probability $P(\text{mut})$ and do not directly add to or subtract from it.
 They shape \emph{how} pattern scores are aggregated by the Choquet integral; the aggregated output then feeds through a classification head to produce $P(\text{mut})$.
-When all Shapley values are near-uniform ($\phi_i \approx 1/n$), the fuzzy measure is approximately additive and the Choquet integral reduces to a simple weighted average---meaning no single pattern is more important than any other in the aggregation.
+When all Shapley values are near-uniform ($\phi_i \approx 1/n$), the fuzzy measure is approximately additive and the Choquet integral reduces to a simple weighted average~\cite{grabisch2000choquet}---meaning no single pattern is more important than any other in the aggregation.
 The interaction indices are typically small ($|I_{ij}| \sim 0.01\text{--}0.05$) and modify the measure at the pair level; they represent second-order adjustments to the aggregation, not direct changes to $P(\text{mut})$.
 A near-uniform measure with small interactions therefore indicates that the Choquet integral behaves almost like a standard average, and the predictive signal is driven by the overall pattern composition rather than by learned pattern preferences.
 
