@@ -401,6 +401,15 @@ a cleaner bag of instances, reducing noise in mutation predictions.
 \label{sec:impl:pattern}
 % ============================================================================
 
+This section describes the implementation of FuzzyArcLoss~V2, a novel
+angular margin loss function that---to the best of our knowledge---is
+the first to introduce per-sample fuzzy membership modulation for
+histopathological pattern classification.
+Prior angular margin methods (ArcFace, CosFace, SphereFace) apply a
+uniform penalty; FuzzyArcLoss~V2 adapts the margin based on
+classification confidence, benefiting minority classes at ambiguous
+morphological boundaries.
+
 \subsection{Network Architecture}
 \label{sec:impl:pattern:arch}
 
@@ -532,6 +541,17 @@ benchmark.
 \label{sec:impl:mutation}
 % ============================================================================
 
+This section describes PI-ABMIL, a novel MIL architecture that fuses
+pretrained visual embeddings with explicit fuzzy pattern membership
+probabilities.
+No prior mutation prediction system injects validated histological
+domain knowledge as a structured feature vector alongside learned
+embeddings; existing methods operate on opaque tile representations
+alone.
+This fusion enables the six-level interpretability framework
+(Section~\ref{sec:impl:lchai:analysis}) that distinguishes
+\emph{what} the model attends to from \emph{whether} it helps.
+
 \subsection{Benchmark Input Preparation}
 \label{sec:impl:mutation:prep}
 
@@ -578,7 +598,7 @@ Each ABMIL model is trained with the following configuration:
 
 \begin{itemize}
     \item \textbf{Optimiser:} Adam with learning rate $2 \times 10^{-4}$ and weight decay $10^{-5}$.
-    \item \textbf{Learning rate schedule:} Cosine annealing with warm restarts (restart period $T_0 = 10$ epochs).
+    \item \textbf{Learning rate schedule:} Cosine annealing with warm restarts~\cite{loshchilov2017sgdr} (restart period $T_0 = 10$ epochs).
     \item \textbf{Epochs:} 50 with early stopping (patience = 15 epochs, monitored on validation AUROC).
     \item \textbf{Batch size:} 1 slide per batch (standard in MIL, as each slide has a variable number of tiles).
     \item \textbf{Loss:} Binary cross-entropy with logits (applied to raw model outputs before sigmoid).
@@ -604,7 +624,7 @@ configuration for the ABMIL mutation prediction benchmark.
 \hline
 Embedding dim.      & CTransPath projection output        & 512 \\
 Pattern dim.        & FuzzyArcLoss~V2 soft probabilities  & 6 \\
-Concat dim.         & Total input (PI-ABMIL condition PI, ours)  & 518 \\
+PI-ABMIL dim.       & Total input (condition PI-ABMIL, ours)  & 518 \\
 Attention hidden    & Gated attention hidden size         & 256 \\
 Attention dim       & $\mathbf{w}$, $\mathbf{V}$, $\mathbf{U}$ size & 128 \\
 Dropout             & After attention and encoder         & 0.25 \\
@@ -704,7 +724,7 @@ for slide in slides:
 \end{verbatim}
 
 The XGBoost classifier is trained with the hyperparameters listed in Table~\ref{tab:hyper_xgboost2} (\texttt{max\_depth=4}, \texttt{n\_estimators=300}, \texttt{learning\_rate=0.05}, \texttt{scale\_pos\_weight} set to the class imbalance ratio).
-TreeSHAP is applied post-training to compute per-feature attributions.
+TreeSHAP~\cite{lundberg2020treeshap} is applied post-training to compute per-feature attributions.
 
 Table~\ref{tab:hyper_xgboost2} summarises the XGBoost baseline
 hyperparameters.
@@ -735,6 +755,18 @@ Random state        &                                     & 42 \\
 \section{Implementation of Artefact 3: Fuzzy Choquet MIL}
 \label{sec:impl:choquet}
 % ============================================================================
+
+This section describes FC-MIL, a novel hybrid architecture that
+augments standard ABMIL with a parallel differentiable Choquet integral
+branch operating on fuzzy pattern memberships.
+To the best of our knowledge, this is the first application of the
+Choquet integral as a \emph{learned aggregation operator over
+domain-specific semantic memberships} in computational pathology,
+as opposed to its prior use exclusively as an ensemble fusion operator
+over classifier outputs~\cite{bhowal2021fuzzybach,mccurley2023mici}.
+The 21-parameter fuzzy measure provides intrinsic interpretability
+through Shapley values and interaction indices that no attention-based
+method can offer.
 
 \subsection{Choquet Integral Module}
 \label{sec:impl:choquet:module}
@@ -793,7 +825,7 @@ hyperparameters.
 \begin{table}[ht!]
 \centering
 \small
-\caption{Hyperparameters for the Fuzzy Choquet MIL (FC-MIL, ours; condition~FC).
+\caption{Hyperparameters for FC-MIL (Fuzzy Choquet MIL, ours).
 The \emph{interpretable} fuzzy measure has 21 learnable parameters;
 the full dual-pathway model has $\sim$266{,}000.}
 \label{tab:hyper_choquet2}
@@ -974,7 +1006,7 @@ A stacked bar shows the relative SHAP contribution of
 \emph{embedding dimensions} (0--511) versus
 \emph{pattern dimensions} (512--517).
 The embedding dimensions encode the rich morphological features
-learned by CTransPath from 15~million histopathological patches---nuclear
+learned by CTransPath~\cite{wang2022ctranspath} from 15~million histopathological patches---nuclear
 shape and chromatin texture, glandular architecture, stromal composition,
 cell density, and staining gradients---while the six pattern dimensions
 represent the explicitly labelled growth patterns
@@ -1738,8 +1770,9 @@ All data used in this thesis are publicly available:
  
 This research was conducted with institutional support and expert
 consultation from the Society for the Fight Against Cancer of Ecuador
-(SOLCA), a non-profit organisation founded in 1951 and officially
-mandated by the Ecuadorian State to lead national cancer control efforts.
+(SOLCA\footnote{\url{https://www.solca.med.ec}}), a non-profit
+organisation founded in 1951 and officially mandated by the Ecuadorian
+State to lead national cancer control efforts.
  
 The study protocol was reviewed and approved by the SOLCA--CISOL
 Research Committee, which oversees clinical and epidemiological research
