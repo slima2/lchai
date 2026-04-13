@@ -10,7 +10,7 @@
 \chapter{Methodology}
 \label{ch:methodology}
 
-This chapter presents the methodological design of the three computational artefacts introduced in Section~\ref{sec:uc:artefact_vision}.
+This chapter presents the methodological design of the three computational artefacts introduced in Section~\ref{sec:uc:artifact_vision}.
 The exposition follows the Design Science Research principle of providing a complete and reproducible description of the artefacts prior to their implementation (Chapter~\ref{ch:implementation}) and evaluation (Chapter~\ref{ch:evaluation}).
 
 The methodology is organised around the two sequential tasks of the pipeline.
@@ -427,7 +427,7 @@ The pattern classifier is trained with the following protocol:
     \item \textbf{Epochs:} 120 (reduced from 150 to prevent overfitting on the small dataset).
     \item \textbf{Precision:} fp32 (mixed-precision fp16 was found to corrupt angular margin gradients; see Section~\ref{sec:uc:pipeline_fixes}).
     \item \textbf{Batch size:} 32 with \texttt{drop\_last=True} and plain shuffle (no WeightedRandomSampler).
-    \item \textbf{Augmentation:} Random horizontal/vertical flip, random rotation ($\pm 90°$), colour jitter (brightness, contrast, saturation, hue), Gaussian blur. No MixUp or CutMix.
+    \item \textbf{Augmentation:} Random horizontal/vertical flip, random rotation ($\pm 90^{\circ}$), colour jitter (brightness, contrast, saturation, hue), Gaussian blur. No MixUp or CutMix.
     \item \textbf{Model selection:} Best checkpoint selected by average precision (avgPR) on the test set.
     \item \textbf{Evaluation logits:} Margin-free logits (i.e., $s \cos\theta_k$ without the margin term) are used for all evaluation metrics.
 \end{itemize}
