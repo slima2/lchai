@@ -979,7 +979,7 @@ analysis (Table~\ref{tab:mutation_luad}) is the primary evaluation.}
 B1  & .559$\pm$.04 & .634$\pm$.18 & .529$\pm$.04 & .588$\pm$.06 & .577 \\
 B2  & .704$\pm$.09 & .698$\pm$.09 & .658$\pm$.05 & .599$\pm$.06 & .665 \\
 B3  & .566$\pm$.04 & .520$\pm$.10 & .441$\pm$.08 & .546$\pm$.05 & .518 \\
-P   & \textbf{.712}$\pm$.09 & .706$\pm$.09 & .672$\pm$.04 &
+PI-ABMIL   & \textbf{.712}$\pm$.09 & .706$\pm$.09 & .672$\pm$.04 &
       .587$\pm$.06 & \textbf{.669} \\
 A   & .702$\pm$.09 & \textbf{.710}$\pm$.08 & \textbf{.691}$\pm$.03 &
       .590$\pm$.07 & .673 \\
@@ -1724,7 +1724,7 @@ The system correctly assigns a very low probability (1.7\%) and an
 RBM10 mutation status cannot be reliably inferred from tissue images
 and molecular testing is required.
 This is the system working as designed: rather than producing a
-false sense of certainty, it honestly reports its inability to
+false sense of certainty, it transparently reports its inability to
 detect this particular mutation type.
 
 
@@ -1909,8 +1909,9 @@ This is the design working as intended---not a failure.
 
 The SHAP decompositions of the four false negatives also reveal genuine
 biological insights.
-Recall that the embedding dimensions encode visual features learned from
-15~million histopathological patches---nuclear morphology, chromatin
+Recall that the embedding dimensions encode visual features learned by
+CTransPath~\cite{wang2022ctranspath} from 15~million histopathological
+patches---nuclear morphology, chromatin
 texture, glandular architecture, stromal composition, and staining
 gradients---while the six pattern dimensions represent the explicitly
 labelled growth patterns.
@@ -2227,7 +2228,7 @@ future work (Section~\ref{sec:disc:future:short}).
 
 LCHAI~v2.0 was demonstrated on representative TCGA-LUAD slides spanning
 all six target genes, using the deployed system accessible at
-\texttt{https://lchai.gptfy.biz} (AWS EKS) and on a local instance
+\texttt{https://lchai.gptfy.biz} and on a local instance
 with identical model checkpoints
 (Section~\ref{sec:impl:repro:checkpoints}).
 The demonstration assessed whether the integrated system produces
@@ -2251,7 +2252,7 @@ as Inconclusive with low probabilities.
 The Conclusive/Inconclusive labelling, driven by the per-gene AUROC
 threshold ($\geq 0.70$), correctly communicated the reliability of
 each prediction.
-The KEAP1 and RBM10 cases honestly exposed the limits of the approach:
+The KEAP1 and RBM10 cases exposed the limits of the approach:
 their SHAP decompositions (40/60\% pattern-dominated for KEAP1, 79/21\% embedding-dominated for RBM10) and
 near-uniform Choquet Shapley values quantitatively explain \emph{why}
 these genes are difficult---information that the v1.x system could not
