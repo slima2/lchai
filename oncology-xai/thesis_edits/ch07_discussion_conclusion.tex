@@ -23,7 +23,34 @@ Section~\ref{sec:disc:conclusion} concludes the thesis.
 \label{sec:disc:contributions}
 % ============================================================================
 
-This thesis makes the following contributions, organised by the three computational artefacts and the integrative system:
+This thesis makes six contributions, each backed by specific
+evaluation findings from Chapter~\ref{ch:evaluation}.
+Table~\ref{tab:contribution_finding_map} summarises the mapping.
+
+\begin{table}[ht!]
+\centering
+\small
+\caption{Mapping of contributions to supporting evaluation evidence.}
+\label{tab:contribution_finding_map}
+\begin{tabular}{c l l}
+\hline
+\textbf{\#} & \textbf{Contribution} & \textbf{Supporting evidence} \\
+\hline
+C1 & FuzzyArcLoss V2 (Artefact~1)
+   & RQ1: 92.31\% F1, $p{=}0.001$, $d{=}1.00$ \\
+C2 & PI-ABMIL (Artefact~2)
+   & Finding~1 (ties B2), Finding~3 (fuzzy$>$crisp 4/6 genes) \\
+C3 & FC-MIL (Artefact~3)
+   & Finding~6 (leads KRAS/RBM10), Finding~2 (gene-dependent) \\
+C4 & LCHAI v2.0 prototype
+   & Sec.~6.4: system demo on 6 representative slides \\
+C5 & Gene-dependent utility
+   & Findings~1, 2, 3: per-gene + per-slide ablation evidence \\
+C6 & Ontology explanation layer
+   & RQ6 (KG demo), RQ7 (50 DeepSearch relations) \\
+\hline
+\end{tabular}
+\end{table}
 
 \textbf{Contribution 1: FuzzyArcLoss V2 (Artefact 1).}
 A novel angular margin loss function that introduces per-sample fuzzy membership modulation for histopathological pattern classification.
