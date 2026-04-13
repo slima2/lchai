@@ -27,13 +27,13 @@ This thesis makes the following contributions, organised by the three computatio
 
 \textbf{Contribution 1: FuzzyArcLoss V2 (Artefact 1).}
 A novel angular margin loss function that introduces per-sample fuzzy membership modulation for histopathological pattern classification.
-Unlike fixed-margin losses (ArcFace, CosFace, SphereFace) that apply the same penalty to all training samples, FuzzyArcLoss~V2 adapts the margin strength based on classification confidence through an explicit fuzzy membership function (Equation~\ref{eq:membership_v2}).
+Unlike fixed-margin losses (ArcFace, CosFace, SphereFace)~\cite{deng2019arcface,wang2018cosface,liu2017sphereface} that apply the same penalty to all training samples, FuzzyArcLoss~V2 adapts the margin strength based on classification confidence through an explicit fuzzy membership function (Equation~\ref{eq:membership_v2}).
 The method achieves 92.31\% macro-F1 on six LUAD histological patterns (15 runs, $p = 0.001$ vs SphereFace), with particular improvement on the minority cribriform class (83.6\% F1).
 The systematic identification and correction of 20 pipeline issues established a correct experimental baseline, raising all loss functions uniformly by $+$18 percentage points and ensuring that the subsequent comparisons reflect genuine algorithmic merit rather than implementation artefacts.
 
 \textbf{Contribution 2: Pattern-Informed ABMIL (Artefact 2).}
 A multiple instance learning architecture that fuses CTransPath visual embeddings with fuzzy pattern membership probabilities, injecting validated histological domain knowledge as a structured prior.
-The method achieves mutation prediction AUROCs competitive with embedding-only ABMIL (mean AUROC 0.658) while enabling a six-level interpretability framework: spatial attention maps reveal \emph{where} the model attends, pattern attribution reveals \emph{what} it sees, SHAP decomposition quantifies embedding versus pattern contributions, per-slide feature channel ablation reveals whether patterns \emph{actually help or harm} each prediction, and fuzzy linguistic labels classify all numeric XAI outputs into calibrated intensity terms injected into LLM explanations.
+The method achieves mutation prediction AUROCs competitive with embedding-only ABMIL (mean AUROC 0.658) while enabling a six-level interpretability framework: (1)~spatial attention maps reveal \emph{where} the model attends, (2)~pattern overlay reveals \emph{what} it sees, (3)~SHAP decomposition quantifies embedding versus pattern contributions, (4)~Choquet Shapley values and interaction indices provide intrinsic interpretability for FC-MIL genes, (5)~per-slide feature channel ablation reveals whether patterns \emph{actually help or harm} each prediction, and (6)~fuzzy linguistic labels classify all numeric XAI outputs into calibrated intensity terms injected into LLM explanations.
 This combination allows a pathologist to verify and critique the model's reasoning against the original slide, addressing the interpretability gap in existing mutation prediction methods.
 
 \textbf{Contribution 3: Fuzzy Choquet MIL (Artefact 3).}
@@ -206,8 +206,8 @@ studies with smaller institutional cohorts could test directly.
 \label{sec:disc:interp:tradeoff}
 
 The field of H\&E-based mutation prediction has pursued a trajectory
-of increasing scale: from Coudray's 382 slides (2018) to DeepGEM's
-3{,}637 patients (2025) and CHIEF's 60{,}530 slides (2024).
+of increasing scale: from Coudray's 382 slides (2018)~\cite{coudray2018classification} to DeepGEM's
+3{,}637 patients (2025)~\cite{zhao2025deepgem} and CHIEF's 60{,}530 slides (2024)~\cite{wang2024chief}.
 Each increase in scale has been accompanied by an increase in model
 complexity and a decrease in interpretability.
 Foundation models such as CHIEF and GigaPath achieve superior AUROCs
@@ -235,7 +235,7 @@ their AUROC.
 The trade-off is quantifiable: at comparable data scale ($\sim$700
 slides), the pattern-informed approach achieves AUROCs of 0.694--0.717
 for clinically actionable genes (EGFR, TP53), compared to the 0.826
-reported by Coudray for EGFR on 382 slides.
+reported by Coudray for EGFR on 382 slides~\cite{coudray2018classification}.
 The $\sim$0.12 AUROC gap is the ``cost of interpretability.''
 Whether this cost is acceptable depends on the clinical context.
 In a triage setting, where the goal is to prioritise patients for
@@ -246,8 +246,8 @@ explanation.
 
 A third dimension of this trade-off concerns data scalability.
 The performance gap between this thesis and large-scale proprietary
-studies (DeepGEM: 0.82--0.96 on 3{,}637 patients; EAGLE: 0.890 on
-8{,}461 slides) reflects a structural data asymmetry rather than a
+studies (DeepGEM: 0.82--0.96 on 3{,}637 patients~\cite{zhao2025deepgem}; EAGLE: 0.890 on
+8{,}461 slides~\cite{campanella2025eagle}) reflects a structural data asymmetry rather than a
 methodological ceiling.
 Two lines of evidence support this interpretation.
 
@@ -289,7 +289,7 @@ discussion, as they constitute structural advantages of the proposed
 approach that AUROC alone cannot capture:
 
 \paragraph{Multi-level interpretability versus black-box prediction.}
-DeepGEM, EAGLE, CHIEF and GigaPath provide a single output: a mutation
+DeepGEM, EAGLE, CHIEF and GigaPath~\cite{zhao2025deepgem,campanella2025eagle,wang2024chief,xu2024gigapath} provide a single output: a mutation
 probability score.
 LCHAI~v2.0 simultaneously provides six layers of interpretability for
 every prediction: (i)~a spatial pattern overlay, (ii)~an ABMIL attention
@@ -310,23 +310,14 @@ B2 for TP53/EGFR, PI-ABMIL for STK11/KEAP1, and FC-MIL for
 KRAS/RBM10.
 LCHAI~v2.0 implements this finding through per-gene method selection
 based on the K-fold benchmark---a design principle absent from
-competing systems such as DeepGEM, which applies a single
+competing systems such as DeepGEM~\cite{zhao2025deepgem}, which applies a single
 architecture uniformly to all genes.
 
 \paragraph{Intrinsic interpretability and reproducibility.}
-The Fuzzy Choquet MIL achieves mean AUROC 0.653 across six genes
-using a fuzzy measure with only 21 interpretable parameters
-(6 Shapley values $+$ 15 interaction indices) within a hybrid
-architecture of $\sim$266{,}000 total parameters---comparable in
-scale to ABMIL ($\sim$200{,}000) yet offering intrinsic
-Shapley-value interpretability that black-box attention lacks.
-By contrast, DeepGEM's co-supervised MIL contains millions of
-parameters with no comparable interpretive structure.
-The interpretable fuzzy measure demonstrates that validated domain
-knowledge---the six histological patterns, encoded as fuzzy
-memberships---provides an inductive bias strong enough to concentrate
-mutation-relevant signal into a transparent, low-dimensional
-aggregation component.
+As detailed in Contribution~3, FC-MIL's 21-parameter fuzzy measure
+provides intrinsic Shapley-value interpretability that no
+attention-based method---including DeepGEM's co-supervised
+MIL~\cite{zhao2025deepgem}---can offer.
 Furthermore, all results in this thesis are fully reproducible from
 public data (TCGA-LUAD, 687 slides) with publicly available code,
 whereas DeepGEM's results depend on proprietary clinical data from
@@ -435,10 +426,9 @@ a \emph{multi-task} prediction architecture---jointly predicting all
 six genes and explicitly modelling co-mutation patterns---could
 improve sensitivity for genes whose morphological signal is
 confounded by co-occurring mutations.
-The current per-gene independent models cannot exploit the
-information that, for example, KRAS and STK11 are frequently
-co-mutated and produce a distinctive immune-cold microenvironment;
-a multi-task model could learn this joint phenotype directly.
+As discussed in Section~\ref{sec:disc:genotype_phenotype}, co-mutation
+interference is a major source of false negatives; a multi-task model
+could learn joint mutation phenotypes directly.
 
 
 \subsection{On the Relationship Between Fuzzy Logic and Biological Gradience}
@@ -478,7 +468,7 @@ The LCHAI system provides the ``demonstration'' activity, showing how the indivi
 The DSR framing also provides a natural way to discuss the results without claiming a breakthrough in mutation prediction accuracy.
 In DSR, an artefact is evaluated against its stated design objectives---not against the state of the art in an absolute sense.
 The design objectives of this thesis include interpretability, robustness to data scarcity, and principled integration of domain knowledge, none of which are captured by AUROC alone.
-The Fuzzy Choquet MIL, for example, would be considered a failure if evaluated purely on AUROC against DeepGEM (0.653 vs 0.82--0.96), but a success when evaluated on its ability to provide interpretable mutation predictions with built-in Shapley values from only 687 public slides.
+The Fuzzy Choquet MIL, for example, would be considered a failure if evaluated purely on AUROC against DeepGEM (0.653 vs 0.82--0.96)~\cite{zhao2025deepgem}, but a success when evaluated on its ability to provide interpretable mutation predictions with built-in Shapley values from only 687 public slides.
 
 
 % ============================================================================
@@ -505,7 +495,7 @@ With 687 slides (668 unique patients), the fold-to-fold variance in AUROC
 is substantial (std = 0.04--0.10), reducing the statistical power to
 detect small differences between conditions.
 Several comparisons that appear directionally meaningful
-(e.g., P vs B2 on STK11: $+0.011$) do not reach statistical significance.
+(e.g., PI-ABMIL vs B2 on STK11: $+0.011$) do not reach statistical significance.
 Larger cohorts would be needed to confirm or reject these trends.
 
 \textbf{Preliminary pathologist validation and no spatial mutation ground truth.}
@@ -632,7 +622,7 @@ The 15-run evaluation protocol mitigates this for the pattern classifier, but th
 
 \textbf{Embedding dimensionality.}
 The 512-dimensional CTransPath embeddings were chosen for consistency with the pattern classifier's projection head.
-Higher-dimensional embeddings (768 raw CTransPath, 1024 CONCH, 2048 RetCCL) might capture finer morphological nuances.
+Higher-dimensional embeddings (768 raw CTransPath~\cite{wang2022ctranspath}, 1024 CONCH, 2048 RetCCL~\cite{wang2023retccl}) might capture finer morphological nuances.
 A systematic study of embedding dimensionality was not conducted.
 
 
@@ -673,6 +663,17 @@ Applying Platt scaling or temperature scaling to the mutation
 prediction outputs, using a held-out calibration set, would improve
 the probability estimates and enable clinically meaningful binary
 classification at optimised thresholds.
+
+\textbf{Deterministic training.}
+The current mutation prediction benchmark uses a single seed per fold,
+making it susceptible to the $\pm 0.8$\,pp non-deterministic variation
+introduced by multi-GPU \texttt{DataParallel} and CUDA atomic
+operations (Section~\ref{sec:disc:lim:technical}).
+Adopting PyTorch deterministic mode
+(\texttt{torch.use\_deterministic\_algorithms(True)}) and repeating
+the 5-fold benchmark with 3 seeds (as done for the pattern classifier)
+would yield tighter confidence intervals and enable formal statistical
+testing between mutation prediction conditions.
 
 \textbf{Strategy for high-probability Inconclusive genes.}
 A notable finding is the paradox of genes with high individual-case
@@ -729,7 +730,7 @@ that the current dataset size ($N = 687$) does not support.
 \label{sec:disc:future:medium}
 
 \textbf{Foundation model embeddings.}
-Replacing CTransPath with more recent foundation model encoders (UNI, CONCH, GigaPath, Virchow) would test whether the pattern-informed approach provides an additional benefit on top of embeddings that are already optimised for diverse histopathological tasks.
+Replacing CTransPath with more recent foundation model encoders (UNI, CONCH, GigaPath, Virchow)~\cite{chen2024uni,xu2024gigapath} would test whether the pattern-informed approach provides an additional benefit on top of embeddings that are already optimised for diverse histopathological tasks.
 If the Fuzzy Choquet branch still provides gene-specific advantages (as observed for KRAS and RBM10 with CTransPath) when paired with stronger foundation model encoders, this would be strong evidence that the fuzzy aggregation mechanism captures complementary inter-pattern information independent of the specific visual encoder.
 
 \textbf{Dedicated Choquet-only ablation.}
@@ -953,11 +954,11 @@ processing through mutation prediction to explainable output with
 therapeutic knowledge linkage.
 
 The results are competitive with published methods at comparable data
-scale: this thesis surpasses Saldanha~et~al.\ (2023, $\sim$676 slides)
-and Logan~et~al.\ (2022, $\sim$747 slides) for TP53 and EGFR, while
+scale: this thesis surpasses Saldanha~et~al.\ (2023, $\sim$676 slides)~\cite{saldanha2023npj}
+and Logan~et~al.\ (2022, $\sim$747 slides)~\cite{logan2022medrxiv} for TP53 and EGFR, while
 providing interpretability that neither study offers.
 The gap relative to large-scale proprietary studies (DeepGEM, EAGLE,
-CHIEF) reflects the fundamental data asymmetry between public academic
+CHIEF)~\cite{zhao2025deepgem,campanella2025eagle,wang2024chief} reflects the fundamental data asymmetry between public academic
 research and hospital-scale industrial efforts---a gap that is structural
 rather than methodological.
 
@@ -1085,7 +1086,7 @@ refines, rather than refutes, the hypothesis.
 In conclusion, the principal contribution of this thesis is not
 predicting mutations with clinical-grade accuracy---that would
 require cohorts of 60{,}000+ slides as in CHIEF or
-GigaPath---but demonstrating that \textbf{fuzzy logic can improve
+GigaPath~\cite{wang2024chief,xu2024gigapath}---but demonstrating that \textbf{fuzzy logic can improve
 pattern classification, capture inter-pattern interactions via the
 Choquet integral, and make the entire prediction pipeline transparent
 through multiple layers of explanation}, all with 687 public slides.
