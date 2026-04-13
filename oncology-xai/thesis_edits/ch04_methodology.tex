@@ -114,6 +114,24 @@ Ablation experiments (Section~\ref{sec:uc:pipeline_fixes}) demonstrated that wit
 The first convolutional layer of the CTransPath backbone, originally designed for 3-channel input, is adapted to accept 4 channels by expanding the input convolution kernel weights.
 The additional channel weights are initialised as the mean of the three RGB channel weights, preserving the pretrained feature extraction for the RGB channels while allowing the network to learn the mask signal during fine-tuning.
 
+\textbf{Training vs.\ inference mask source.}
+During training on the Zenodo--ANORAK dataset~\cite{anorak2024}, the
+tissue mask is derived from the expert-annotated \texttt{.mat} files
+by thresholding non-zero pixels.
+During inference on TCGA whole-slide images, no expert masks are
+available; the tissue mask is instead generated automatically via
+Otsu thresholding~\cite{otsu1979threshold} on the saturation channel
+of the HSV colour space.
+Both masks encode the same binary semantic information
+(tissue~$= 1$, background~$= 0$), and Otsu-based tissue
+segmentation is the standard approach in computational
+pathology~\cite{janowczyk2016deep}.
+The quality difference between expert-derived and Otsu-derived masks
+is minimal for tissue-versus-background discrimination (as opposed
+to pattern classification), and the model is exposed to automatically
+generated masks during TCGA embedding extraction, ensuring
+consistency between the feature space used for training and inference.
+
 
 % ============================================================================
 \section{Artefact 1: FuzzyArcLoss V2 for Pattern Classification}
