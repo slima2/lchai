@@ -32,7 +32,7 @@ This pipeline is shared by all experimental conditions and consists of four stag
 \subsection{Tissue Detection and Tiling}
 \label{sec:meth:tiling}
 
-Given a WSI in Aperio SVS format, tissue regions are segmented from the glass background using Otsu thresholding on the saturation channel of the HSV colour space.
+Given a WSI in Aperio SVS format, tissue regions are segmented from the glass background using Otsu thresholding~\cite{otsu1979threshold} on the saturation channel of the HSV colour space.
 Connected components smaller than $64 \times 64$ pixels at the target magnification are discarded as debris.
 The remaining tissue area is partitioned into non-overlapping tiles of $224 \times 224$ pixels at $20\times$ magnification (approximately $0.50\,\mu\text{m/pixel}$).
 Tiles with less than 50\% tissue content (measured as the fraction of foreground pixels after thresholding) are excluded.
@@ -50,7 +50,7 @@ The encoder produces a 768-dimensional feature vector from its backbone:
 \mathbf{e}_i^{\text{raw}} = f_{\text{CTransPath}}(t_i) \in \mathbb{R}^{768}.
 \end{equation}
 
-A learned linear projection head, fine-tuned during the pattern classification training on the Zenodo dataset, compresses the representation to 512 dimensions:
+A learned linear projection head, fine-tuned during the pattern classification training on the Zenodo dataset~\cite{anorak2024}, compresses the representation to 512 dimensions:
 \begin{equation}
 \label{eq:projection}
 \mathbf{x}_i = \mathbf{W}_{\text{proj}} \, \mathbf{e}_i^{\text{raw}} + \mathbf{b}_{\text{proj}} \in \mathbb{R}^{512},
@@ -81,7 +81,7 @@ The projection from 768 to 512 dimensions is not merely a
 dimensionality reduction: the projection head
 $(\mathbf{W}_{\text{proj}}, \mathbf{b}_{\text{proj}})$ was trained
 \emph{jointly} with the FuzzyArcLoss~V2 classifier on the Zenodo
-dataset, meaning the 512 output dimensions were optimised specifically
+dataset~\cite{anorak2024}, meaning the 512 output dimensions were optimised specifically
 to separate the six LUAD histological patterns on the angular
 hypersphere.
 The resulting embedding space is therefore \emph{pattern-oriented}:
@@ -93,7 +93,7 @@ for the downstream mutation prediction task than the raw 768-d
 CTransPath output, because it concentrates representational capacity
 on the morphological distinctions most relevant to lung adenocarcinoma.
 While the literature uses embedding dimensions ranging from 512
-(CTransPath) to 2048 (RetCCL~\cite{wang2023retccl}), the lower
+(CTransPath~\cite{wang2022ctranspath}) to 2048 (RetCCL~\cite{wang2023retccl}), the lower
 dimensionality is additionally advantageous under data scarcity
 because it reduces the risk of overfitting in downstream models
 operating on $\sim$687 slides.
@@ -238,10 +238,10 @@ loss~\cite{lin2017focal}:
 \;+\; (1 - \alpha) \, \mathcal{L}_{\text{focal}}(s \tilde{\mathbf{z}}_i, y_i),
 \end{equation}
 where $\alpha = 0.6$ balances the two components.
-Label smoothing ($\epsilon = 0.1$) prevents overconfident predictions,
+Label smoothing~\cite{szegedy2016rethinking} ($\epsilon = 0.1$) prevents overconfident predictions,
 while the focal term (with $\gamma = 2.0$) up-weights hard examples
 that the model classifies poorly---a combination particularly suited
-to the class-imbalanced Zenodo--ANORAK dataset where the minority
+to the class-imbalanced Zenodo--ANORAK dataset~\cite{anorak2024} where the minority
 cribriform and micropapillary classes have only 55 training tiles each.
 
 \subsubsection{Gradient Analysis}
@@ -295,8 +295,8 @@ CurricularFace~\cite{huang2020curricularface} & Curriculum-adaptive & Per sample
 \end{table}
 
 FuzzyArcLoss~V2 is distinguished by its \emph{sample-level, confidence-based} modulation through an explicit fuzzy membership function that interpolates between the full ArcFace logit and the margin-free cosine (Equation~\ref{eq:fuzzyarcloss_v2_method}).
-AdaptiveFace adjusts margins per class but treats all samples within a class uniformly.
-CurricularFace is also per-sample, but it modulates \emph{negative-class} logits based on an adaptive threshold $t$ (an exponential moving average of target cosine) that evolves during training; the target-class margin itself remains fixed at $m$.
+AdaptiveFace~\cite{liu2019adaptiveface} adjusts margins per class but treats all samples within a class uniformly.
+CurricularFace~\cite{huang2020curricularface} is also per-sample, but it modulates \emph{negative-class} logits based on an adaptive threshold $t$ (an exponential moving average of target cosine) that evolves during training; the target-class margin itself remains fixed at $m$.
 In contrast, FuzzyArcLoss~V2 modulates the \emph{target-class} logit directly via the fuzzy membership $\mu_i$, which is a deterministic function of instantaneous classification confidence and requires no running statistics.
 This produces a margin that varies both across samples and across training epochs as the model improves.
 
@@ -342,7 +342,7 @@ larger datasets.
 \subsection{Hyperparameter Optimisation with Optuna}
 \label{sec:meth:pattern:optuna}
 
-The three key hyperparameters of FuzzyArcLoss~V2---scale $s$, margin $m$, and threshold $\tau$---were optimised using Optuna~\cite{akiba2019optuna}, a Bayesian hyperparameter optimisation framework based on the Tree-structured Parzen Estimator (TPE) algorithm.
+The three key hyperparameters of FuzzyArcLoss~V2---scale $s$, margin $m$, and threshold $\tau$---were optimised using Optuna~\cite{akiba2019optuna}, a Bayesian hyperparameter optimisation framework based on the Tree-structured Parzen Estimator (TPE)~\cite{bergstra2011tpe} algorithm.
 
 The search space was defined as:
 \begin{align}
@@ -421,8 +421,8 @@ The margin $m^* = 0.518$ is close to the ArcFace default ($m = 0.5$), confirming
 
 The pattern classifier is trained with the following protocol:
 \begin{itemize}
-    \item \textbf{Optimiser:} AdamW with weight decay $10^{-4}$.
-    \item \textbf{Learning rate schedule:} Linear warmup for 5 epochs followed by cosine annealing to $10^{-6}$.
+    \item \textbf{Optimiser:} AdamW~\cite{loshchilov2019adamw} with weight decay $10^{-4}$.
+    \item \textbf{Learning rate schedule:} Linear warmup for 5 epochs followed by cosine annealing~\cite{loshchilov2017sgdr} to $10^{-6}$.
     \item \textbf{Warmup formula:} $\text{lr}_{\text{epoch}} = \text{lr}_{\text{base}} \cdot (\text{epoch} + 1) / \text{warmup\_epochs}$.
     \item \textbf{Epochs:} 120 (reduced from 150 to prevent overfitting on the small dataset).
     \item \textbf{Precision:} fp32 (mixed-precision fp16 was found to corrupt angular margin gradients; see Section~\ref{sec:uc:pipeline_fixes}).
@@ -496,7 +496,7 @@ The comparison between PI-ABMIL and A tests whether the continuous (fuzzy) repre
 \subsection{Attention-Based MIL Architecture}
 \label{sec:meth:mutation:abmil}
 
-For conditions B2, B3, PI-ABMIL, and A, the ABMIL architecture consists of three modules: a tile-level transformation, an attention mechanism, and a slide-level classifier.
+For conditions B2, B3, PI-ABMIL, and A, the ABMIL architecture~\cite{ilse2018attention} consists of three modules: a tile-level transformation, an attention mechanism, and a slide-level classifier.
 
 \subsubsection{Tile-Level Transformation}
 
@@ -506,11 +506,11 @@ Each tile representation is projected through a two-layer feedforward network:
 \mathbf{h}_i' = \text{ReLU}(\mathbf{W}_2 \cdot \text{ReLU}(\mathbf{W}_1 \mathbf{h}_i + \mathbf{b}_1) + \mathbf{b}_2) \in \mathbb{R}^{L},
 \end{equation}
 where $L = 256$ is the hidden dimension.
-Dropout with $p = 0.25$ is applied after each ReLU activation.
+Dropout~\cite{srivastava2014dropout} with $p = 0.25$ is applied after each ReLU activation.
 
 \subsubsection{Gated Attention Mechanism}
 
-The attention weight for tile $i$ is computed using the gated attention formulation~\cite{lu2021data}:
+The attention weight for tile $i$ is computed using the gated attention formulation~\cite{ilse2018attention,lu2021data}:
 \begin{equation}
 \label{eq:gated_attn}
 a_i = \frac{\exp\left(\mathbf{w}^\top \left(\tanh(\mathbf{V} \mathbf{h}_i') \odot \sigma(\mathbf{U} \mathbf{h}_i')\right)\right)}{\sum_{j=1}^{N_s} \exp\left(\mathbf{w}^\top \left(\tanh(\mathbf{V} \mathbf{h}_j') \odot \sigma(\mathbf{U} \mathbf{h}_j')\right)\right)},
@@ -566,7 +566,7 @@ genotype is better reflected by global architectural composition than by
 any single microscopic region~\cite{coudray2018classification}; and
 (ii)~it produces a fixed-dimensional case representation regardless of
 slide size (5{,}000--80{,}000 tiles), enabling direct comparison across
-the heterogeneous TCGA-LUAD cohort.
+the heterogeneous TCGA-LUAD cohort~\cite{tcga2014luad}.
  
 
 % ============================================================================
@@ -583,7 +583,7 @@ This section presents its mathematical formulation.
 The standard ABMIL attention mechanism (Equation~\ref{eq:gated_attn}) learns which \emph{tiles} are important but treats each tile's pattern memberships independently.
 It cannot model interactions between patterns: for example, the co-occurrence of solid and micropapillary morphology in the same tumour may predict TP53 mutation more strongly than either pattern alone, but ABMIL has no mechanism to capture this superadditive effect.
 
-The Choquet integral provides exactly this capability.
+The Choquet integral~\cite{choquet1954theory,grabisch2009aggregation} provides exactly this capability.
 By operating on the six-dimensional fuzzy membership vector with a learned fuzzy measure, it aggregates pattern contributions while accounting for pairwise (and higher-order) interactions between patterns.
 
 \subsection{Architecture}
@@ -611,7 +611,7 @@ This pathway captures the same visual features as condition~B2.
 
 In parallel, the tile-level fuzzy membership vectors
 $\{\mathbf{p}_1, \ldots, \mathbf{p}_{N_s}\}$ are passed through the
-discrete Choquet integral with a learned 2-additive fuzzy measure $g$.
+discrete Choquet integral with a learned 2-additive fuzzy measure~\cite{grabisch1997kapprox} $g$.
 Following Section~\ref{sec:bg:choquet:secondorder}, the fuzzy measure is
 parameterised by Shapley values $\{\phi_k\}_{k=1}^{6}$ and pairwise
 interaction indices $\{I_{jk}\}_{j < k}$:
@@ -620,7 +620,7 @@ interaction indices $\{I_{jk}\}_{j < k}$:
 g(A) = \sum_{k \in A} \phi_k + \sum_{\{j,k\} \subseteq A} I_{jk}, \quad A \subseteq \{1, \ldots, 6\}.
 \end{equation}
 
-The Shapley values are constrained to be non-negative and sum to~1 via a
+The Shapley values~\cite{shapley1953value} are constrained to be non-negative and sum to~1 via a
 softmax parameterisation:
 \begin{equation}
 \label{eq:shapley_param}
@@ -764,7 +764,7 @@ associated with dedifferentiation at the tumour boundary.''
 \label{sec:meth:interp:shap}
 
 For condition B1 (XGBoost), TreeSHAP~\cite{lundberg2020treeshap} provides exact Shapley values for each of the seven slide-level features.
-For ABMIL conditions, DeepSHAP attributes the prediction to individual dimensions of the tile representation $\mathbf{h}_i$.
+For ABMIL conditions, DeepSHAP~\cite{lundberg2017shap} attributes the prediction to individual dimensions of the tile representation $\mathbf{h}_i$.
 In PI-ABMIL, the SHAP decomposition can distinguish contributions from the CTransPath embedding dimensions (positions 1--512) versus the pattern probability dimensions (positions 513--518), quantifying the relative importance of visual features versus pattern knowledge for each gene.
 
 \subsection{Level 4: Choquet Shapley Values (Artefact 3 Only)}
@@ -1297,13 +1297,13 @@ Conditions B2, B3, PI-ABMIL and A evaluate Artefact~2 under different input repr
 
 \textbf{Primary metric:} AUROC (Area Under the Receiver Operating
 Characteristic Curve), the standard metric in the mutation prediction
-literature, reported as mean $\pm$ standard deviation across folds.
+literature~\cite{coudray2018classification,kather2020pancancer}, reported as mean $\pm$ standard deviation across folds.
 
-\textbf{Secondary metrics:} AUPRC (Area Under the Precision-Recall
+\textbf{Secondary metrics:} AUPRC~\cite{davis2006auprc} (Area Under the Precision-Recall
 Curve), particularly informative for imbalanced genes (RBM10 at 5.4\%,
 STK11 at 9.9\%);
 and F1 score at the 0.5 probability threshold, with the caveat that
-threshold optimisation (e.g., Youden's $J$) would be needed for
+threshold optimisation (e.g., Youden's $J$~\cite{youden1950index}) would be needed for
 clinical deployment.
 AUPRC is computed for all six experimental conditions to expose
 the gap between ranking ability and precision-recall performance,
@@ -1333,7 +1333,7 @@ To complement $p$-values, Cohen's $d$ quantifies the standardised difference bet
 d = \frac{\bar{x}_1 - \bar{x}_2}{s_{\text{pooled}}},
 \end{equation}
 where $s_{\text{pooled}}$ is the pooled standard deviation.
-Following standard conventions: $|d| < 0.2$ = negligible, $0.2 \leq |d| < 0.5$ = small, $0.5 \leq |d| < 0.8$ = medium, $|d| \geq 0.8$ = large.
+Following standard conventions~\cite{cohen1988statistical}: $|d| < 0.2$ = negligible, $0.2 \leq |d| < 0.5$ = small, $0.5 \leq |d| < 0.8$ = medium, $|d| \geq 0.8$ = large.
 
 \subsubsection{Win Rate}
 
