@@ -16,7 +16,7 @@ The exposition follows the Design Science Research principle of providing a comp
 The methodology is organised around the two sequential tasks of the pipeline.
 Section~\ref{sec:meth:tile_pipeline} describes the tile-level preprocessing and feature extraction pipeline that is common to all downstream methods.
 Section~\ref{sec:meth:pattern_classifier} formalises the pattern classification task and the design of FuzzyArcLoss~V2 (Artefact~1), including its mathematical derivation from first principles, the fuzzy membership formulation, and the hyperparameter optimisation strategy.
-Section~\ref{sec:meth:mutation_prediction} presents the mutation prediction framework, detailing the five experimental conditions: the XGBoost baseline (B1), ABMIL on embeddings (B2), ABMIL on patterns (B3), PI-ABMIL (PI, Artefact~2, ours), the crisp ablation (A), and FC-MIL (FC, Artefact~3, ours).
+Section~\ref{sec:meth:mutation_prediction} presents the mutation prediction framework, detailing the six experimental conditions: the XGBoost baseline (B1), ABMIL on embeddings (B2), ABMIL on patterns (B3), PI-ABMIL (Artefact~2, ours), the crisp ablation (A), and FC-MIL (Artefact~3, ours).
 Section~\ref{sec:meth:interpretability} describes the interpretability framework.
 Section~\ref{sec:meth:evaluation_protocol} specifies the evaluation protocol, including cross-validation, statistical testing, and metric selection.
 
@@ -68,8 +68,10 @@ gradients (see Section~\ref{sec:bg:ctranspath} for details).
 Unlike the six explicit pattern probabilities $\mathbf{p}_i$, which
 carry clinically labelled meaning, the embedding captures a much
 richer but less directly interpretable set of visual features.
-This distinction is central to the SHAP decomposition
-(Section~\ref{sec:meth:shap}), where the relative contribution of the
+This distinction is central to the SHAP
+decomposition~\cite{lundberg2017shap}
+(Section~\ref{sec:meth:interp:shap}), where the relative contribution
+of the
 512 embedding dimensions versus the 6 pattern dimensions reveals
 whether the model relies on interpretable domain knowledge or on
 opaque visual features for each gene.
@@ -107,7 +109,7 @@ For the pattern classification task (Artefact~1), the RGB tile is augmented with
 where $t_i^{\text{mask}} \in \{0, 1\}^{224 \times 224}$ indicates diagnostically relevant tissue regions (as opposed to glass background, pen marks, or out-of-focus areas).
 
 This spatial prior explicitly informs the classifier about which regions of the tile contain diagnostic tissue, eliminating the need to learn background versus tissue discrimination from the limited training set.
-Ablation experiments (Section~\ref{sec:uc:pipeline_fixes}) demonstrated that this modification contributes an estimated 15--20 percentage points to classification performance.
+Ablation experiments (Section~\ref{sec:uc:pipeline_fixes}) demonstrated that without this mask channel, classification performance drops by an estimated 15--20 percentage points across all loss functions, confirming the tissue mask as a necessary pipeline component.
 
 The first convolutional layer of the CTransPath backbone, originally designed for 3-channel input, is adapted to accept 4 channels by expanding the input convolution kernel weights.
 The additional channel weights are initialised as the mean of the three RGB channel weights, preserving the pretrained feature extraction for the RGB channels while allowing the network to learn the mask signal during fine-tuning.
@@ -282,11 +284,11 @@ Table~\ref{tab:margin_comparison} compares FuzzyArcLoss~V2 with related adaptive
 \toprule
 \textbf{Method} & \textbf{Margin type} & \textbf{Adaptation level} & \textbf{Modulation signal} \\
 \midrule
-ArcFace & Fixed additive & None & --- \\
-CosFace & Fixed cosine & None & --- \\
-SphereFace & Fixed multiplicative & None & --- \\
-AdaptiveFace & Class-adaptive & Per class & $\bar{c}_k$ (class difficulty) \\
-CurricularFace & Curriculum-adaptive & Per sample & $t$ (EMA of $\cos\theta_y$) + sample $\cos\theta_j$ \\
+ArcFace~\cite{deng2019arcface} & Fixed additive & None & --- \\
+CosFace~\cite{wang2018cosface} & Fixed cosine & None & --- \\
+SphereFace~\cite{liu2017sphereface} & Fixed multiplicative & None & --- \\
+AdaptiveFace~\cite{liu2019adaptiveface} & Class-adaptive & Per class & $\bar{c}_k$ (class difficulty) \\
+CurricularFace~\cite{huang2020curricularface} & Curriculum-adaptive & Per sample & $t$ (EMA of $\cos\theta_y$) + sample $\cos\theta_j$ \\
 \textbf{FuzzyArcLoss V2} & \textbf{Fuzzy interpolation} & \textbf{Per sample} & $\mu(\cos\theta_y)$ (confidence) \\
 \bottomrule
 \end{tabular}}
@@ -467,7 +469,7 @@ Let $\mathbf{o}_i \in \{0,1\}^6$ be the one-hot encoding of the predicted patter
 B1 & XGBoost baseline & N/A (slide-level features) & 7 \\
 B2 & ABMIL --- embeddings & $\mathbf{h}_i = \mathbf{x}_i$ & 512 \\
 B3 & ABMIL --- patterns & $\mathbf{h}_i = \mathbf{p}_i$ & 6 \\
-PI-ABMIL  & PI-ABMIL (concat soft, ours) & $\mathbf{h}_i = [\mathbf{x}_i \,\|\, \mathbf{p}_i]$ & 518 \\
+PI-ABMIL  & PI-ABMIL (ours) & $\mathbf{h}_i = [\mathbf{x}_i \,\|\, \mathbf{p}_i]$ & 518 \\
 A  & Ablation (one-hot) & $\mathbf{h}_i = [\mathbf{x}_i \,\|\, \mathbf{o}_i]$ & 518 \\
 FC-MIL & FC-MIL (hybrid, ours) & $\mathbf{h}_i = (\mathbf{x}_i, \mathbf{p}_i)$ (dual pathway) & 512+6 \\
 \hline
@@ -554,7 +556,7 @@ For each slide $s$, a seven-dimensional feature vector is computed from the tile
 where $\text{frac}_k = |\{i : \hat{y}_i = k\}| / N_s$ is the fraction of tiles assigned to pattern $k$, and $H_s = -\sum_{k=1}^{6} \text{frac}_k \log(\text{frac}_k + \epsilon)$ is the Shannon entropy of the pattern distribution, measuring intra-tumoral heterogeneity.
 
 An XGBoost gradient-boosted tree classifier~\cite{chen2016xgboost} is trained on these seven features.
-XGBoost is chosen for its robustness to small sample sizes, built-in regularisation, and compatibility with SHAP for feature attribution.
+XGBoost is chosen for its robustness to small sample sizes, built-in regularisation, and compatibility with SHAP~\cite{lundberg2017shap} for feature attribution.
 
 \textbf{Rationale.}
 Converting locally ambiguous tile predictions into a global distributional
@@ -708,7 +710,7 @@ The Fuzzy Choquet MIL is trained with binary cross-entropy plus the interaction 
 \end{equation}
 
 \textbf{Interpretability by construction.}
-Unlike post-hoc explanation methods (SHAP, attention maps), the Choquet integral provides built-in interpretability through its learned parameters:
+Unlike post-hoc explanation methods (SHAP~\cite{lundberg2017shap}, attention maps), the Choquet integral provides built-in interpretability through its learned parameters:
 \begin{itemize}
     \item The Shapley value $\phi_k$ quantifies the marginal contribution of pattern $k$ to the fuzzy measure.
     Because the softmax parameterisation (Equation~\ref{eq:shapley_param}) ensures $\sum_k \phi_k = 1$, the uniform baseline is $\phi_k = 1/6 \approx 0.167$.
@@ -811,8 +813,8 @@ channel ablation} (cf.\ Section~\ref{sec:bg:channel_ablation}) by
 running three \emph{separately trained} models on the same tile set:
 
 \begin{enumerate}
-    \item \textbf{Combined} ($f_{\text{PI}}$): the PI-ABMIL model
-    (PI-ABMIL), operating on the full 518-d representation
+    \item \textbf{Combined} ($f_{\text{PI}}$): the PI-ABMIL model,
+    operating on the full 518-d representation
     $\mathbf{h}_i = [\mathbf{x}_i \,\|\, \mathbf{p}_i]$.
     \item \textbf{Embeddings-only} ($f_{\text{B2}}$): the ABMIL model
     trained on CTransPath embeddings alone (condition~B2),
