@@ -8,7 +8,7 @@ import {
   getKGSnapshots, createKGSnapshot, getKGChangelog, api,
 } from '../api';
 
-type Tab = 'parameters' | 'reference' | 'pipeline' | 'versions' | 'ontologies' | 'audit' | 'fuzzy';
+type Tab = 'parameters' | 'reference' | 'pipeline' | 'versions' | 'ontologies' | 'audit' | 'fuzzy' | 'corrections';
 
 const METHODS: Record<string, string> = {
   TP53: 'B2 (embeddings)', EGFR: 'B2 (embeddings)', RBM10: 'FC (Fuzzy Choquet)',
@@ -284,6 +284,7 @@ export default function AdminPanel() {
     { key: 'ontologies', label: 'Ontology Management', icon: '🧬' },
     { key: 'audit', label: 'Audit Log', icon: '📋' },
     { key: 'fuzzy', label: 'Fuzzy Labels', icon: '🎛' },
+    { key: 'corrections', label: 'Correction History', icon: '✏️' },
   ];
 
   return (
@@ -772,6 +773,104 @@ Linear(256→1) → sigmoid → P(mut)`}</pre>
 
       {/* ──── Fuzzy Labels ──── */}
       {tab === 'fuzzy' && <FuzzyLabelsPanel />}
+
+      {/* ──── Correction History ──── */}
+      {tab === 'corrections' && <CorrectionHistoryPanel />}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Correction History Panel — Active Learning Audit Trail
+   ═══════════════════════════════════════════════════════════════ */
+
+function CorrectionHistoryPanel() {
+  const [corrections, setCorrections] = useState<any[]>([]);
+  const [modelVersions, setModelVersions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      api.get('/active-learning/corrections-all').catch(() => ({ data: [] })),
+      api.get('/active-learning/model-versions').catch(() => ({ data: [] })),
+    ]).then(([corrRes, mvRes]) => {
+      setCorrections(Array.isArray(corrRes.data) ? corrRes.data : []);
+      setModelVersions(Array.isArray(mvRes.data) ? mvRes.data : []);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <p className="p-4 text-gray-500">Loading correction history...</p>;
+
+  return (
+    <div className="space-y-6">
+      {/* Model Versions */}
+      <div className="bg-white border rounded-lg p-4">
+        <h3 className="font-bold text-lg mb-3">Model Versions ({modelVersions.length})</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 py-2 text-left">Version</th>
+                <th className="px-3 py-2 text-left">Parent</th>
+                <th className="px-3 py-2 text-left">Corrections</th>
+                <th className="px-3 py-2 text-left">Slide</th>
+                <th className="px-3 py-2 text-left">Notes</th>
+                <th className="px-3 py-2 text-left">Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {modelVersions.map((mv: any, i: number) => (
+                <tr key={i} className="border-t hover:bg-gray-50">
+                  <td className="px-3 py-2 font-mono text-xs">{mv.version_tag}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{mv.parent_version || '—'}</td>
+                  <td className="px-3 py-2">{mv.corrections_count}</td>
+                  <td className="px-3 py-2 text-xs">{mv.slide_id}</td>
+                  <td className="px-3 py-2 text-xs">{mv.notes}</td>
+                  <td className="px-3 py-2 text-xs">{mv.created_at ? new Date(mv.created_at).toLocaleString() : ''}</td>
+                </tr>
+              ))}
+              {!modelVersions.length && <tr><td colSpan={6} className="px-3 py-4 text-gray-400 text-center">No model versions yet</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Pattern Corrections */}
+      <div className="bg-white border rounded-lg p-4">
+        <h3 className="font-bold text-lg mb-3">Pattern Corrections ({corrections.length})</h3>
+        <div className="overflow-x-auto max-h-96 overflow-y-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 sticky top-0">
+              <tr>
+                <th className="px-3 py-2 text-left">User</th>
+                <th className="px-3 py-2 text-left">Case</th>
+                <th className="px-3 py-2 text-left">Tile</th>
+                <th className="px-3 py-2 text-left">Original</th>
+                <th className="px-3 py-2 text-left">Corrected</th>
+                <th className="px-3 py-2 text-left">Model Before</th>
+                <th className="px-3 py-2 text-left">Model After</th>
+                <th className="px-3 py-2 text-left">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {corrections.map((c: any, i: number) => (
+                <tr key={i} className="border-t hover:bg-gray-50">
+                  <td className="px-3 py-2 font-semibold text-blue-700">{c.corrected_by}</td>
+                  <td className="px-3 py-2 text-xs">{c.case_id}</td>
+                  <td className="px-3 py-2">#{c.tile_index}</td>
+                  <td className="px-3 py-2 text-red-600">{c.original_pattern}</td>
+                  <td className="px-3 py-2 text-green-600 font-semibold">{c.corrected_pattern}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{c.model_version_before || '—'}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{c.model_version_after || '—'}</td>
+                  <td className="px-3 py-2 text-xs">{c.created_at ? new Date(c.created_at).toLocaleString() : ''}</td>
+                </tr>
+              ))}
+              {!corrections.length && <tr><td colSpan={8} className="px-3 py-4 text-gray-400 text-center">No corrections submitted yet</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

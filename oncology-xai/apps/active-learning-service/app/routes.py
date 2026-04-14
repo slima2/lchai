@@ -117,6 +117,30 @@ async def get_corrections(result_bundle_id: str, db: AsyncSession = Depends(get_
     }
 
 
+@router.get("/corrections-all")
+async def get_all_corrections(db: AsyncSession = Depends(get_db), limit: int = 500):
+    """List all corrections across all bundles (admin audit trail)."""
+    result = await db.execute(
+        select(PatternCorrectionDB)
+        .order_by(PatternCorrectionDB.created_at.desc())
+        .limit(limit)
+    )
+    corrections = result.scalars().all()
+    return [
+        {
+            "id": c.id, "case_id": c.case_id, "image_id": c.image_id,
+            "tile_index": c.tile_index,
+            "original_pattern": c.original_pattern,
+            "corrected_pattern": c.corrected_pattern,
+            "corrected_by": c.corrected_by,
+            "model_version_before": c.model_version_before,
+            "model_version_after": c.model_version_after,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        }
+        for c in corrections
+    ]
+
+
 @router.get("/model-versions")
 async def list_model_versions(db: AsyncSession = Depends(get_db)):
     """List all model versions (original + delta-trained)."""
@@ -232,6 +256,30 @@ async def _run_correction_pipeline(
             sync_db.add(pc)
 
         sync_db.commit()
+
+        # Emit audit event for correction tracking
+        try:
+            from event_contracts.publisher import EventPublisher
+            from event_contracts.envelope import EventEnvelope
+            publisher = EventPublisher(settings.rabbitmq_url)
+            corrected_by = corrections[0].get("corrected_by", "unknown") if corrections else "unknown"
+            envelope = EventEnvelope(
+                event_type="active_learning.correction_applied",
+                producer="active-learning-service",
+                case_id=case_id,
+                payload={
+                    "result_bundle_id": rb_id,
+                    "image_id": image_id,
+                    "corrected_by": corrected_by,
+                    "corrections_count": len(corrections),
+                    "model_version_before": current_version_tag,
+                    "model_version_after": version_tag,
+                    "new_pth_uri": new_pth_uri,
+                },
+            )
+            publisher.publish(envelope)
+        except Exception as pub_err:
+            logger.warning("Failed to publish audit event: %s", pub_err)
 
         job.update(progress=0.6, stage="Triggering slide re-analysis...")
 

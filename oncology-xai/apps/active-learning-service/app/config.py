@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     s3_bucket: str = "oncology-xai"
 
     inference_service_url: str = "http://inference-service:8003"
+    rabbitmq_url: str = "amqp://guest:guest@rabbitmq:5672/"
 
     delta_train_epochs: int = 10
     delta_train_lr: float = 1e-5

@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, getResultBundle, getArtifacts, getArtifactUrl, getImages, getJob, submitPatternCorrections, getActiveLearningJob } from '../api';
 import { patternColor, filterAllowedPatternResults, predominantPatternForDisplay, PATTERN_COLORS, type AnorakPattern } from '../patternConstants';
+import { useAuth } from '../auth/AuthProvider';
 
 interface Props {
   caseId: string;
@@ -24,6 +25,7 @@ function pointInPolygon(x: number, y: number, polygon: {x: number; y: number}[])
 }
 
 export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) {
+  const { user } = useAuth();
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -224,7 +226,7 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
       tile_y: regionMap[idx]?.yn || 0,
       original_pattern: regionMap[idx]?.pattern || 'unknown',
       corrected_pattern: correctionPattern,
-      corrected_by: 'pathologist (SOLCA)',
+      corrected_by: user?.name || 'unknown',
     }));
     try {
       setRetrainStatus('PENDING');
