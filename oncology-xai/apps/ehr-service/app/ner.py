@@ -93,8 +93,8 @@ def extract_entities(text: str) -> list[ExtractedEntity]:
 ONTOLOGY_MAP: dict[str, dict[str, tuple[str, str]]] = {
     "MUTATION": {
         "EGFR": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17757"),
-        "KRAS": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17383"),
-        "TP53": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17387"),
+        "KRAS": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25785"),
+        "TP53": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17359"),
     },
     "DIAGNOSIS": {
         "adenocarcinoma": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C2852"),
@@ -102,11 +102,11 @@ ONTOLOGY_MAP: dict[str, dict[str, tuple[str, str]]] = {
         "lung cancer": ("MONDO", "http://purl.obolibrary.org/obo/MONDO_0008903"),
     },
     "PATTERN": {
-        "lepidic": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128847"),
-        "acinar": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128848"),
-        "papillary": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128849"),
-        "micropapillary": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128850"),
-        "solid": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128851"),
+        "lepidic": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C55821"),
+        "acinar": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C35922"),
+        "papillary": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C35911"),
+        "micropapillary": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C36181"),
+        "solid": ("NCIt", "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C36182"),
     },
 }
 

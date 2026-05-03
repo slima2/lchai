@@ -58,17 +58,17 @@ STAGE_KEYWORDS = {
 # Ontology IRI mappings
 ONTOLOGY_MAP: dict[str, dict[str, str]] = {
     "EGFR": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17757", "label": "EGFR Gene"},
-    "KRAS": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17383", "label": "KRAS Gene"},
-    "TP53": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17387", "label": "TP53 Gene"},
+    "KRAS": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25785", "label": "KRAS Gene"},
+    "TP53": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17359", "label": "TP53 Gene"},
     "ALK": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C20316", "label": "ALK Gene"},
     "ROS1": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C101480", "label": "ROS1 Gene"},
     "adenocarcinoma": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C2852", "label": "Adenocarcinoma"},
     "NSCLC": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C2926", "label": "Non-Small Cell Lung Carcinoma"},
-    "lepidic": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128847", "label": "Lepidic Pattern"},
-    "acinar": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128848", "label": "Acinar Pattern"},
-    "papillary": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128849", "label": "Papillary Pattern"},
-    "micropapillary": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128850", "label": "Micropapillary Pattern"},
-    "solid": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128851", "label": "Solid Pattern"},
+    "lepidic": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C55821", "label": "Lepidic Growth Pattern"},
+    "acinar": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C35922", "label": "Acinar Pattern"},
+    "papillary": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C35911", "label": "Papillary Growth Pattern"},
+    "micropapillary": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C36181", "label": "Micropapillary Growth Pattern"},
+    "solid": {"ontology": "NCIt", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C36182", "label": "Solid Growth Pattern"},
 }
 
 

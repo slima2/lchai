@@ -119,7 +119,7 @@ def _mock_case_graph(case_id: str) -> tuple[dict, list]:
     """Generate a representative mock graph for demo."""
     nodes = {
         "case": {"id": f"case:{case_id}", "label": f"Case {case_id[:8]}", "type": "case", "iri": None, "source": "system"},
-        "tp53": {"id": "ncit:C17387", "label": "TP53", "type": "gene", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17387", "source": "ontology"},
+        "tp53": {"id": "ncit:C17359", "label": "TP53", "type": "gene", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17359", "source": "ontology"},
         "egfr": {"id": "ncit:C17757", "label": "EGFR", "type": "gene", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17757", "source": "ontology"},
         "adeno": {"id": "ncit:C2852", "label": "Adenocarcinoma", "type": "diagnosis", "iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C2852", "source": "ontology"},
         "lepidic": {"id": "pattern:lepidic", "label": "Lepidic", "type": "pattern", "iri": None, "source": "image"},
@@ -135,8 +135,8 @@ def _mock_case_graph(case_id: str) -> tuple[dict, list]:
         {"source": f"case:{case_id}", "target": "pattern:papillary", "label": "hasPattern", "type": "asserted", "provenance": "image"},
         {"source": f"case:{case_id}", "target": "pattern:cribriform", "label": "hasPattern", "type": "asserted", "provenance": "image"},
         {"source": "ncit:C2852", "target": "mondo:0005233", "label": "subClassOf", "type": "asserted", "provenance": "ontology"},
-        {"source": "pattern:lepidic", "target": "ncit:C17387", "label": "associatedWith", "type": "inferred", "provenance": "thesis"},
+        {"source": "pattern:lepidic", "target": "ncit:C17359", "label": "associatedWith", "type": "inferred", "provenance": "thesis"},
         {"source": "pattern:acinar", "target": "ncit:C17757", "label": "associatedWith", "type": "inferred", "provenance": "thesis"},
-        {"source": "ncit:C17387", "target": "ncit:C2852", "label": "mutatedIn", "type": "asserted", "provenance": "ontology"},
+        {"source": "ncit:C17359", "target": "ncit:C2852", "label": "mutatedIn", "type": "asserted", "provenance": "ontology"},
     ]
     return nodes, edges

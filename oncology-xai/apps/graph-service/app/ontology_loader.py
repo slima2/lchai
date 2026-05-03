@@ -56,17 +56,17 @@ CURATED_NODES: dict[str, dict] = {
     _mondo("0005233"):  {"label": "NSCLC (MONDO)",             "type": "diagnosis"},
 
     # ── Histologic patterns (WHO 2021 LUAD subtypes) ──
-    _ncit("C128847"):   {"label": "Lepidic Pattern",           "type": "pattern"},
-    _ncit("C128848"):   {"label": "Acinar Pattern",            "type": "pattern"},
-    _ncit("C128849"):   {"label": "Papillary Pattern",         "type": "pattern"},
-    _ncit("C128850"):   {"label": "Micropapillary Pattern",    "type": "pattern"},
-    _ncit("C128851"):   {"label": "Solid Pattern",             "type": "pattern"},
+    _ncit("C55821"):   {"label": "Lepidic Pattern",           "type": "pattern"},
+    _ncit("C35922"):   {"label": "Acinar Pattern",            "type": "pattern"},
+    _ncit("C35911"):   {"label": "Papillary Pattern",         "type": "pattern"},
+    _ncit("C36181"):   {"label": "Micropapillary Pattern",    "type": "pattern"},
+    _ncit("C36182"):   {"label": "Solid Pattern",             "type": "pattern"},
     _ncit("C35920"):    {"label": "Cribriform Pattern",        "type": "pattern"},
 
     # ── Genes / Biomarkers ──
     _ncit("C17757"):    {"label": "EGFR",                      "type": "gene"},
-    _ncit("C17383"):    {"label": "KRAS",                      "type": "gene"},
-    _ncit("C17387"):    {"label": "TP53",                      "type": "gene"},
+    _ncit("C25785"):    {"label": "KRAS",                      "type": "gene"},
+    _ncit("C17359"):    {"label": "TP53",                      "type": "gene"},
     _ncit("C20316"):    {"label": "ALK",                       "type": "gene"},
     _ncit("C101480"):   {"label": "ROS1",                      "type": "gene"},
     _ncit("C51549"):    {"label": "BRAF",                      "type": "gene"},
@@ -74,19 +74,19 @@ CURATED_NODES: dict[str, dict] = {
     _ncit("C52544"):    {"label": "RET",                       "type": "gene"},
     _ncit("C18449"):    {"label": "HER2 (ERBB2)",              "type": "gene"},
     # Thesis genes added for v2
-    _ncit("C18609"):    {"label": "STK11",                     "type": "gene"},
-    _ncit("C97660"):    {"label": "KEAP1",                     "type": "gene"},
-    _ncit("C114948"):   {"label": "RBM10",                     "type": "gene"},
+    _ncit("C18253"):    {"label": "STK11",                     "type": "gene"},
+    _ncit("C112105"):   {"label": "KEAP1",                     "type": "gene"},
+    _ncit("C115382"):   {"label": "RBM10",                     "type": "gene"},
 
     # ── Treatments / Drugs (FDA-approved for NSCLC, from OncoKB/NCIt) ──
     "drug:erlotinib":    {"label": "Erlotinib",       "type": "treatment", "iri": _ncit("C65530")},
     "drug:gefitinib":    {"label": "Gefitinib",       "type": "treatment", "iri": _ncit("C1855")},
     "drug:afatinib":     {"label": "Afatinib",        "type": "treatment", "iri": _ncit("C66940")},
-    "drug:osimertinib":  {"label": "Osimertinib",     "type": "treatment", "iri": _ncit("C102402")},
-    "drug:sotorasib":    {"label": "Sotorasib",       "type": "treatment", "iri": _ncit("C168990")},
+    "drug:osimertinib":  {"label": "Osimertinib",     "type": "treatment", "iri": _ncit("C116377")},
+    "drug:sotorasib":    {"label": "Sotorasib",       "type": "treatment", "iri": _ncit("C154287")},
     "drug:adagrasib":    {"label": "Adagrasib",       "type": "treatment", "iri": _ncit("C177693")},
     "drug:crizotinib":   {"label": "Crizotinib",      "type": "treatment", "iri": _ncit("C71610")},
-    "drug:alectinib":    {"label": "Alectinib",       "type": "treatment", "iri": _ncit("C97660")},
+    "drug:alectinib":    {"label": "Alectinib",       "type": "treatment", "iri": _ncit("C101790")},
     "drug:lorlatinib":   {"label": "Lorlatinib",      "type": "treatment", "iri": _ncit("C120299")},
     "drug:entrectinib":  {"label": "Entrectinib",     "type": "treatment", "iri": _ncit("C120226")},
     "drug:dabrafenib":   {"label": "Dabrafenib",      "type": "treatment", "iri": _ncit("C82386")},
@@ -114,11 +114,11 @@ CURATED_EDGES: list[dict] = [
     {"s": _ncit("C2926"),  "t": _mondo("0005233"), "label": "equivalentClass", "prov": "MONDO"},
 
     # ── Patterns → Diagnosis (WHO classification) ──
-    {"s": _ncit("C128847"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
-    {"s": _ncit("C128848"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
-    {"s": _ncit("C128849"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
-    {"s": _ncit("C128850"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
-    {"s": _ncit("C128851"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
+    {"s": _ncit("C55821"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
+    {"s": _ncit("C35922"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
+    {"s": _ncit("C35911"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
+    {"s": _ncit("C36181"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
+    {"s": _ncit("C36182"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
     {"s": _ncit("C35920"), "t": _ncit("C2852"), "label": "subtypeOf",       "prov": "WHO-2021"},
 
     # ── Patterns → Genes (morphology-molecular correlation) ──
@@ -127,19 +127,19 @@ CURATED_EDGES: list[dict] = [
     #
     # Lepidic → EGFR: PMID:27738759 (90.5% EGFR in lepidic; J Cancer Res Clin Oncol 2017)
     #                  + PMID:21252858 (Yoshizawa et al. 2011; lepidic = low-grade, EGFR-enriched)
-    {"s": _ncit("C128847"), "t": _ncit("C17757"), "label": "associatedWithMutation", "prov": "PMID:27738759", "type": "inferred"},
+    {"s": _ncit("C55821"), "t": _ncit("C17757"), "label": "associatedWithMutation", "prov": "PMID:27738759", "type": "inferred"},
     # Papillary → EGFR: PMID:21252858 (Yoshizawa et al.; papillary = intermediate, EGFR-enriched)
-    {"s": _ncit("C128849"), "t": _ncit("C17757"), "label": "associatedWithMutation", "prov": "PMID:21252858", "type": "inferred"},
+    {"s": _ncit("C35911"), "t": _ncit("C17757"), "label": "associatedWithMutation", "prov": "PMID:21252858", "type": "inferred"},
     # Micropapillary → TP53: PMID:36457500 (TP53 57.4% in micropapillary LUAD; Front Oncol 2022)
     #                         + thesis gene_unified: TP53 = solid + micropapillary
-    {"s": _ncit("C128850"), "t": _ncit("C17387"), "label": "associatedWithMutation", "prov": "PMID:36457500", "type": "inferred"},
+    {"s": _ncit("C36181"), "t": _ncit("C17359"), "label": "associatedWithMutation", "prov": "PMID:36457500", "type": "inferred"},
     # Micropapillary → ALK: PMID:21753699 (Yoshida et al.; comprehensive histologic analysis of ALK-rearranged LUAD; Am J Surg Pathol 2011)
-    {"s": _ncit("C128850"), "t": _ncit("C20316"), "label": "associatedWithMutation", "prov": "PMID:21753699", "type": "inferred"},
+    {"s": _ncit("C36181"), "t": _ncit("C20316"), "label": "associatedWithMutation", "prov": "PMID:21753699", "type": "inferred"},
     # Solid → KRAS: PMID:23619604 (solid 27% in KRAS+ vs 3% in EGFR+, p<0.001; Mod Pathol 2013)
-    {"s": _ncit("C128851"), "t": _ncit("C17383"), "label": "associatedWithMutation", "prov": "PMID:23619604", "type": "inferred"},
+    {"s": _ncit("C36182"), "t": _ncit("C25785"), "label": "associatedWithMutation", "prov": "PMID:23619604", "type": "inferred"},
     # Solid → TP53: PMID:25079552 (TCGA 2014 Nature; TP53 most mutated gene, associated with high-grade)
     #               + thesis gene_unified: TP53 = solid + micropapillary
-    {"s": _ncit("C128851"), "t": _ncit("C17387"), "label": "associatedWithMutation", "prov": "PMID:25079552", "type": "inferred"},
+    {"s": _ncit("C36182"), "t": _ncit("C17359"), "label": "associatedWithMutation", "prov": "PMID:25079552", "type": "inferred"},
     # Acinar: no specific gene enrichment (EJSO 2019 pooled: OR 0.65 for KRAS, EGFR not enriched)
     # Cribriform: no established gene association (rare; PMID:24061507 Kamata et al. 2013)
     # Papillary → BRAF: not included — PMID:21483012 shows BRAF in LUAD but no specific
@@ -152,8 +152,8 @@ CURATED_EDGES: list[dict] = [
     {"s": _ncit("C17757"), "t": "drug:afatinib",    "label": "treatedWith", "prov": "OncoKB/FDA"},
     {"s": _ncit("C17757"), "t": "drug:osimertinib",  "label": "treatedWith", "prov": "OncoKB/FDA"},
     # KRAS G12C → targeted therapies
-    {"s": _ncit("C17383"), "t": "drug:sotorasib",   "label": "treatedWith", "prov": "OncoKB/FDA"},
-    {"s": _ncit("C17383"), "t": "drug:adagrasib",   "label": "treatedWith", "prov": "OncoKB/FDA"},
+    {"s": _ncit("C25785"), "t": "drug:sotorasib",   "label": "treatedWith", "prov": "OncoKB/FDA"},
+    {"s": _ncit("C25785"), "t": "drug:adagrasib",   "label": "treatedWith", "prov": "OncoKB/FDA"},
     # ALK → inhibitors
     {"s": _ncit("C20316"), "t": "drug:crizotinib",  "label": "treatedWith", "prov": "OncoKB/FDA"},
     {"s": _ncit("C20316"), "t": "drug:alectinib",   "label": "treatedWith", "prov": "OncoKB/FDA"},
@@ -173,8 +173,8 @@ CURATED_EDGES: list[dict] = [
 
     # ── Genes → mutatedIn diagnosis ──
     {"s": _ncit("C17757"), "t": _ncit("C2852"), "label": "mutatedIn", "prov": "COSMIC"},
-    {"s": _ncit("C17383"), "t": _ncit("C2852"), "label": "mutatedIn", "prov": "COSMIC"},
-    {"s": _ncit("C17387"), "t": _ncit("C2852"), "label": "mutatedIn", "prov": "COSMIC"},
+    {"s": _ncit("C25785"), "t": _ncit("C2852"), "label": "mutatedIn", "prov": "COSMIC"},
+    {"s": _ncit("C17359"), "t": _ncit("C2852"), "label": "mutatedIn", "prov": "COSMIC"},
     {"s": _ncit("C20316"), "t": _ncit("C2852"), "label": "mutatedIn", "prov": "COSMIC"},
     {"s": _ncit("C101480"), "t": _ncit("C2852"), "label": "mutatedIn", "prov": "COSMIC"},
     {"s": _ncit("C51549"), "t": _ncit("C2852"), "label": "mutatedIn", "prov": "COSMIC"},
@@ -226,21 +226,21 @@ def _enrich_labels_from_owl(nodes: dict[str, dict], ncit_path: str, mondo_path: 
 # ──────────────────────────────────────────────────────────────────────
 
 PATTERN_NAME_TO_IRI: dict[str, str] = {
-    "lepidic":        _ncit("C128847"),
-    "acinar":         _ncit("C128848"),
-    "papillary":      _ncit("C128849"),
-    "micropapillary": _ncit("C128850"),
-    "solid":          _ncit("C128851"),
+    "lepidic":        _ncit("C55821"),
+    "acinar":         _ncit("C35922"),
+    "papillary":      _ncit("C35911"),
+    "micropapillary": _ncit("C36181"),
+    "solid":          _ncit("C36182"),
     "cribriform":     _ncit("C35920"),
 }
 
 GENE_NAME_TO_IRI: dict[str, str] = {
     "EGFR":  _ncit("C17757"),
-    "KRAS":  _ncit("C17383"),
-    "TP53":  _ncit("C17387"),
-    "STK11": _ncit("C18609"),
-    "KEAP1": _ncit("C97660"),
-    "RBM10": _ncit("C114948"),
+    "KRAS":  _ncit("C25785"),
+    "TP53":  _ncit("C17359"),
+    "STK11": _ncit("C18253"),
+    "KEAP1": _ncit("C112105"),
+    "RBM10": _ncit("C115382"),
     "ALK":   _ncit("C20316"),
     "ROS1":  _ncit("C101480"),
     "BRAF":  _ncit("C51549"),

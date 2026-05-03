@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 ENTITY_IRI_MAP: dict[str, dict] = {
     # Genes
     "EGFR": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17757", "type": "gene"},
-    "KRAS": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17383", "type": "gene"},
-    "TP53": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17387", "type": "gene"},
+    "KRAS": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C25785", "type": "gene"},
+    "TP53": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C17359", "type": "gene"},
     "ALK":  {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C20316", "type": "gene"},
     "ROS1": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C101480", "type": "gene"},
     "BRAF": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C51549", "type": "gene"},
@@ -33,21 +33,21 @@ ENTITY_IRI_MAP: dict[str, dict] = {
     "RET":  {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C52544", "type": "gene"},
     "HER2": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C18449", "type": "gene"},
     # Patterns
-    "lepidic":       {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128847", "type": "pattern"},
-    "acinar":        {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128848", "type": "pattern"},
-    "papillary":     {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128849", "type": "pattern"},
-    "micropapillary": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128850", "type": "pattern"},
-    "solid":         {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C128851", "type": "pattern"},
+    "lepidic":       {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C55821", "type": "pattern"},
+    "acinar":        {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C35922", "type": "pattern"},
+    "papillary":     {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C35911", "type": "pattern"},
+    "micropapillary": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C36181", "type": "pattern"},
+    "solid":         {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C36182", "type": "pattern"},
     "cribriform":    {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C35920", "type": "pattern"},
     # Diagnoses
     "adenocarcinoma": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C2852", "type": "diagnosis"},
     "NSCLC":          {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C2926", "type": "diagnosis"},
     # Drugs
     "erlotinib":  {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C65530", "type": "treatment"},
-    "osimertinib": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C102402", "type": "treatment"},
-    "sotorasib":  {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C168990", "type": "treatment"},
+    "osimertinib": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C116377", "type": "treatment"},
+    "sotorasib":  {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C154287", "type": "treatment"},
     "crizotinib": {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C71610", "type": "treatment"},
-    "alectinib":  {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C97660", "type": "treatment"},
+    "alectinib":  {"iri": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C101790", "type": "treatment"},
 }
 
 EXTRACT_SYSTEM_PROMPT = """You are a biomedical knowledge extraction system.
