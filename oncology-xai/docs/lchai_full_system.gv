@@ -1,35 +1,37 @@
-// LCHAI v1.2 — Full System Architecture
-// Lung Cancer Histologic Analysis with AI — Explainable AI Platform
-// Render:  dot -Tpng  lchai_full_system.gv -o lchai_full_system.png -Gdpi=150
-//          dot -Tsvg  lchai_full_system.gv -o lchai_full_system.svg
-//          dot -Tpdf  lchai_full_system.gv -o lchai_full_system.pdf
+// LCHAI v2.0 — Full System Architecture
+// Lung Cancer Histologic Analysis with AI
+// Interpretable & explainable platform for H&E mutation prediction in lung adenocarcinoma
+//
+// Render:  dot -Tpng  docs/lchai_full_system.gv -o docs/lchai_full_system.png -Gdpi=160
+//          dot -Tsvg  docs/lchai_full_system.gv -o docs/lchai_full_system.svg
+//          dot -Tpdf  docs/lchai_full_system.gv -o docs/lchai_full_system.pdf
 
-digraph LCHAI_v12 {
+digraph LCHAI_v20 {
   compound=true;
   rankdir=TB;
   splines=polyline;
-  nodesep=0.6;
-  ranksep=0.8;
+  nodesep=0.55;
+  ranksep=0.85;
   pad=0.4;
 
   graph [fontname="Segoe UI", fontsize=16,
          label=<<B>LCHAI v2.0 — Lung Cancer Histologic Analysis with AI</B><BR/>
-                <FONT POINT-SIZE="11">Microservice Architecture · ABMIL + Choquet MIL · Explainable AI · Oncology Decision Support</FONT>>,
+                <FONT POINT-SIZE="11">FuzzyArcLoss V2 · PI-ABMIL · FC-MIL · 6-level interpretability · NCIt/MONDO-grounded explanations</FONT>>,
          labelloc=t, labeljust=c];
   node  [fontname="Segoe UI", fontsize=10, shape=box,
          style="rounded,filled", margin="0.2,0.12"];
   edge  [fontname="Segoe UI", fontsize=8, color="#555555"];
 
   // ═══════════════════════════════════════════════════════════════════
-  //  LAYER 1 — User
+  //  LAYER 1 — Actors
   // ═══════════════════════════════════════════════════════════════════
   subgraph cluster_user {
     label=<<B>Actors</B>>;
     labelloc=t; style="rounded,dashed"; color="#888888";
     bgcolor="#FAFAFA";
 
-    user_clin [label="Oncologist /\nPathologist",
-               shape=ellipse, fillcolor="#BBDEFB", color="#1565C0"];
+    user_clin  [label="Pathologist /\nOncologist",
+                shape=ellipse, fillcolor="#BBDEFB", color="#1565C0"];
     user_admin [label="Admin /\nAuditor",
                 shape=ellipse, fillcolor="#C8E6C9", color="#2E7D32"];
   }
@@ -38,12 +40,13 @@ digraph LCHAI_v12 {
   //  LAYER 2 — Frontend
   // ═══════════════════════════════════════════════════════════════════
   subgraph cluster_frontend {
-    label=<<B>Frontend</B>  <FONT POINT-SIZE="9">(React 18 + Vite + Tailwind)</FONT>>;
+    label=<<B>Frontend</B>  <FONT POINT-SIZE="9">(React 18 + Vite + Tailwind + TanStack Query)</FONT>>;
     labelloc=t; style=rounded; bgcolor="#E3F2FD"; color="#90CAF9";
 
     webapp [label=<<B>Webapp :3000</B><BR/>
-      <FONT POINT-SIZE="9">CaseSelector · ImagePanel · EHRPanel<BR/>
-      GraphPanel · ShapPanel · AdminPanel</FONT>>,
+      <FONT POINT-SIZE="9">Images · Viewer (QuPath-like)<BR/>
+      Graph (NCIt/MONDO) · Explainability<BR/>
+      Active Learning · Admin</FONT>>,
       fillcolor="#BBDEFB", color="#1E88E5"];
   }
 
@@ -55,8 +58,8 @@ digraph LCHAI_v12 {
     labelloc=t; style=rounded; bgcolor="#FFF3E0"; color="#FFCC80";
 
     gateway [label=<<B>API Gateway :8000</B><BR/>
-      <FONT POINT-SIZE="9">FastAPI · JWT validation · RBAC<BR/>
-      Reverse proxy → 7 services</FONT>>,
+      <FONT POINT-SIZE="9">FastAPI · OIDC/JWT · RBAC<BR/>
+      Reverse proxy → 8 services</FONT>>,
       fillcolor="#FFE0B2", color="#FB8C00"];
   }
 
@@ -68,54 +71,59 @@ digraph LCHAI_v12 {
     labelloc=t; style=rounded; bgcolor="#E8F5E9"; color="#A5D6A7";
 
     case_svc [label=<<B>case-service :8001</B><BR/>
-      <FONT POINT-SIZE="9">Patients &amp; Cases CRUD<BR/>
-      <I>tables: patients, cases</I></FONT>>,
+      <FONT POINT-SIZE="9">Patients &amp; cases<BR/>
+      <I>patients, cases</I></FONT>>,
       fillcolor="#C8E6C9", color="#43A047"];
 
     image_svc [label=<<B>image-service :8002</B><BR/>
-      <FONT POINT-SIZE="9">Image upload · SHA-256<BR/>
-      Presigned URLs<BR/>
-      <I>tables: images</I></FONT>>,
+      <FONT POINT-SIZE="9">WSI upload (SVS/TIFF/BIF)<BR/>
+      SHA-256 · presigned URLs<BR/>
+      <I>images</I></FONT>>,
       fillcolor="#C8E6C9", color="#43A047"];
 
     infer_svc [label=<<B>inference-service :8003</B><BR/>
       <FONT POINT-SIZE="9">ML pipeline orchestrator<BR/>
-      Job management<BR/>
-      <I>tables: ml_jobs, result_bundles,<BR/>
+      Job &amp; progress tracking<BR/>
+      <I>ml_jobs, result_bundles,<BR/>
       pattern_results, genetic_results,<BR/>
       xai_artifacts, morphologic_profiles</I></FONT>>,
       fillcolor="#C8E6C9", color="#43A047"];
 
     infer_worker [label=<<B>inference-worker</B><BR/>
-      <FONT POINT-SIZE="9">Celery worker · concurrency=1<BR/>
+      <FONT POINT-SIZE="9">Celery · GPU (NVIDIA)<BR/>
       Executes ML pipeline</FONT>>,
       fillcolor="#E1BEE7", color="#8E24AA"];
 
     ehr_svc [label=<<B>ehr-service :8004</B><BR/>
       <FONT POINT-SIZE="9">EHR ingestion · Regex NER<BR/>
-      Ontology mapping (NCIt/MONDO)<BR/>
-      <I>tables: ehr_documents,<BR/>
-      ehr_entities, ehr_mappings</I></FONT>>,
+      Mapping → canonical NCIt/MONDO<BR/>
+      <I>ehr_documents, ehr_entities,<BR/>
+      ehr_mappings</I></FONT>>,
       fillcolor="#C8E6C9", color="#43A047"];
 
     graph_svc [label=<<B>graph-service :8005</B><BR/>
-      <FONT POINT-SIZE="9">Knowledge graph assembly<BR/>
-      SPARQL queries · LLM explain<BR/>
-      <I>tables: case_graph_snapshots</I></FONT>>,
+      <FONT POINT-SIZE="9">3-tier KG assembly · SPARQL<BR/>
+      Fuzzy-label-constrained LLM explain<BR/>
+      <I>case_graph_snapshots</I></FONT>>,
       fillcolor="#C8E6C9", color="#43A047"];
 
     ont_svc [label=<<B>ontology-admin :8006</B><BR/>
       <FONT POINT-SIZE="9">Ontology versioning · Proposals<BR/>
-      DeepSearch (PubMed/arXiv/SS)<BR/>
-      KG snapshots &amp; changelog<BR/>
-      <I>tables: ontology_versions,<BR/>
-      proposals, deep_search_jobs,<BR/>
-      discovered_relations, kg_snapshots</I></FONT>>,
+      DeepSearch (PubMed / arXiv / SS)<BR/>
+      <I>ontology_versions, proposals,<BR/>
+      deep_search_jobs, discovered_relations,<BR/>
+      kg_snapshots</I></FONT>>,
       fillcolor="#C8E6C9", color="#43A047"];
 
     audit_svc [label=<<B>audit-service :8007</B><BR/>
       <FONT POINT-SIZE="9">Event consumer · Idempotent log<BR/>
-      <I>tables: audit_events</I></FONT>>,
+      <I>audit_events</I></FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+
+    al_svc [label=<<B>active-learning :8008</B><BR/>
+      <FONT POINT-SIZE="9">Pathologist correction loop<BR/>
+      Re-process · Δ-train · audit trail<BR/>
+      <I>corrections, retraining_runs</I></FONT>>,
       fillcolor="#C8E6C9", color="#43A047"];
   }
 
@@ -127,7 +135,7 @@ digraph LCHAI_v12 {
     labelloc=t; style="rounded,dashed"; bgcolor="#F5F5F5"; color="#BDBDBD";
 
     pkg_common [label=<<B>oncology-common</B><BR/>
-      <FONT POINT-SIZE="9">JWT · Storage · Pydantic models<BR/>
+      <FONT POINT-SIZE="9">JWT · Storage · Pydantic<BR/>
       Middleware · OTel · DB base</FONT>>,
       fillcolor="#EEEEEE", color="#9E9E9E"];
 
@@ -137,52 +145,114 @@ digraph LCHAI_v12 {
       fillcolor="#EEEEEE", color="#9E9E9E"];
 
     pkg_workflows [label=<<B>langgraph-workflows</B><BR/>
-      <FONT POINT-SIZE="9">5 LangGraph state machines</FONT>>,
+      <FONT POINT-SIZE="9">5 LangGraph state machines<BR/>
+      ONTOLOGY_MAP (canonical IRIs)</FONT>>,
       fillcolor="#EEEEEE", color="#9E9E9E"];
   }
 
   // ═══════════════════════════════════════════════════════════════════
   //  LAYER 5 — ML Pipeline (inside inference-worker)
+  //  Three thesis artefacts (C1, C2/C3, C3) integrated end-to-end
   // ═══════════════════════════════════════════════════════════════════
   subgraph cluster_ml {
-    label=<<B>ML Pipeline</B>  <FONT POINT-SIZE="9">(ROI → Pattern → Mutation → XAI)</FONT>>;
+    label=<<B>ML Pipeline</B>  <FONT POINT-SIZE="9">(WSI → patterns → mutation → 6-level XAI)</FONT>>;
     labelloc=t; style=rounded; bgcolor="#FFF8E1"; color="#FFE082";
 
-    ml_tile [label="Tile Extraction\n384px, no overlap",
+    ml_tile [label="Tile Extraction\n224 px · artifact rejection\n(dark / pen / saturation)",
              fillcolor="#FFF9C4", color="#F9A825"];
-    ml_ctrans [label="CTransPath\nSwin Tiny + ConvStem\n768→512 embed",
+
+    ml_ctrans [label="CTransPath encoder\nSwin Tiny + ConvStem\n→ 512-d embedding / tile",
                fillcolor="#FFF9C4", color="#F9A825"];
-    ml_fuzzy [label="FuzzyArcLoss v3\nK=3 sub-centers\n6 pattern classes",
+
+    ml_fuzzy [label=<<B>FuzzyArcLoss V2 (C1)</B><BR/>
+      <FONT POINT-SIZE="8">per-sample adaptive angular margin<BR/>
+      6 ANORAK patterns: lepidic, acinar,<BR/>
+      papillary, micropapillary, solid, cribriform<BR/>
+      macro-F1 = 92.3% ± 2.0</FONT>>,
+      fillcolor="#FFF9C4", color="#F9A825"];
+
+    ml_morph [label="Morphologic profile\nslide-level pct_pattern + n_tiles",
               fillcolor="#FFF9C4", color="#F9A825"];
-    ml_comp [label="Pattern\nComposition\n(6 histologic types)",
-             fillcolor="#FFF9C4", color="#F9A825"];
-    ml_morph [label="Morphologic\nProfile\nn_tiles + pct_*",
-              fillcolor="#FFF9C4", color="#F9A825"];
-    ml_abmil [label="Pattern-Informed ABMIL\nconcat(emb₅₁₂, pat₆) = 518-d\nGated Attention",
-              fillcolor="#FFF9C4", color="#F9A825"];
-    ml_choquet [label="Fuzzy Choquet MIL\n21 params (6 Shapley + 15 interact)\n6 genes",
-                fillcolor="#FFF9C4", color="#F9A825"];
-    ml_shap [label="DeepSHAP Decomposition\nEmb dims vs Pattern dims\nChoquet Shapley Values",
-             fillcolor="#FFF9C4", color="#F9A825"];
+
+    ml_pi [label=<<B>PI-ABMIL (C2)</B><BR/>
+      <FONT POINT-SIZE="8">Pattern-Informed ABMIL<BR/>
+      concat(emb₅₁₂, pat₆) = 518-d<BR/>
+      Gated Attention · STK11, KEAP1</FONT>>,
+      fillcolor="#FFF9C4", color="#F9A825"];
+
+    ml_fc [label=<<B>FC-MIL (C3)</B><BR/>
+      <FONT POINT-SIZE="8">Fuzzy Choquet integral aggregator<BR/>
+      21 params: 6 Shapley + 15 interactions<BR/>
+      KRAS, RBM10</FONT>>,
+      fillcolor="#FFF9C4", color="#F9A825"];
+
+    ml_b2 [label=<<B>B2 (baseline)</B><BR/>
+      <FONT POINT-SIZE="8">embeddings-only ABMIL<BR/>
+      TP53, EGFR</FONT>>,
+      fillcolor="#FFF9C4", color="#F9A825"];
+
+    ml_xai [label=<<B>6-level interpretability</B><BR/>
+      <FONT POINT-SIZE="8">1 Pattern probabilities<BR/>
+      2 Spatial attention maps<BR/>
+      3 Permutation pattern importance<BR/>
+      4 DeepSHAP emb-vs-pattern split<BR/>
+      5 Choquet Shapley + interactions<BR/>
+      6 Fuzzy linguistic labels</FONT>>,
+      fillcolor="#FFECB3", color="#FF8F00"];
+
+    ml_verdict [label=<<B>Per-gene Conclusive flag</B><BR/>
+      <FONT POINT-SIZE="8">cohort-level (Hosmer–Lemeshow)<BR/>
+      AUROC ≥ 0.70 ⇒ Conclusive</FONT>>,
+      fillcolor="#FFECB3", color="#FF8F00"];
   }
 
   // ═══════════════════════════════════════════════════════════════════
   //  LAYER 5b — LangGraph Workflows
   // ═══════════════════════════════════════════════════════════════════
   subgraph cluster_langgraph {
-    label=<<B>LangGraph Workflows</B>  <FONT POINT-SIZE="9">(LangChain Core + Anthropic / OpenAI)</FONT>>;
+    label=<<B>LangGraph Workflows</B>  <FONT POINT-SIZE="9">(5 state machines)</FONT>>;
     labelloc=t; style=rounded; bgcolor="#EDE7F6"; color="#B39DDB";
 
-    wf_image [label="ImageAnalysisGraph\n14 nodes",
-              fillcolor="#D1C4E9", color="#7E57C2"];
-    wf_ehr   [label="EHRToOntologyGraph\n7 nodes",
-              fillcolor="#D1C4E9", color="#7E57C2"];
-    wf_graph [label="GraphAssemblerGraph\n6 nodes",
-              fillcolor="#D1C4E9", color="#7E57C2"];
-    wf_explain [label="ExplanationComposer\n6 nodes + guardrails",
+    wf_image   [label="ImageAnalysisGraph\n14 nodes",
                 fillcolor="#D1C4E9", color="#7E57C2"];
-    wf_onto  [label="OntologyUpdateWorkflow\n12 nodes + HITL",
-              fillcolor="#D1C4E9", color="#7E57C2"];
+    wf_ehr     [label="EHRToOntologyGraph\n7 nodes",
+                fillcolor="#D1C4E9", color="#7E57C2"];
+    wf_graph   [label="GraphAssemblerGraph\n6 nodes",
+                fillcolor="#D1C4E9", color="#7E57C2"];
+    wf_explain [label=<<B>ExplanationComposer</B><BR/>
+      <FONT POINT-SIZE="8">6 nodes + dual anti-hallucination:<BR/>
+      • fuzzy labels constrain HOW<BR/>
+      • curated KG constrains WHAT</FONT>>,
+      fillcolor="#D1C4E9", color="#7E57C2"];
+    wf_onto    [label="OntologyUpdateWorkflow\n12 nodes + HITL",
+                fillcolor="#D1C4E9", color="#7E57C2"];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  LAYER 5c — Knowledge Graph (3 tiers)
+  // ═══════════════════════════════════════════════════════════════════
+  subgraph cluster_kg {
+    label=<<B>Knowledge Graph</B>  <FONT POINT-SIZE="9">(3 tiers)</FONT>>;
+    labelloc=t; style=rounded; bgcolor="#F1F8E9"; color="#C5E1A5";
+
+    kg_curated [label=<<B>Tier 1 — Curated</B><BR/>
+      <FONT POINT-SIZE="8">NCIt v26.04d + MONDO<BR/>
+      verified canonical IRIs<BR/>
+      patterns, genes, treatments</FONT>>,
+      fillcolor="#DCEDC8", color="#7CB342"];
+
+    kg_case [label=<<B>Tier 2 — Per-case</B><BR/>
+      <FONT POINT-SIZE="8">dynamic filter:<BR/>
+      active patterns + thesis genes</FONT>>,
+      fillcolor="#DCEDC8", color="#7CB342"];
+
+    kg_deep [label=<<B>Tier 3 — DeepSearch</B><BR/>
+      <FONT POINT-SIZE="8">PubMed/arXiv/SS enrichment<BR/>
+      relation mining → HITL approval</FONT>>,
+      fillcolor="#DCEDC8", color="#7CB342"];
+
+    kg_curated -> kg_case [style=dashed, arrowhead=none, color="#7CB342"];
+    kg_case    -> kg_deep [style=dashed, arrowhead=none, color="#7CB342"];
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -193,17 +263,18 @@ digraph LCHAI_v12 {
     labelloc=t; style=rounded; bgcolor="#F3E5F5"; color="#CE93D8";
 
     postgres [label=<<B>PostgreSQL 16 :5432</B><BR/>
-      <FONT POINT-SIZE="9">19 tables across 7 services</FONT>>,
+      <FONT POINT-SIZE="9">Alembic-managed schemas<BR/>
+      across 8 services</FONT>>,
       shape=cylinder, fillcolor="#E1BEE7", color="#8E24AA"];
 
     minio [label=<<B>MinIO :9000</B><BR/>
-      <FONT POINT-SIZE="9">S3: images, tiles, overlays,<BR/>
-      xai artifacts, ehr docs</FONT>>,
+      <FONT POINT-SIZE="9">S3: WSI, tiles, overlays,<BR/>
+      XAI artifacts, EHR docs</FONT>>,
       shape=cylinder, fillcolor="#E1BEE7", color="#8E24AA"];
 
     fuseki [label=<<B>Apache Fuseki :3030</B><BR/>
       <FONT POINT-SIZE="9">SPARQL triplestore<BR/>
-      NCIt + MONDO ontologies</FONT>>,
+      NCIt + MONDO triples</FONT>>,
       shape=cylinder, fillcolor="#E1BEE7", color="#8E24AA"];
   }
 
@@ -220,7 +291,7 @@ digraph LCHAI_v12 {
       shape=hexagon, fillcolor="#FFF9C4", color="#F9A825"];
 
     redis [label=<<B>Redis :6379</B><BR/>
-      <FONT POINT-SIZE="9">Celery result backend</FONT>>,
+      <FONT POINT-SIZE="9">Celery results · job progress</FONT>>,
       shape=hexagon, fillcolor="#FFF9C4", color="#F9A825"];
   }
 
@@ -232,7 +303,7 @@ digraph LCHAI_v12 {
     labelloc=t; style=rounded; bgcolor="#ECEFF1"; color="#B0BEC5";
 
     keycloak [label=<<B>Keycloak :8080</B><BR/>
-      <FONT POINT-SIZE="9">OIDC / JWT · Realm "oncology"<BR/>
+      <FONT POINT-SIZE="9">OIDC / JWT · realm "oncology"<BR/>
       Roles: clinician, admin, auditor</FONT>>,
       fillcolor="#CFD8DC", color="#546E7A"];
 
@@ -242,21 +313,21 @@ digraph LCHAI_v12 {
       fillcolor="#CFD8DC", color="#546E7A"];
 
     prometheus [label=<<B>Prometheus :9090</B><BR/>
-      <FONT POINT-SIZE="9">Metrics scrape 15s</FONT>>,
+      <FONT POINT-SIZE="9">Metrics scrape 15 s</FONT>>,
       fillcolor="#CFD8DC", color="#546E7A"];
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  //  LAYER 7 — External APIs (DeepSearch targets)
+  //  LAYER 7 — External APIs
   // ═══════════════════════════════════════════════════════════════════
   subgraph cluster_external {
-    label=<<B>External Sources</B>  <FONT POINT-SIZE="9">(DeepSearch)</FONT>>;
+    label=<<B>External Sources</B>  <FONT POINT-SIZE="9">(DeepSearch + LLM)</FONT>>;
     labelloc=t; style="rounded,dashed"; bgcolor="#FAFAFA"; color="#BDBDBD";
 
-    pubmed [label="PubMed\nAPI", shape=oval, fillcolor="#E0E0E0", color="#757575"];
-    arxiv  [label="arXiv\nAPI", shape=oval, fillcolor="#E0E0E0", color="#757575"];
-    semsch [label="Semantic\nScholar API", shape=oval, fillcolor="#E0E0E0", color="#757575"];
-    llm_api [label="LLM API\n(Anthropic / OpenAI)",
+    pubmed  [label="PubMed API",  shape=oval, fillcolor="#E0E0E0", color="#757575"];
+    arxiv   [label="arXiv API",   shape=oval, fillcolor="#E0E0E0", color="#757575"];
+    semsch  [label="Semantic\nScholar API", shape=oval, fillcolor="#E0E0E0", color="#757575"];
+    llm_api [label="LLM API\n(OpenAI / Anthropic)",
              shape=oval, fillcolor="#FFCDD2", color="#E53935"];
   }
 
@@ -265,7 +336,7 @@ digraph LCHAI_v12 {
   // ═══════════════════════════════════════════════════════════════════
   user_clin  -> webapp [label="browser", color="#1565C0"];
   user_admin -> webapp [label="browser", color="#2E7D32"];
-  webapp -> gateway    [label="HTTP /api/v1/*", color="#1976D2", penwidth=1.5];
+  webapp -> gateway    [label="HTTPS /api/v1/*", color="#1976D2", penwidth=1.5];
 
   // ═══════════════════════════════════════════════════════════════════
   //  EDGES — Gateway → Services
@@ -277,6 +348,7 @@ digraph LCHAI_v12 {
   gateway -> graph_svc  [label="graph"];
   gateway -> ont_svc    [label="ontologies"];
   gateway -> audit_svc  [label="audit"];
+  gateway -> al_svc     [label="active-learning"];
 
   // ═══════════════════════════════════════════════════════════════════
   //  EDGES — Gateway → Auth
@@ -293,13 +365,15 @@ digraph LCHAI_v12 {
   graph_svc  -> postgres [color="#8E24AA"];
   ont_svc    -> postgres [color="#8E24AA"];
   audit_svc  -> postgres [color="#8E24AA"];
+  al_svc     -> postgres [color="#8E24AA"];
 
   image_svc    -> minio [label="store/fetch", color="#8E24AA"];
-  infer_worker -> minio [label="tiles, overlays,\nSHAP PNGs", color="#8E24AA"];
+  infer_worker -> minio [label="tiles, overlays,\nXAI artefacts", color="#8E24AA"];
+  al_svc       -> minio [label="corrected\noverlays", color="#8E24AA"];
 
-  ehr_svc   -> fuseki [label="SPARQL\nlookup", color="#8E24AA"];
+  ehr_svc   -> fuseki [label="SPARQL\nlookup",    color="#8E24AA"];
   graph_svc -> fuseki [label="SPARQL\nconstruct", color="#8E24AA"];
-  ont_svc   -> fuseki [label="SPARQL\nupdate", color="#8E24AA"];
+  ont_svc   -> fuseki [label="SPARQL\nupdate",    color="#8E24AA"];
 
   // ═══════════════════════════════════════════════════════════════════
   //  EDGES — Services → Messaging
@@ -309,31 +383,40 @@ digraph LCHAI_v12 {
   infer_svc    -> redis    [label="Celery", color="#F9A825"];
   infer_worker -> redis    [label="Celery", color="#F9A825"];
   ehr_svc      -> rabbitmq [label="ehr.ingested", color="#F9A825"];
-  graph_svc    -> rabbitmq [label="graph.built", color="#F9A825"];
+  graph_svc    -> rabbitmq [label="graph.built",  color="#F9A825"];
   ont_svc      -> rabbitmq [label="ontology.\nupdated", color="#F9A825"];
+  al_svc       -> rabbitmq [label="correction.\nsubmitted", color="#F9A825"];
   rabbitmq     -> audit_svc [label="consume all\nevents", color="#E65100",
                               penwidth=1.5, style=bold];
 
   // ═══════════════════════════════════════════════════════════════════
   //  EDGES — Celery: inference-service ↔ worker
   // ═══════════════════════════════════════════════════════════════════
-  infer_svc -> infer_worker [label="Celery task\n(via RabbitMQ+Redis)",
+  infer_svc -> infer_worker [label="Celery task\n(via RabbitMQ + Redis)",
                               color="#8E24AA", style=bold, penwidth=1.5];
 
   // ═══════════════════════════════════════════════════════════════════
   //  EDGES — ML Pipeline internal flow
   // ═══════════════════════════════════════════════════════════════════
-  ml_tile   -> ml_ctrans [color="#E65100"];
-  ml_ctrans -> ml_fuzzy  [color="#E65100"];
-  ml_fuzzy  -> ml_comp   [color="#E65100"];
-  ml_comp   -> ml_morph  [color="#E65100"];
-  ml_morph  -> ml_abmil   [color="#E65100"];
-  ml_morph  -> ml_choquet [color="#E65100"];
-  ml_abmil  -> ml_shap   [color="#E65100"];
-  ml_choquet -> ml_shap   [color="#E65100"];
+  ml_tile   -> ml_ctrans  [color="#E65100"];
+  ml_ctrans -> ml_fuzzy   [color="#E65100"];
+  ml_fuzzy  -> ml_morph   [color="#E65100"];
+  ml_morph  -> ml_pi      [color="#E65100"];
+  ml_morph  -> ml_fc      [color="#E65100"];
+  ml_ctrans -> ml_b2      [color="#E65100", style=dashed];
+  ml_pi     -> ml_xai     [color="#E65100"];
+  ml_fc     -> ml_xai     [color="#E65100"];
+  ml_b2     -> ml_xai     [color="#E65100", style=dashed];
+  ml_xai    -> ml_verdict [color="#E65100"];
 
   infer_worker -> ml_tile [label="execute",
                             lhead=cluster_ml, color="#8E24AA", style=dashed];
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  EDGES — Active learning → ML pipeline
+  // ═══════════════════════════════════════════════════════════════════
+  al_svc -> infer_svc [label="re-process\n+ Δ-train",
+                        color="#43A047", style=dashed];
 
   // ═══════════════════════════════════════════════════════════════════
   //  EDGES — Services → LangGraph Workflows
@@ -345,11 +428,15 @@ digraph LCHAI_v12 {
   ont_svc   -> wf_onto    [label="runs", style=dashed, color="#7E57C2"];
 
   // ═══════════════════════════════════════════════════════════════════
-  //  EDGES — Workflows / Services → LLM
+  //  EDGES — Workflows / Services → KG and LLM
   // ═══════════════════════════════════════════════════════════════════
-  wf_explain -> llm_api [label="generate\nexplanation", color="#E53935", style=dashed];
-  wf_onto    -> llm_api [label="extract\nrelations", color="#E53935", style=dashed];
-  graph_svc  -> llm_api [label="NL explain", color="#E53935", style=dashed];
+  wf_explain  -> kg_curated [label="grounded\nin", color="#7CB342", style=dashed];
+  wf_explain  -> ml_xai     [label="reads fuzzy\nlinguistic labels",
+                              color="#7CB342", style=dashed];
+  wf_explain  -> llm_api    [label="generate\nrationale", color="#E53935", style=dashed];
+  wf_onto     -> kg_deep    [label="proposes\nrelations", color="#7CB342", style=dashed];
+  wf_onto     -> llm_api    [label="extract\nrelations", color="#E53935", style=dashed];
+  graph_svc   -> kg_case    [label="builds", color="#7CB342", style=dashed];
 
   // ═══════════════════════════════════════════════════════════════════
   //  EDGES — DeepSearch → External APIs
@@ -365,6 +452,7 @@ digraph LCHAI_v12 {
   infer_svc -> jaeger [style=dotted, color="#B0BEC5", arrowsize=0.6];
   graph_svc -> jaeger [style=dotted, color="#B0BEC5", arrowsize=0.6];
   gateway   -> jaeger [style=dotted, color="#B0BEC5", arrowsize=0.6];
+  al_svc    -> jaeger [style=dotted, color="#B0BEC5", arrowsize=0.6];
 
   gateway     -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
   case_svc    -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
@@ -374,6 +462,7 @@ digraph LCHAI_v12 {
   ont_svc     -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
   audit_svc   -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
   image_svc   -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
+  al_svc      -> prometheus [style=dotted, color="#B0BEC5", arrowsize=0.6];
 
   // ═══════════════════════════════════════════════════════════════════
   //  EDGES — Shared packages (used by all services)
@@ -393,23 +482,25 @@ digraph LCHAI_v12 {
     labelloc=t; style=rounded; bgcolor="#FAFAFA"; color="#E0E0E0";
     rankdir=LR;
 
-    leg_sync   [label="Synchronous\nHTTP / SQL", shape=plaintext, fontsize=9];
-    leg_async  [label="Async event\n(RabbitMQ)", shape=plaintext, fontsize=9];
-    leg_wf     [label="Workflow\n(LangGraph)", shape=plaintext, fontsize=9];
+    leg_sync   [label="Synchronous\nHTTP / SQL",      shape=plaintext, fontsize=9];
+    leg_async  [label="Async event\n(RabbitMQ)",      shape=plaintext, fontsize=9];
+    leg_wf     [label="Workflow\n(LangGraph)",        shape=plaintext, fontsize=9];
+    leg_kg     [label="KG grounding /\nfuzzy labels", shape=plaintext, fontsize=9];
+    leg_llm    [label="LLM call",                     shape=plaintext, fontsize=9];
     leg_obs    [label="Observability\n(traces/metrics)", shape=plaintext, fontsize=9];
 
-    leg_s1 [shape=point, width=0.01];
-    leg_s2 [shape=point, width=0.01];
-    leg_s3 [shape=point, width=0.01];
-    leg_s4 [shape=point, width=0.01];
-    leg_e1 [shape=point, width=0.01];
-    leg_e2 [shape=point, width=0.01];
-    leg_e3 [shape=point, width=0.01];
-    leg_e4 [shape=point, width=0.01];
+    leg_s1 [shape=point, width=0.01]; leg_e1 [shape=point, width=0.01];
+    leg_s2 [shape=point, width=0.01]; leg_e2 [shape=point, width=0.01];
+    leg_s3 [shape=point, width=0.01]; leg_e3 [shape=point, width=0.01];
+    leg_s4 [shape=point, width=0.01]; leg_e4 [shape=point, width=0.01];
+    leg_s5 [shape=point, width=0.01]; leg_e5 [shape=point, width=0.01];
+    leg_s6 [shape=point, width=0.01]; leg_e6 [shape=point, width=0.01];
 
     leg_sync  -> leg_s1 [style=invis]; leg_s1 -> leg_e1 [color="#555555", penwidth=1.2];
     leg_async -> leg_s2 [style=invis]; leg_s2 -> leg_e2 [color="#F9A825", penwidth=1.2, style=bold];
     leg_wf    -> leg_s3 [style=invis]; leg_s3 -> leg_e3 [color="#7E57C2", style=dashed];
-    leg_obs   -> leg_s4 [style=invis]; leg_s4 -> leg_e4 [color="#B0BEC5", style=dotted];
+    leg_kg    -> leg_s4 [style=invis]; leg_s4 -> leg_e4 [color="#7CB342", style=dashed];
+    leg_llm   -> leg_s5 [style=invis]; leg_s5 -> leg_e5 [color="#E53935", style=dashed];
+    leg_obs   -> leg_s6 [style=invis]; leg_s6 -> leg_e6 [color="#B0BEC5", style=dotted];
   }
 }

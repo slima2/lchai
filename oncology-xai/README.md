@@ -81,9 +81,11 @@ Fuzzy logic · Angular margin loss · Multiple-instance learning · Choquet inte
 
 ## System Architecture
 
-LCHAI v2.0 is a microservice-based platform deployed via Docker Compose with GPU acceleration.
+LCHAI v2.0 is a microservice-based platform deployed via Docker Compose locally and AWS EKS in production.
 
-![System Architecture](docs/lchai_full_system.png)
+[![System Architecture](docs/lchai_full_system.png)](docs/lchai_full_system.png)
+
+> Click the image to view full size. Vector version: [`docs/lchai_full_system.svg`](docs/lchai_full_system.svg). Source (Graphviz DOT): [`docs/lchai_full_system.gv`](docs/lchai_full_system.gv) — regenerate with `dot -Tpng docs/lchai_full_system.gv -o docs/lchai_full_system.png -Gdpi=160`.
 
 ### ML Pipeline
 
