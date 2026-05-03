@@ -6,10 +6,15 @@ RUN npm install
 
 COPY apps/webapp/ .
 
-ARG VITE_API_URL=http://localhost:8000
-ARG VITE_KEYCLOAK_URL=http://localhost:8080
+ARG VITE_API_URL=https://lchai.gptfy.biz
+ARG VITE_KEYCLOAK_URL=https://lchai.gptfy.biz
 ARG VITE_KEYCLOAK_REALM=oncology
 ARG VITE_KEYCLOAK_CLIENT_ID=oncology-webapp
+
+ENV VITE_API_URL=${VITE_API_URL} \
+    VITE_KEYCLOAK_URL=${VITE_KEYCLOAK_URL} \
+    VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM} \
+    VITE_KEYCLOAK_CLIENT_ID=${VITE_KEYCLOAK_CLIENT_ID}
 
 RUN npx vite build
 

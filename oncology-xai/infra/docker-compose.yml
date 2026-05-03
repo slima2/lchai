@@ -393,6 +393,14 @@ services:
     build:
       context: ..
       dockerfile: apps/webapp/Dockerfile
+      args:
+        # Vite substitutes import.meta.env.VITE_* at build time, so these
+        # MUST be passed as build args (the runtime `environment:` vars
+        # below are ignored by the static bundle but kept for parity).
+        VITE_API_URL: http://localhost:8000
+        VITE_KEYCLOAK_URL: http://localhost:8080
+        VITE_KEYCLOAK_REALM: oncology
+        VITE_KEYCLOAK_CLIENT_ID: oncology-webapp
     container_name: oncology-webapp
     environment:
       - VITE_API_URL=http://localhost:8000

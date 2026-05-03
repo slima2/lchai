@@ -31,10 +31,29 @@ ecr_login() {
 build_images() {
   echo "==> Building Docker images..."
   cd "$(dirname "$0")/.."
+
+  # Vite-based webapp needs production URLs baked in at build time.
+  # The helm chart's runtime env: vars are useless for Vite (substitution
+  # happens during `vite build`). All four VITE_* values must be passed
+  # as --build-arg so they end up in the minified JS bundle.
+  PROD_DOMAIN="${PROD_DOMAIN:-lchai.gptfy.biz}"
+  WEBAPP_BUILD_ARGS=(
+    --build-arg "VITE_API_URL=https://${PROD_DOMAIN}"
+    --build-arg "VITE_KEYCLOAK_URL=https://${PROD_DOMAIN}"
+    --build-arg "VITE_KEYCLOAK_REALM=oncology"
+    --build-arg "VITE_KEYCLOAK_CLIENT_ID=oncology-webapp"
+  )
+
   for svc in "${SERVICES[@]}"; do
     echo "  Building $svc..."
-    docker build -t ${REGISTRY}/${PREFIX}/${svc}:${TAG} \
-      -f apps/${svc}/Dockerfile . &
+    if [ "$svc" = "webapp" ]; then
+      docker build -t ${REGISTRY}/${PREFIX}/${svc}:${TAG} \
+        "${WEBAPP_BUILD_ARGS[@]}" \
+        -f apps/${svc}/Dockerfile . &
+    else
+      docker build -t ${REGISTRY}/${PREFIX}/${svc}:${TAG} \
+        -f apps/${svc}/Dockerfile . &
+    fi
   done
   wait
   echo "==> All images built."
