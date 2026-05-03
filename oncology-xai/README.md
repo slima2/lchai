@@ -1,8 +1,10 @@
 # LCHAI v2.0 — Lung Cancer Histologic Analysis with AI
 
-**Explainable AI system for predicting oncogenic mutations from H&E whole-slide images of lung adenocarcinoma, integrating fuzzy logic, attention-based MIL, and ontology-grounded explanations.**
+**Interpretable and explainable AI system for predicting oncogenic mutations from H&E whole-slide images of lung adenocarcinoma, integrating fuzzy logic, attention-based MIL, fuzzy Choquet aggregation, and ontology-grounded LLM explanations.**
 
 > Research tool — NOT for clinical diagnosis.
+
+**Live demo:** [https://lchai.gptfy.biz/](https://lchai.gptfy.biz/) (credentials: `unifr1` / `unifr1`)
 
 ---
 
@@ -13,7 +15,14 @@ LCHAI (Lung Cancer Histologic Analysis with AI) is the translational software ar
 **Author:** Servio Fernando Lima Reina  
 **Institution:** University of Fribourg, Switzerland  
 **Degree:** PhD in Computer Science  
-**Thesis:** *Fuzzy Margin Representation Learning for Explainable Architecture–Genotype Associations in Lung Adenocarcinoma*
+**Thesis:** *Fuzzy Margin Representation Learning for Interpretable Architecture–Genotype Associations in Lung Adenocarcinoma*
+
+### Interpretability vs. Explainability
+
+LCHAI distinguishes the two terms following Lipton (2018) and Doshi-Velez & Kim (2017):
+
+- **Interpretability** is a model property: every artefact exposes inspectable internal structure (per-sample fuzzy margins, attention weights, Choquet Shapley values, pattern attributions). This is empirically evaluated in the thesis.
+- **Explainability** is a system capability: the LCHAI prototype generates LLM rationales grounded in a curated NCIt/MONDO knowledge graph and constrained by fuzzy linguistic labels. Formal evaluation (faithfulness study, expert reader study) is short-term future work.
 
 ---
 
@@ -36,18 +45,33 @@ A Fuzzy Choquet integral aggregation module that replaces standard attention poo
 
 ### Results
 
-All artefacts are evaluated on the TCGA–LUAD cohort (N = 687 slides, 668 patients, 6 genes) using stratified 5-fold patient-level cross-validation:
+All artefacts are evaluated on the TCGA–LUAD cohort (N = 687 slides, 668 patients, **multi-label** mutation supervision over 6 genes) using stratified 5-fold patient-level cross-validation. Each slide may carry several co-mutations (e.g. TP53+KRAS, STK11+KEAP1):
 
-| Gene | Best Method | AUROC (mean ± std) |
-|------|-------------|-------------------|
-| **TP53** | B2 (embeddings-only ABMIL) | 0.718 ± 0.053 |
-| **EGFR** | B2 (embeddings-only ABMIL) | 0.701 ± 0.049 |
-| **STK11** | P (pattern-informed ABMIL) | 0.695 ± 0.023 |
-| **RBM10** | FC (Fuzzy Choquet) | 0.661 ± 0.063 |
-| **KEAP1** | P (pattern-informed ABMIL) | 0.610 ± 0.071 |
-| **KRAS** | FC (Fuzzy Choquet) | 0.609 ± 0.059 |
+| Gene  | Best Method                | AUROC (mean ± std) | Conclusive? (AUROC ≥ 0.70) |
+|-------|----------------------------|--------------------|----------------------------|
+| **TP53**  | B2 (embeddings-only ABMIL) | 0.718 ± 0.053 | Yes |
+| **EGFR**  | B2 (embeddings-only ABMIL) | 0.701 ± 0.049 | Yes |
+| **STK11** | PI-ABMIL (ours)            | 0.695 ± 0.023 | Inconclusive |
+| **RBM10** | FC-MIL (ours)              | 0.661 ± 0.063 | Inconclusive |
+| **KEAP1** | PI-ABMIL (ours)            | 0.610 ± 0.071 | Inconclusive |
+| **KRAS**  | FC-MIL (ours)              | 0.609 ± 0.059 | Inconclusive |
 
-These results are competitive with similarly-scaled studies such as Saldanha et al. (AUROC = 0.65 for TP53) and Logan et al. (AUROC = 0.69 for TP53), while providing a **dual-interpretability channel** absent from all prior work: spatial attention maps *and* human-readable histological pattern attributions.
+The **Conclusive / Inconclusive** flag is a per-gene, **cohort-level** verdict (not per-slide) derived solely from AUROC against the Hosmer–Lemeshow criterion (AUROC ≥ 0.70).
+
+These results are competitive with similarly-scaled studies (Saldanha et al. 0.65 for TP53; Logan et al. 0.69 for TP53), while providing a **dual-interpretability channel** absent from prior work: spatial attention maps *and* human-readable histological pattern attributions.
+
+### Three-regime structural taxonomy (analytical contribution)
+
+The per-gene Inconclusive verdicts decompose into three named structural regimes that bound what any morphology-only model can recover from H&E alone:
+
+1. **Encoder saturation** *(TP53, EGFR)* — the pretrained CTransPath encoder already captures the relevant morphology; the explicit pattern channel adds no further information.
+2. **Inter-pattern co-occurrence** *(KRAS)* — discriminative signal lives in pairwise pattern interactions, not in any single pattern; only an aggregator that reads joint pattern activations (FC-MIL's Choquet integral) recovers it.
+3. **Out-of-ontology** *(STK11, KEAP1, RBM10)* — no representation within the 6-pattern ANORAK simplex carries the signal. This regime decomposes into three named mechanisms:
+   - *label-space mismatch* (Lipton et al. 2018, label shift)
+   - *no morphological projection* (this thesis)
+   - *collapse-to-prior* (Bowman et al. 2016, posterior collapse)
+
+Genes in regime (iii) require **fusing additional data sources** (gene-expression, radiology, expanded pattern taxonomy with mucinous/IMA), not further architectural refinement.
 
 ### Keywords
 
@@ -75,13 +99,14 @@ WSI (SVS/TIFF/BIF)
   │   └─ 512-d embeddings per tile
   │
   ├─ FuzzyArcLoss V2 cosine head
-  │   └─ 6-class pattern probabilities (acinar, lepidic,
-  │      papillary, micropapillary, solid, mucinous)
+  │   └─ 6-class pattern probabilities (lepidic, acinar,
+  │      papillary, micropapillary, solid, cribriform)
+  │      [ANORAK 2024 ontology — Pan et al.]
   │
   ├─ Gene-specific optimal model (thesis Finding 2):
-  │   ├─ B2: ABMIL on embeddings only (TP53, EGFR)
-  │   ├─ P:  ABMIL on concat(emb₅₁₂, pat₆) (STK11, KEAP1)
-  │   └─ FC: Fuzzy Choquet MIL (KRAS, RBM10)
+  │   ├─ B2:        ABMIL on embeddings only (TP53, EGFR)
+  │   ├─ PI-ABMIL:  ABMIL on concat(emb₅₁₂, pat₆) (STK11, KEAP1)
+  │   └─ FC-MIL:    Fuzzy Choquet MIL (KRAS, RBM10)
   │
   ├─ Ablation comparison (Proposed vs B2 vs B3)
   ├─ Permutation importance (pattern contribution %)
@@ -89,13 +114,36 @@ WSI (SVS/TIFF/BIF)
   └─ Choquet Shapley values + interaction indices
 ```
 
+### Six-level interpretability framework
+
+Every prediction exposes inspectable internal structure across six complementary levels, integrated end-to-end in the prototype:
+
+| Level | Output | Source artefact |
+|-------|--------|-----------------|
+| 1. Tile-level pattern probabilities | 6-d soft pattern vector per tile | FuzzyArcLoss V2 |
+| 2. Spatial attention maps | Per-tile attention weight | PI-ABMIL / FC-MIL |
+| 3. Pattern attribution | Permutation importance over the 6 patterns | PI-ABMIL ablation |
+| 4. SHAP decomposition | Embedding-vs-pattern dimensional split | DeepSHAP |
+| 5. Choquet Shapley + interaction indices | 6 Shapley values + 15 pairwise interactions | FC-MIL fuzzy measure |
+| 6. Fuzzy linguistic labels + ontology-grounded LLM rationale | Calibrated intensity terms + NCIt/MONDO-anchored natural language | KG explainer |
+
+### Dual anti-hallucination mechanism (explainability layer)
+
+LLM-generated rationales are constrained on two axes simultaneously:
+
+- **HOW the model speaks**: trapezoidal fuzzy membership functions translate every numeric output into a calibrated linguistic intensity term, eliminating fabricated quantitative claims.
+- **WHAT the model can claim**: a curated three-tier knowledge graph (NCIt + MONDO ontologies + per-case dynamic filter + DeepSearch literature enrichment) bounds the set of admissible mutation–pattern–treatment relations.
+
+All ontology IRIs in the graph have been **verified canonical** against the NCI EVS REST API (NCIt v26.04d, April 2026) and the MONDO OLS API.
+
 ### Frontend
 
-- **Images tab**: Upload WSI, process with v2.0 pipeline, view mutation report with confidence labels, pattern overlay, and clinical summary
+- **Images tab**: Upload WSI, process with v2.0 pipeline, view mutation report with fuzzy linguistic confidence labels, pattern overlay, and clinical summary
 - **Viewer tab**: QuPath-like zoom/pan viewer with Original, Patterns, Attention, and Combined overlay layers
-- **Graph tab**: Ontology-grounded knowledge graph (NCIt + MONDO) with LLM-generated explanations and treatment associations
-- **Explainability tab**: Per-gene SHAP decomposition, Choquet Shapley values, ablation study, permutation importance, and LLM-powered explanations
-- **Admin tab**: Editable system parameters (AUROC values, threshold, methods, inference settings)
+- **Graph tab**: Ontology-grounded knowledge graph (NCIt + MONDO + DeepSearch literature enrichment) with LLM rationales and treatment associations
+- **Explainability tab**: Per-gene SHAP decomposition, Choquet Shapley + interaction indices, ablation study, permutation importance, fuzzy-label-constrained LLM explanations
+- **Active Learning tab**: Pathologist correction loop with audit trail (Keycloak username, RabbitMQ events, Correction History panel)
+- **Admin tab**: Editable system parameters (AUROC values, threshold, methods, inference settings); ontology versioning and DeepSearch tools
 
 ---
 
@@ -227,7 +275,7 @@ If you use LCHAI or any of the artefacts described in this thesis, please cite:
 ```bibtex
 @phdthesis{lima2026fuzzy,
   author  = {Lima Reina, Servio Fernando},
-  title   = {Fuzzy Margin Representation Learning for Explainable
+  title   = {Fuzzy Margin Representation Learning for Interpretable
              Architecture--Genotype Associations in Lung Adenocarcinoma},
   school  = {University of Fribourg},
   year    = {2026},
@@ -246,3 +294,5 @@ This project is part of a PhD thesis and is provided for academic and research p
 - **Author:** Servio Fernando Lima Reina
 - **Institution:** University of Fribourg, Department of Informatics
 - **GitLab:** [gitlab.com/serviolimareina/lchaiv2](https://gitlab.com/serviolimareina/lchaiv2)
+- **GitHub:** [github.com/slima2/lchai](https://github.com/slima2/lchai)
+- **Live demo:** [lchai.gptfy.biz](https://lchai.gptfy.biz/) (credentials: `unifr1` / `unifr1`)
