@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, getResultBundle, getArtifacts, getArtifactUrl, getImages, getJob, submitPatternCorrections, getActiveLearningJob } from '../api';
 import { patternColor, filterAllowedPatternResults, predominantPatternForDisplay, PATTERN_COLORS, type AnorakPattern } from '../patternConstants';
+import { classifyAttention } from '../fuzzyLabels';
 import { useAuth } from '../auth/AuthProvider';
 
 interface Props {
@@ -35,7 +36,18 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
   const [overlayOpacity, setOverlayOpacity] = useState(0.85);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgError, setImgError] = useState(false);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; pattern: string } | null>(null);
+  // "Show tiles" overlays the segmentation grid (xn/yn/wn/hn from pattern_region_map.json)
+  // on top of every layer so the user can see the exact tile size the pipeline used.
+  const [showTiles, setShowTiles] = useState(false);
+  // Tooltip carries pattern info (shown on "Patterns"/"Combined" layers) and/or attention info
+  // (shown on "Attention"/"Combined" layers — mirrors the AnalysisPanel's ABMIL heatmap tooltip).
+  const [tooltip, setTooltip] = useState<{
+    x: number;
+    y: number;
+    pattern?: string;
+    attention_percentile?: number;
+    attention_rank?: number;
+  } | null>(null);
   const [regionMap, setRegionMap] = useState<any[] | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -89,13 +101,48 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
   const attnArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'attention_overlay');
   const combArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'combined_overlay');
   const regionMapArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'pattern_region_map');
+  const attentionMapArt = allArts.find((a: any) => (a.type || a.artifact_type) === 'attention_region_map');
 
+  // Merge the two region maps so a single hit lookup carries both the pattern label and the
+  // ABMIL attention percentile/rank for the same tile — needed so the "Combined" layer can
+  // render a tooltip with both pieces of information side-by-side. The two JSONs are produced
+  // in the same iteration order over tile_coords by the inference worker, so we can zip by
+  // index when their lengths match; we also fall back to xn/yn matching as a defensive path
+  // for legacy bundles where the order isn't guaranteed.
   useEffect(() => {
-    if (regionMapArt?.uri) {
-      const url = getArtifactUrl(regionMapArt.uri);
-      fetch(url).then(r => r.json()).then(data => setRegionMap(data)).catch(() => setRegionMap(null));
+    if (!regionMapArt?.uri) {
+      setRegionMap(null);
+      return;
     }
-  }, [regionMapArt?.uri]);
+    const patternUrl = getArtifactUrl(regionMapArt.uri);
+    const attnUrl = attentionMapArt?.uri ? getArtifactUrl(attentionMapArt.uri) : null;
+    Promise.all([
+      fetch(patternUrl).then((r) => r.json()).catch(() => null),
+      attnUrl ? fetch(attnUrl).then((r) => r.json()).catch(() => null) : Promise.resolve(null),
+    ])
+      .then(([patternData, attentionData]) => {
+        if (!Array.isArray(patternData)) {
+          setRegionMap(null);
+          return;
+        }
+        if (!Array.isArray(attentionData) || attentionData.length === 0) {
+          setRegionMap(patternData);
+          return;
+        }
+        const merged = patternData.map((p: any, i: number) => {
+          let a = attentionData[i];
+          if (!a || a.xn !== p.xn || a.yn !== p.yn) {
+            // defensive fallback: match by normalised coords
+            a = attentionData.find((q: any) => q.xn === p.xn && q.yn === p.yn);
+          }
+          return a
+            ? { ...p, attention: a.attention, attention_rank: a.attention_rank, attention_percentile: a.attention_percentile }
+            : p;
+        });
+        setRegionMap(merged);
+      })
+      .catch(() => setRegionMap(null));
+  }, [regionMapArt?.uri, attentionMapArt?.uri]);
 
   const bust = cacheBust ? `&_cb=${cacheBust}` : '';
   const thumbnailUrl = thumbArt?.uri ? getArtifactUrl(thumbArt.uri) + bust : null;
@@ -203,10 +250,32 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
           setCacheBust(Date.now());
           queryClient.invalidateQueries({ queryKey: ['viewer-bundle', resultBundleId] });
           queryClient.invalidateQueries({ queryKey: ['viewer-artifacts', resultBundleId] });
-          // Re-fetch region map with new data
+          // Re-fetch region maps with new data (merging pattern + attention as in the load effect).
           if (regionMapArt?.uri) {
-            fetch(getArtifactUrl(regionMapArt.uri) + `&_cb=${Date.now()}`)
-              .then(r => r.json()).then(d => setRegionMap(d)).catch(() => {});
+            const patternUrl = getArtifactUrl(regionMapArt.uri) + `&_cb=${Date.now()}`;
+            const attnUrl = attentionMapArt?.uri ? getArtifactUrl(attentionMapArt.uri) + `&_cb=${Date.now()}` : null;
+            Promise.all([
+              fetch(patternUrl).then((r) => r.json()).catch(() => null),
+              attnUrl ? fetch(attnUrl).then((r) => r.json()).catch(() => null) : Promise.resolve(null),
+            ])
+              .then(([patternData, attentionData]) => {
+                if (!Array.isArray(patternData)) return;
+                if (!Array.isArray(attentionData) || attentionData.length === 0) {
+                  setRegionMap(patternData);
+                  return;
+                }
+                const merged = patternData.map((p: any, i: number) => {
+                  let a = attentionData[i];
+                  if (!a || a.xn !== p.xn || a.yn !== p.yn) {
+                    a = attentionData.find((q: any) => q.xn === p.xn && q.yn === p.yn);
+                  }
+                  return a
+                    ? { ...p, attention: a.attention, attention_rank: a.attention_rank, attention_percentile: a.attention_percentile }
+                    : p;
+                });
+                setRegionMap(merged);
+              })
+              .catch(() => {});
           }
           setTimeout(() => { setRetrainJobId(null); setRetrainStatus(null); }, 4000);
         } else if (data.status === 'FAILED') {
@@ -275,6 +344,28 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
             <span className="text-gray-400 text-xs font-mono w-8">{(overlayOpacity * 100).toFixed(0)}%</span>
           </div>
         )}
+        <div className="w-px h-6 bg-gray-600 mx-1" />
+        <button
+          onClick={() => setShowTiles(t => !t)}
+          disabled={!regionMap || regionMap.length === 0}
+          className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1.5 ${
+            showTiles ? 'bg-sky-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+          } disabled:opacity-40 disabled:cursor-not-allowed`}
+          title={
+            regionMap?.length
+              ? `Toggle tile grid (${regionMap.length} tiles, click to ${showTiles ? 'hide' : 'show'})`
+              : 'Tile grid unavailable: region map not loaded for this result'
+          }
+        >
+          {/* simple grid icon */}
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+          </svg>
+          {showTiles ? 'Hide Tiles' : 'Show Tiles'}
+        </button>
         <div className="flex-1" />
         {rb && (
           <div className="flex gap-3 text-xs text-gray-400">
@@ -311,30 +402,76 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
               {imgError && (
                 <div className="text-red-400 text-sm absolute">Failed to load image</div>
               )}
-              <img ref={imgRef} src={activeUrl} alt={`${layer} view`} draggable={false}
-                onLoad={() => setImgLoaded(true)} onError={() => setImgError(true)}
-                onMouseMove={(e) => {
-                  if (!regionMap || (layer !== 'pattern' && layer !== 'combined')) { setTooltip(null); return; }
-                  const img = imgRef.current;
-                  if (!img) return;
-                  const rect = img.getBoundingClientRect();
-                  const xn = (e.clientX - rect.left) / rect.width;
-                  const yn = (e.clientY - rect.top) / rect.height;
-                  const hit = regionMap.find((r: any) =>
-                    xn >= r.xn && xn <= r.xn + r.wn && yn >= r.yn && yn <= r.yn + r.hn
-                  );
-                  if (hit) {
-                    setTooltip({ x: e.clientX, y: e.clientY, pattern: hit.pattern });
-                  } else {
-                    setTooltip(null);
-                  }
-                }}
-                onMouseLeave={() => setTooltip(null)}
-                style={{
-                  maxWidth: 'none', maxHeight: 'none',
-                  opacity: imgLoaded ? (layer === 'original' ? 1 : overlayOpacity) : 0,
-                  imageRendering: zoom > 3 ? 'pixelated' : 'auto',
-                }} />
+              <div className="relative">
+                <img ref={imgRef} src={activeUrl} alt={`${layer} view`} draggable={false}
+                  onLoad={() => setImgLoaded(true)} onError={() => setImgError(true)}
+                  onMouseMove={(e) => {
+                    // Tooltip is meaningful on every overlay except "original".
+                    if (!regionMap || layer === 'original') { setTooltip(null); return; }
+                    const img = imgRef.current;
+                    if (!img) return;
+                    const rect = img.getBoundingClientRect();
+                    const xn = (e.clientX - rect.left) / rect.width;
+                    const yn = (e.clientY - rect.top) / rect.height;
+                    const hit = regionMap.find((r: any) =>
+                      xn >= r.xn && xn <= r.xn + r.wn && yn >= r.yn && yn <= r.yn + r.hn
+                    );
+                    if (!hit) { setTooltip(null); return; }
+                    // Show pattern on "pattern"/"combined" and attention on "attention"/"combined".
+                    setTooltip({
+                      x: e.clientX,
+                      y: e.clientY,
+                      pattern: (layer === 'pattern' || layer === 'combined') ? hit.pattern : undefined,
+                      attention_percentile: (layer === 'attention' || layer === 'combined') ? hit.attention_percentile : undefined,
+                      attention_rank: (layer === 'attention' || layer === 'combined') ? hit.attention_rank : undefined,
+                    });
+                  }}
+                  onMouseLeave={() => setTooltip(null)}
+                  style={{
+                    maxWidth: 'none', maxHeight: 'none',
+                    opacity: imgLoaded ? (layer === 'original' ? 1 : overlayOpacity) : 0,
+                    imageRendering: zoom > 3 ? 'pixelated' : 'auto',
+                  }} />
+                {/* Tile grid — drawn on top of the image so the user can see the exact
+                    segmentation size the pipeline used. Uses a normalised SVG viewBox so
+                    one element renders all tiles efficiently (>1000 tiles per slide).
+                    Two-pass rendering: a slightly thicker dark stroke underneath so the
+                    bright magenta lines above stay legible on every background — pink H&E,
+                    coloured pattern overlay, and white glass. Magenta (#FF00FF) is the only
+                    saturated colour absent from the pattern palette
+                    (blue/red/yellow/green/maroon/cyan) and from the attention overlay's
+                    cyan fill + black contours. */}
+                {showTiles && imgLoaded && regionMap && regionMap.length > 0 && (
+                  <svg
+                    className="absolute inset-0 w-full h-full pointer-events-none"
+                    viewBox="0 0 1 1"
+                    preserveAspectRatio="none"
+                  >
+                    {/* Dark halo pass */}
+                    {regionMap.map((r: any, i: number) => (
+                      <rect
+                        key={`h-${i}`}
+                        x={r.xn} y={r.yn} width={r.wn} height={r.hn}
+                        fill="none"
+                        stroke="rgba(0, 0, 0, 0.55)"
+                        strokeWidth={2.4}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    ))}
+                    {/* Bright magenta foreground pass */}
+                    {regionMap.map((r: any, i: number) => (
+                      <rect
+                        key={`f-${i}`}
+                        x={r.xn} y={r.yn} width={r.wn} height={r.hn}
+                        fill="none"
+                        stroke="#FF00FF"
+                        strokeWidth={1.2}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    ))}
+                  </svg>
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500">
@@ -351,15 +488,35 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
             </div>
           )}
 
-          {tooltip && (
+          {tooltip && (tooltip.pattern || tooltip.attention_percentile != null) && (
             <div
-              className="fixed z-50 pointer-events-none bg-black/85 text-white text-xs font-bold px-3 py-1.5 rounded shadow-lg capitalize"
+              className="fixed z-50 pointer-events-none bg-black/85 text-white text-xs font-bold px-3 py-1.5 rounded shadow-lg"
               style={{ left: tooltip.x + 12, top: tooltip.y - 30 }}
             >
-              <span className="inline-block w-2.5 h-2.5 rounded-full mr-1.5" style={{
-                backgroundColor: patternColor(tooltip.pattern),
-              }} />
-              {tooltip.pattern}
+              {tooltip.pattern && (
+                <span className="capitalize">
+                  <span className="inline-block w-2.5 h-2.5 rounded-full mr-1.5 align-middle" style={{
+                    backgroundColor: patternColor(tooltip.pattern),
+                  }} />
+                  {tooltip.pattern}
+                </span>
+              )}
+              {tooltip.pattern && tooltip.attention_percentile != null && (
+                <span className="mx-1.5 text-gray-500">|</span>
+              )}
+              {tooltip.attention_percentile != null && (() => {
+                const cl = classifyAttention(tooltip.attention_percentile);
+                return (
+                  <span>
+                    <span className="inline-block w-2.5 h-2.5 rounded-full mr-1.5 align-middle" style={{ backgroundColor: cl.color }} />
+                    <span>{cl.label}</span>
+                    <span className="ml-1.5 font-mono text-gray-300">p{tooltip.attention_percentile.toFixed(0)}</span>
+                    {tooltip.attention_rank != null && (
+                      <span className="ml-1 text-gray-400">#{tooltip.attention_rank}</span>
+                    )}
+                  </span>
+                );
+              })()}
             </div>
           )}
           {/* Selected tile highlights + lasso — overlaid on the image using same transform */}

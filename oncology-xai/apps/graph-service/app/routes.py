@@ -20,6 +20,15 @@ from app.sparql import get_case_subgraph
 router = APIRouter(prefix="/api/v1", tags=["Graph"])
 
 
+async def _fetch_case_label(db: AsyncSession, case_id: str) -> str | None:
+    """Resolve a human-friendly label for the case node: the patient's external_id when available."""
+    stmt = text(
+        "SELECT p.external_id FROM patients p JOIN cases c ON c.patient_id = p.id WHERE c.id = :cid"
+    )
+    row = (await db.execute(stmt, {"cid": case_id})).fetchone()
+    return row[0] if row and row[0] else None
+
+
 async def _fetch_case_results(db: AsyncSession, case_id: str) -> tuple[list[dict], list[dict]]:
     """Fetch pattern_results and genetic_results for the latest result_bundle of a case."""
     # Find latest result bundle for this case
@@ -228,6 +237,9 @@ async def rebuild_graph(
     # Fetch discovered relations from batch DeepSearch
     discovered = await _fetch_discovered_relations(db)
 
+    # Resolve human-friendly label for the case (patient external_id, falls back to short uuid)
+    case_label = await _fetch_case_label(db, case_id)
+
     graph = await get_case_subgraph(
         settings.fuseki_url,
         settings.fuseki_dataset,
@@ -236,6 +248,7 @@ async def rebuild_graph(
         pattern_results=pattern_results or None,
         genetic_results=genetic_results or None,
         discovered_relations=discovered or None,
+        case_label=case_label,
     )
 
     ontology_versions = {

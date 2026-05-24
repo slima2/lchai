@@ -13,6 +13,8 @@ import {
   getGeneAssociations,
   createPatient,
   createCase,
+  deletePatient,
+  deleteCase,
 } from '../api';
 import { clinicalAssocForGene } from '../data/geneClinicalAssociations';
 import { useAuth } from '../auth/AuthProvider';
@@ -789,9 +791,11 @@ function GeneAnalysisView({
 
   const patternsHelpPrediction = abl && (abl.p_proposed || 0) > (abl.p_emb_only || 0);
 
-  const roiArt = artifacts.find((a: any) =>
-    a.artifact_type === 'roi_overlay' || (a.artifact_type === 'combined_overlay')
-  );
+  // PATTERN OVERLAY panel must show the PURE pattern overlay (no attention contours), so the
+  // visual on the left answers "where is each tissue pattern?" and the visual on the right
+  // (ABMIL Attention Heatmap) answers "where does the MIL look?". Combined overlay (patterns +
+  // attention contours) lives in the Viewer tab where the user can toggle it explicitly.
+  const roiArt = artifacts.find((a: any) => a.artifact_type === 'roi_overlay');
   const attnArt = artifacts.find((a: any) => a.artifact_type === 'attention_overlay');
   const patternRegionArt = artifacts.find((a: any) => a.artifact_type === 'pattern_region_map');
   const attentionRegionArt = artifacts.find((a: any) => a.artifact_type === 'attention_region_map');
@@ -912,19 +916,63 @@ function GeneAnalysisView({
                     <span>Embeddings (512-d CTransPath)</span>
                     <span>Patterns (6 classes)</span>
                   </div>
-                  {shapDecomp.top_pattern_dims?.length > 0 && (
-                    <div className="mt-2 text-[10px] text-gray-500">
-                      Top contributing:{' '}
-                      {shapDecomp.top_pattern_dims
-                        .filter((p: string) => !isDisallowedPatternName(p))
-                        .map((p: string) => (
-                          <span key={p} className="capitalize bg-gray-100 rounded px-1 py-0.5 mr-1">
-                            <span className="w-1.5 h-1.5 rounded-full inline-block mr-0.5" style={{ backgroundColor: patternColor(p) }} />
-                            {p}
-                          </span>
-                        ))}
-                    </div>
-                  )}
+                  {shapDecomp.top_pattern_dims?.length > 0 && (() => {
+                    const signedMap = (shapDecomp.pattern_shap_signed || {}) as Record<string, number>;
+                    const allowedAbs = Object.entries(signedMap)
+                      .filter(([p]) => !isDisallowedPatternName(p))
+                      .map(([, v]) => Math.abs(v as number));
+                    const maxAbs = allowedAbs.length > 0 ? Math.max(...allowedAbs) : 0;
+                    // Drop patterns whose |signed SHAP| is numerical noise.
+                    //   - ABSOLUTE_FLOOR: anything that would render as "0.0000" (4 decimals) is treated as
+                    //     literally zero — showing it as "top contributing" is misleading.
+                    //   - RELATIVE_THRESHOLD: 5% of the largest magnitude in this gene — guards against
+                    //     showing a 0.001 next to a 0.500 as if both mattered.
+                    const ABSOLUTE_FLOOR = 5e-4;            // |val| < 0.0005 ⇒ rounds to "0.0000"
+                    const RELATIVE_THRESHOLD = 0.05 * maxAbs;
+                    const isNoise = (val: number | undefined): boolean => {
+                      if (val == null) return true;
+                      const a = Math.abs(val);
+                      if (a < ABSOLUTE_FLOOR) return true;
+                      if (maxAbs > 0 && a < RELATIVE_THRESHOLD) return true;
+                      return false;
+                    };
+                    const visible: string[] = (shapDecomp.top_pattern_dims as string[])
+                      .filter((p: string) => !isDisallowedPatternName(p))
+                      .filter((p: string) => !isNoise(signedMap[p]));
+                    if (visible.length === 0) {
+                      return (
+                        <div className="mt-2 text-[10px] text-gray-400 italic">
+                          No individual pattern contributes meaningfully for this gene
+                          (all |signed SHAP| &lt; {ABSOLUTE_FLOOR.toExponential(0)}).
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="mt-2 text-[10px] text-gray-500">
+                        Top contributing:{' '}
+                        {visible.map((p: string) => {
+                          const dir = shapDecomp.pattern_shap_directions?.[p];
+                          const val = signedMap[p] as number;
+                          const isPos = dir === 'positive' || val > 0;
+                          const isNeg = dir === 'negative' || val < 0;
+                          const arrow = isPos ? '▲' : isNeg ? '▼' : '•';
+                          const arrowColor = isPos ? 'text-emerald-600' : isNeg ? 'text-rose-600' : 'text-gray-400';
+                          const directionText = isPos
+                            ? 'pushes toward mutated (+)'
+                            : isNeg ? 'pushes toward wild-type (−)'
+                            : 'neutral';
+                          const title = `${p}: signed SHAP = ${val.toFixed(4)} (${directionText})`;
+                          return (
+                            <span key={p} className="capitalize bg-gray-100 rounded px-1 py-0.5 mr-1" title={title}>
+                              <span className="w-1.5 h-1.5 rounded-full inline-block mr-0.5" style={{ backgroundColor: patternColor(p) }} />
+                              {p}
+                              <span className={`ml-1 font-bold ${arrowColor}`}>{arrow}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                   {(() => {
                     const bal = classifySHAPBalance(shapDecomp.pattern_contribution_pct || 0);
                     return (
@@ -1198,6 +1246,8 @@ export default function AnalysisPanel({
 
   /* ── Mutations (upload / process / job) ── */
 
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const upload = useMutation({
     mutationFn: async (file: File) => {
       const filename = file.name.replace(/\.[^.]+$/, '');
@@ -1210,12 +1260,23 @@ export default function AnalysisPanel({
       }
       const newCaseId = (await createCase({ patient_id: patientId })).data.case_id;
       setUploadProgress(0);
-      const imgRes = await uploadImage(newCaseId, file, (pct) => setUploadProgress(pct));
-      setUploadProgress(null);
-      return { ...imgRes, newCaseId };
+      try {
+        const imgRes = await uploadImage(newCaseId, file, (pct) => setUploadProgress(pct));
+        setUploadProgress(null);
+        return { ...imgRes, newCaseId };
+      } catch (err) {
+        // Transactional rollback: best-effort delete patient (cascades to case + any partial rows)
+        try { await deletePatient(patientId); }
+        catch (rollbackErr) {
+          console.warn('Rollback failed; orphan patient/case may remain:', rollbackErr);
+          try { await deleteCase(newCaseId); } catch { /* swallow */ }
+        }
+        throw err;
+      }
     },
     onSuccess: (r: any) => {
       setUploadProgress(null);
+      setUploadError(null);
       onCaseChanged(r.newCaseId);
       setTimeout(() => {
         setSelImage(r.data.image_id);
@@ -1223,7 +1284,14 @@ export default function AnalysisPanel({
         setAutoSelected(true);
       }, 200);
     },
-    onError: () => setUploadProgress(null),
+    onError: (err: any) => {
+      setUploadProgress(null);
+      const detail = err?.response?.data?.detail
+        || err?.response?.statusText
+        || err?.message
+        || 'unknown error';
+      setUploadError(String(detail));
+    },
   });
 
   const process = useMutation({
@@ -1289,6 +1357,29 @@ export default function AnalysisPanel({
           </button>
         )}
       </div>
+
+      {uploadError && (
+        <div className="mb-4 bg-red-50 border border-red-300 rounded-lg p-3 flex items-start gap-3">
+          <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="flex-1 text-sm">
+            <p className="font-bold text-red-800">Upload failed</p>
+            <p className="text-red-700 break-words">{uploadError}</p>
+            <p className="text-red-600 text-xs mt-1">
+              The patient and case created for this upload have been rolled back.
+            </p>
+          </div>
+          <button
+            className="text-red-400 hover:text-red-700 text-xl leading-none"
+            onClick={() => setUploadError(null)}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Image list */}
       <div className="flex gap-2 mb-4 flex-wrap">
@@ -1397,6 +1488,9 @@ export default function AnalysisPanel({
       {/* ══ Gene Sub-tabs + Analysis ══ */}
       {sortedGenes.length > 0 && (
         <>
+          <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+            Mutation Prediction
+          </h3>
           <div className="border-b border-gray-200 mb-4">
             <div className="flex gap-0 overflow-x-auto">
               {sortedGenes.map((g: any, idx: number) => {

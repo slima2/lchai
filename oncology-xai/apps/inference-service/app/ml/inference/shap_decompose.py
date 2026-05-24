@@ -30,6 +30,8 @@ class SHAPDecomposition:
     embedding_contribution_pct: float = 0.0
     pattern_contribution_pct: float = 0.0
     top_pattern_dims: list[str] = field(default_factory=list)
+    pattern_shap_signed: dict[str, float] = field(default_factory=dict)
+    pattern_shap_directions: dict[str, str] = field(default_factory=dict)
     shap_values_full: np.ndarray | None = None
     bar_plot_bytes: bytes = b""
     decomposition_plot_bytes: bytes = b""
@@ -82,6 +84,16 @@ def run_shap_decomposition(
     pattern_shap = abs_shap[EMBED_DIM:EMBED_DIM + PATTERN_DIM]
     top_idx = np.argsort(pattern_shap)[::-1][:2]
     result.top_pattern_dims = [PATTERN_NAMES[i] for i in top_idx if i < len(PATTERN_NAMES)]
+
+    pattern_shap_signed_arr = shap_vals[EMBED_DIM:EMBED_DIM + PATTERN_DIM]
+    result.pattern_shap_signed = {
+        PATTERN_NAMES[i]: round(float(pattern_shap_signed_arr[i]), 6)
+        for i in range(min(PATTERN_DIM, len(PATTERN_NAMES)))
+    }
+    result.pattern_shap_directions = {
+        name: ("positive" if val > 0 else ("negative" if val < 0 else "neutral"))
+        for name, val in result.pattern_shap_signed.items()
+    }
     result.shap_values_full = shap_vals
 
     result.bar_plot_bytes = _generate_bar_plot(gene, result)
@@ -124,11 +136,18 @@ def _compute_gradient_shap(
 def _mock_decomposition(gene: str) -> SHAPDecomposition:
     rng = np.random.default_rng(hash(gene) % (2**31))
     emb_pct = round(float(rng.uniform(75, 95)), 1)
+    signed = {name: round(float(rng.uniform(-0.1, 0.1)), 6) for name in PATTERN_NAMES}
+    directions = {
+        name: ("positive" if v > 0 else ("negative" if v < 0 else "neutral"))
+        for name, v in signed.items()
+    }
     return SHAPDecomposition(
         gene=gene,
         embedding_contribution_pct=emb_pct,
         pattern_contribution_pct=round(100.0 - emb_pct, 1),
         top_pattern_dims=["solid", "micropapillary"],
+        pattern_shap_signed=signed,
+        pattern_shap_directions=directions,
         bar_plot_bytes=_placeholder_png(f"SHAP Decomposition — {gene} (mock)"),
         decomposition_plot_bytes=_placeholder_png(f"Emb vs Pattern — {gene} (mock)"),
     )

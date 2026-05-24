@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthProvider';
 import { getCaseGraph, rebuildGraph, explainGraph } from '../api';
-import { patternColor, isDisallowedPatternName } from '../patternConstants';
+import { isDisallowedPatternName } from '../patternConstants';
 import * as d3 from 'd3';
 
 function escapeXmlContent(s: string): string {
@@ -18,40 +18,43 @@ function safeIri(iri: string): string {
   return iri.replace(/ /g, '%20').replace(/[<>"{}|\\^`]/g, (c) => encodeURIComponent(c));
 }
 
+// Unified palette. Patterns (lepidic, acinar, papillary, micropapillary, solid, cribriform)
+// all share #EC4899 (pink) — a hue distinct from every other layer (red genes, purple therapies,
+// green diagnoses, cyan stages, blue cases, gray ontologies) and semantically connected to H&E's eosin.
 const NODE_COLORS: Record<string, string> = {
   Case: '#3B82F6',
   Gene: '#EF4444',
   Diagnosis: '#10B981',
-  Pattern: '#F59E0B',
+  Pattern: '#EC4899',
   Stage: '#06B6D4',
   Mutation: '#EF4444',
   Treatment: '#8B5CF6',
   Ontology: '#78909C',
+  // lowercase aliases for legacy node.type values returned by the graph service
   entity: '#8B5CF6',
   case: '#3B82F6',
   gene: '#EF4444',
   diagnosis: '#10B981',
-  pattern: '#F59E0B',
+  pattern: '#EC4899',
   treatment: '#8B5CF6',
   stage: '#06B6D4',
   curated: '#78909C',
 };
 
-/** Map graph node label/id to canonical pattern slug for overlay colours. */
+/** Map graph node label/id to canonical pattern slug. */
 function patternSlugFromGraphLabel(label: string): string | null {
   const noPct = label.replace(/\s*\([^)]*\)\s*$/u, '').trim();
   const s = noPct.toLowerCase().replace(/\s+pattern$/iu, '').trim();
   return s || null;
 }
 
+/** All histopathological patterns now share the unified pink color regardless of subtype. */
 function resolvePatternNodeColor(n: { type?: string; label?: string; color?: string }): string | undefined {
-  if (n.color) return n.color;
   const t = (n.type || '').toLowerCase();
   if (t !== 'pattern') return undefined;
   const slug = patternSlugFromGraphLabel(String(n.label || ''));
-  if (!slug || isDisallowedPatternName(slug)) return undefined;
-  const c = patternColor(slug);
-  return c !== '#888888' ? c : undefined;
+  if (slug && isDisallowedPatternName(slug)) return undefined;
+  return NODE_COLORS.Pattern;
 }
 
 const NODE_RADIUS: Record<string, number> = {
@@ -265,7 +268,12 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
       Treatment: 4, treatment: 4,
     };
     const layerCount = 5;
-    const layerSpacing = height / (layerCount + 1);
+    // Use a *virtual* canvas height so each layer gets enough vertical room (≥ MIN_LAYER_SPACING)
+    // for the node label below the circle plus the edge label that sits at the midpoint with the
+    // next layer. Auto-fit zooms the whole graph back down to fit inside the visible canvas.
+    const MIN_LAYER_SPACING = 180;
+    const virtualHeight = Math.max(height, MIN_LAYER_SPACING * (layerCount + 1));
+    const layerSpacing = virtualHeight / (layerCount + 1);
 
     // Group nodes by layer
     const layerBuckets: Map<number, GraphNode[]> = new Map();
@@ -277,8 +285,14 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
 
     const labelWidth = (n: GraphNode) => {
       const text = n.label || n.id;
-      return Math.max((text.length > 30 ? 30 : text.length) * 6 + 20, 60);
+      // 12px font ≈ 7.4px per glyph; cap displayed text at 30 chars (matches the node label render below).
+      return Math.max((text.length > 30 ? 30 : text.length) * 7.4 + 20, 60);
     };
+
+    // Minimum gap between adjacent label boxes so words never overlap. The graph is allowed to
+    // grow wider than the canvas — auto-fit will zoom out to make it fit on screen.
+    // 60 px keeps long labels (e.g. "Non-Small Cell Lung Cancer") clear of neighbouring nodes.
+    const NODE_GAP = 60;
 
     // Build adjacency for barycenter ordering (reduces edge crossings)
     const nodeIdToIdx = new Map(nodes.map((n, i) => [n.id, i]));
@@ -302,7 +316,17 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
       }
     }
 
-    // Place each layer; use barycenter of connected nodes in previous layer to reduce crossings
+    // Compute the natural width each layer needs (sum of label widths + gaps).
+    // The graph uses this as its virtual width — we never squeeze nodes together; instead
+    // we let the graph extend beyond the canvas and rely on auto-fit/zoom to render it on screen.
+    let maxLayerWidth = 0;
+    for (const [, bucket] of layerBuckets) {
+      const lw = bucket.reduce((sum, n) => sum + labelWidth(n) + NODE_GAP, 0);
+      if (lw > maxLayerWidth) maxLayerWidth = lw;
+    }
+    const virtualWidth = Math.max(width, maxLayerWidth + 80);
+
+    // Place each layer; use barycenter of connected nodes in previous layer to reduce crossings.
     const nodeXPos = new Map<string, number>();
 
     for (let layer = 0; layer < layerCount; layer++) {
@@ -311,21 +335,19 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
 
       if (layer > 0 && bucket.length > 1) {
         bucket.sort((a, b) => {
-          const aParents = (adjUp.get(a.id) || []).map(pid => nodeXPos.get(pid) ?? width / 2);
-          const bParents = (adjUp.get(b.id) || []).map(pid => nodeXPos.get(pid) ?? width / 2);
-          const aCenter = aParents.length ? aParents.reduce((s, x) => s + x, 0) / aParents.length : width / 2;
-          const bCenter = bParents.length ? bParents.reduce((s, x) => s + x, 0) / bParents.length : width / 2;
+          const aParents = (adjUp.get(a.id) || []).map(pid => nodeXPos.get(pid) ?? virtualWidth / 2);
+          const bParents = (adjUp.get(b.id) || []).map(pid => nodeXPos.get(pid) ?? virtualWidth / 2);
+          const aCenter = aParents.length ? aParents.reduce((s, x) => s + x, 0) / aParents.length : virtualWidth / 2;
+          const bCenter = bParents.length ? bParents.reduce((s, x) => s + x, 0) / bParents.length : virtualWidth / 2;
           return aCenter - bCenter;
         });
       }
 
-      const totalWidth = bucket.reduce((sum, n) => sum + labelWidth(n) + 15, 0);
-      const margin = 40;
-      const availableWidth = width - margin * 2;
-      const scale = totalWidth > availableWidth ? availableWidth / totalWidth : 1;
-      let xCursor = (width - totalWidth * scale) / 2;
+      const totalWidth = bucket.reduce((sum, n) => sum + labelWidth(n) + NODE_GAP, 0);
+      // Center this layer inside the virtual width; never scale down — keep labels readable.
+      let xCursor = (virtualWidth - totalWidth) / 2;
       for (const n of bucket) {
-        const w = (labelWidth(n) + 15) * scale;
+        const w = labelWidth(n) + NODE_GAP;
         n.x = xCursor + w / 2;
         n.y = yTarget;
         nodeXPos.set(n.id, n.x);
@@ -371,18 +393,73 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
       });
     svg.call(zoom);
 
+    // ── Layer category labels on the right edge ─────────────────────────────
+    // Each label sits just past the rightmost node in its row and pans/zooms
+    // with the graph so it stays aligned with its layer.
+    const LAYER_NAMES: Record<number, string> = {
+      0: 'Case',
+      1: 'Diagnosis',
+      2: 'Histopathological Patterns',
+      3: 'Genetic Mutations',
+      4: 'Therapy',
+    };
+    const layerLabelsGroup = g.append('g').attr('class', 'layer-labels');
+    // All layer labels share a single column: the rightmost node-edge across every layer + 32 px.
+    // This guarantees vertical alignment (labels read as a clean column on the right) and that the
+    // column starts just past the widest row — labels never overlap node text from any layer.
+    let globalRightmost = 0;
+    for (let layer = 0; layer < layerCount; layer++) {
+      const bucket = layerBuckets.get(layer) || [];
+      for (const n of bucket) {
+        const nodeRight = (n.x ?? 0) + labelWidth(n) / 2;
+        if (nodeRight > globalRightmost) globalRightmost = nodeRight;
+      }
+    }
+    const labelColumnX = (globalRightmost > 0 ? globalRightmost : virtualWidth / 2) + 32;
+    for (let layer = 0; layer < layerCount; layer++) {
+      const yPos = layerSpacing * (layer + 1);
+      const labelText = LAYER_NAMES[layer];
+      if (!labelText) continue;
+      layerLabelsGroup.append('text')
+        .attr('x', labelColumnX)
+        .attr('y', yPos)
+        .attr('text-anchor', 'start')
+        .attr('dominant-baseline', 'middle')
+        .attr('font-size', '16px')
+        .attr('font-weight', 'bold')
+        .attr('fill', '#374151')
+        .attr('letter-spacing', '0.05em')
+        .attr('paint-order', 'stroke')
+        .attr('stroke', '#ffffff')
+        .attr('stroke-width', 3)
+        .attr('stroke-linejoin', 'round')
+        .text(labelText.toUpperCase());
+    }
+
     // Deterministic hierarchical layout — only use collision to avoid overlap, pin Y strictly
     const simulation = d3.forceSimulation<GraphNode>(nodes)
       .force('link', d3.forceLink<GraphNode, GraphEdge>(edges).id(d => d.id).distance(100).strength(0.05))
-      .force('collision', d3.forceCollide<GraphNode>().radius(d => labelWidth(d) / 2 + 8).strength(1.0))
-      .force('x', d3.forceX<GraphNode>((d) => nodeXPos.get(d.id) ?? width / 2).strength(0.8))
+      .force('collision', d3.forceCollide<GraphNode>().radius(d => labelWidth(d) / 2 + 12).strength(1.0))
+      .force('x', d3.forceX<GraphNode>((d) => nodeXPos.get(d.id) ?? virtualWidth / 2).strength(0.8))
       .force('y', d3.forceY<GraphNode>((d) => {
         const layer = LAYER_ORDER[d.type] ?? 3;
         return layerSpacing * (layer + 1);
       }).strength(2.0));
 
-    // Draw edges as curved paths with provenance tooltip on hover
+    // Draw edges as curved paths with provenance tooltip on hover.
+    // Inferred edges that carry a PMID are clickable and navigate to the corresponding PubMed page.
     const isInferred = (d: any) => d.asserted === false || d.type === 'inferred';
+    const pmidOf = (d: any): string | null => {
+      const prov: string = d?.provenance || '';
+      const m = prov.match(/PMID:(\d+)/);
+      return m ? m[1] : null;
+    };
+    const pubmedUrl = (pmid: string) => `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`;
+    const openPmid = (d: any) => {
+      const pmid = pmidOf(d);
+      if (pmid) window.open(pubmedUrl(pmid), '_blank', 'noopener');
+    };
+
     const link = g.append('g')
       .selectAll('path')
       .data(edges)
@@ -392,33 +469,44 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
       .attr('stroke-width', (d: any) => isInferred(d) ? 1.5 : 2)
       .attr('stroke-dasharray', (d: any) => isInferred(d) ? '6,3' : 'none')
       .attr('marker-end', (d: any) => isInferred(d) ? 'url(#arrow-inferred)' : 'url(#arrow-asserted)')
-      .attr('cursor', 'help');
+      .attr('cursor', (d: any) => (pmidOf(d) ? 'pointer' : 'help'))
+      .on('click', (event: any, d: any) => {
+        if (!pmidOf(d)) return;
+        event.stopPropagation();
+        openPmid(d);
+      });
 
     link.append('title')
       .text((d: any) => {
         const prov = d.provenance || '';
-        const pmid = prov.match(/PMID:\d+/)?.[0];
-        if (pmid) return `${d.label} — ${pmid} (pubmed.ncbi.nlm.nih.gov/${pmid.replace('PMID:', '')}/)`;
+        const pmid = pmidOf(d);
+        if (pmid) return `${d.label} — Click to open PMID:${pmid} (${pubmedUrl(pmid)})`;
         return `${d.label} — ${prov || 'curated'}`;
       });
 
-    // Edge labels with provenance tooltip
+    // Edge labels with provenance tooltip — also clickable when they carry a PMID.
     const edgeLabels = g.append('g')
       .selectAll('text')
       .data(edges)
       .join('text')
       .attr('text-anchor', 'middle')
       .attr('font-size', '9px')
-      .attr('fill', '#6B7280')
+      .attr('fill', (d: any) => (pmidOf(d) ? '#1D4ED8' : '#6B7280'))
+      .attr('text-decoration', (d: any) => (pmidOf(d) ? 'underline' : 'none'))
       .attr('dy', -6)
-      .attr('cursor', 'help')
+      .attr('cursor', (d: any) => (pmidOf(d) ? 'pointer' : 'help'))
+      .on('click', (event: any, d: any) => {
+        if (!pmidOf(d)) return;
+        event.stopPropagation();
+        openPmid(d);
+      })
       .text((d: any) => d.label || d.type || '');
 
     edgeLabels.append('title')
       .text((d: any) => {
         const prov = d.provenance || '';
-        const pmid = prov.match(/PMID:\d+/)?.[0];
-        if (pmid) return `${d.label || d.type} — Source: ${pmid} (https://pubmed.ncbi.nlm.nih.gov/${pmid.replace('PMID:', '')}/)`;
+        const pmid = pmidOf(d);
+        if (pmid) return `${d.label || d.type} — Click to open PMID:${pmid} (${pubmedUrl(pmid)})`;
         return `${d.label || d.type} — Source: ${prov || 'curated'}`;
       });
 
@@ -457,11 +545,11 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
       .attr('stroke-width', 2)
       .attr('opacity', 0.9);
 
-    // Node labels
+    // Node labels (+2 pt over edges so the entity is the visual primary)
     node.append('text')
       .attr('text-anchor', 'middle')
       .attr('dy', (d: GraphNode) => (NODE_RADIUS[d.type] || 16) + 14)
-      .attr('font-size', '10px')
+      .attr('font-size', '12px')
       .attr('fill', '#374151')
       .attr('font-weight', '500')
       .text((d: GraphNode) => {
@@ -594,14 +682,24 @@ export default function GraphPanel({ caseId, resultBundleId }: Props) {
         </div>
       )}
 
-      {/* Legend */}
+      {/* Legend — deduplicated by color (Mutation is omitted because it shares red with Gene) */}
       <div className="flex gap-4 mb-3 text-xs flex-wrap">
-        {Object.entries(NODE_COLORS).filter(([k]) => k[0] === k[0].toUpperCase()).map(([type, color]) => (
-          <div key={type} className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: color }} />
-            {type}
-          </div>
-        ))}
+        {(() => {
+          const seen = new Set<string>();
+          return Object.entries(NODE_COLORS)
+            .filter(([k]) => k[0] === k[0].toUpperCase() && k !== 'Mutation')
+            .filter(([, color]) => {
+              if (seen.has(color)) return false;
+              seen.add(color);
+              return true;
+            })
+            .map(([type, color]) => (
+              <div key={type} className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: color }} />
+                {type}
+              </div>
+            ));
+        })()}
         <div className="flex items-center gap-1 ml-4">
           <span className="inline-block w-6 border-t-2 border-gray-400" /> Asserted
         </div>

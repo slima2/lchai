@@ -288,6 +288,8 @@ def process_image_task(self, job_id: str, image_id: str, case_id: str, threshold
                 shap_embedding_pct=shap_d.embedding_contribution_pct if shap_d else None,
                 shap_pattern_pct=shap_d.pattern_contribution_pct if shap_d else None,
                 shap_top_patterns=shap_d.top_pattern_dims if shap_d else None,
+                shap_pattern_signed=shap_d.pattern_shap_signed if shap_d else None,
+                shap_pattern_directions=shap_d.pattern_shap_directions if shap_d else None,
                 choquet_shapley_values=choquet_d.shapley_values if choquet_d else None,
                 choquet_interaction_indices=choquet_d.interaction_indices if choquet_d else None,
                 ablation_data=ablation_by_gene.get(entry.gene),

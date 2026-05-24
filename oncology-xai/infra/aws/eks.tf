@@ -26,6 +26,12 @@ module "eks" {
       max_size       = var.eks_cpu_max
       desired_size   = var.eks_cpu_min
 
+      # 100 GB root volume to accommodate large container images
+      # (inference-service v2.2.0+ is ~15 GB due to torch CUDA + pre-baked checkpoints).
+      # Volumes already grown in-place via `aws ec2 modify-volume` on 2026-05-16;
+      # this declaration keeps Terraform state consistent so future applies don't shrink them.
+      disk_size = 100
+
       iam_role_additional_policies = {
         s3_full = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
       }

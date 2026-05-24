@@ -170,6 +170,8 @@ class SHAPDecomposition(BaseModel):
     embedding_contribution_pct: float | None = None
     pattern_contribution_pct: float | None = None
     top_pattern_dims: list[str] | None = None
+    pattern_shap_signed: dict[str, float] | None = None
+    pattern_shap_directions: dict[str, str] | None = None
 
 
 class ChoquetShapley(BaseModel):

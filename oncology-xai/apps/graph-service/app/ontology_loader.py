@@ -265,11 +265,13 @@ def build_case_graph_from_ontology(
     pattern_results: list[dict] | None = None,
     genetic_results: list[dict] | None = None,
     discovered_relations: list[dict] | None = None,
+    case_label: str | None = None,
 ) -> tuple[dict[str, dict], list[dict]]:
     """Build a **case-specific** knowledge graph.
 
     If pattern_results / genetic_results are provided, only include:
-      - Patterns actually detected (percentage > 0.5%)
+      - Patterns actually detected (percentage > 0%) — even trace presence is meaningful
+        biologically (the *existence* of a pattern matters, not the quantity).
       - Genes associated with those patterns + genes predicted
       - Treatments for those genes
     If discovered_relations is provided, merge them into the graph.
@@ -279,7 +281,9 @@ def build_case_graph_from_ontology(
         active_patterns = {
             p["pattern"].lower()
             for p in pattern_results
-            if p.get("percentage", 0) > 0.5  # threshold: > 0.5% to include
+            # Any non-zero prevalence counts: trace presence of a pattern carries clinical/biological
+            # meaning, so we do NOT filter by an arbitrary minimum percentage.
+            if p.get("percentage", 0) > 0
         }
     else:
         active_patterns = None  # show all
@@ -382,11 +386,16 @@ def build_case_graph_from_ontology(
                 "provenance": e["prov"],
             })
 
-    # Add case node
+    # Add case node — prefer the uploaded case name (patient external_id) with the internal id in parens.
     case_nid = f"case:{case_id}"
+    short_id = case_id[:8]
+    if case_label:
+        case_node_label = f"{case_label} ({short_id})"
+    else:
+        case_node_label = f"Case {short_id}"
     nodes[case_nid] = {
         "id": case_nid,
-        "label": f"Case {case_id[:8]}",
+        "label": case_node_label,
         "type": "case",
         "iri": None,
         "source": "system",
@@ -427,6 +436,16 @@ def build_case_graph_from_ontology(
                 continue
             if o_type == "gene" and o_name not in THESIS_GENES:
                 continue
+
+            # Don't bring in pattern nodes that are not actually present on this slide.
+            # active_patterns is None when no slide-level filter is requested.
+            def _pattern_slug(raw: str) -> str:
+                return raw.lower().replace(" pattern", "").strip()
+            if active_patterns is not None:
+                if s_type == "pattern" and _pattern_slug(dr.get("subject", "")) not in active_patterns:
+                    continue
+                if o_type == "pattern" and _pattern_slug(dr.get("object", "")) not in active_patterns:
+                    continue
 
             s_id = _iri_to_id(s_iri)
             o_id = _iri_to_id(o_iri)
@@ -483,14 +502,20 @@ def _deduplicate_graph(
     label_to_canonical: dict[str, str] = {}
     id_remap: dict[str, str] = {}
 
-    source_priority = {"curated": 3, "ehr": 2, "system": 2, "discovered": 1, "inferred": 0}
+    # "ontology" is the source when the IRI is a real NCIt/MONDO URL (resolved from CURATED_NODES);
+    # it must beat "discovered" so that "Acinar Pattern (0.9%)" wins over the bare DeepSearch slug "acinar".
+    source_priority = {"curated": 3, "ontology": 3, "ehr": 2, "system": 2, "discovered": 1, "inferred": 0}
 
     for nid, node in sorted(nodes.items()):
         label_key = (node.get("label", "") or nid).strip().lower()
-        # Remove status suffixes for comparison: "TP53 [POS]" → "tp53"
+        # Remove status suffixes for comparison: "TP53 [POS]" → "tp53", "Acinar Pattern (0.9%)" → "acinar pattern"
         clean_key = label_key.split("[")[0].split("(")[0].strip()
         if not clean_key:
             clean_key = label_key
+        # For pattern nodes, also strip trailing " pattern" so that the curated
+        # "Acinar Pattern" matches the DeepSearch-discovered bare slug "acinar".
+        if node.get("type") == "pattern" and clean_key.endswith(" pattern"):
+            clean_key = clean_key[: -len(" pattern")].strip()
 
         if clean_key in label_to_canonical:
             canonical_id = label_to_canonical[clean_key]

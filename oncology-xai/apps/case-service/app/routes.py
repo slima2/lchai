@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import PatientDB, CaseDB
+
+logger = logging.getLogger(__name__)
 
 patients_router = APIRouter(prefix="/api/v1", tags=["Patients"])
 cases_router = APIRouter(prefix="/api/v1", tags=["Cases"])
@@ -49,6 +52,59 @@ async def get_patient(patient_id: str, db: AsyncSession = Depends(get_db)):
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
     return _patient_dict(patient)
+
+
+async def _cascade_delete_case(db: AsyncSession, case_id: str) -> dict[str, int]:
+    """Hard-delete a case and all dependent rows in FK order.
+
+    Returns counts per table. Caller is responsible for the surrounding transaction.
+    """
+    counts: dict[str, int] = {}
+
+    rb_rows = await db.execute(text("SELECT id FROM result_bundles WHERE case_id = :c"), {"c": case_id})
+    rb_ids = [r[0] for r in rb_rows.fetchall()]
+    for rb in rb_ids:
+        for table in ("xai_artifacts", "pattern_results", "genetic_results", "morphologic_profiles"):
+            res = await db.execute(text(f"DELETE FROM {table} WHERE result_bundle_id = :rb"), {"rb": rb})
+            counts[table] = counts.get(table, 0) + (res.rowcount or 0)
+
+    res = await db.execute(text("DELETE FROM result_bundles WHERE case_id = :c"), {"c": case_id})
+    counts["result_bundles"] = res.rowcount or 0
+    res = await db.execute(text("DELETE FROM ml_jobs WHERE case_id = :c"), {"c": case_id})
+    counts["ml_jobs"] = res.rowcount or 0
+    res = await db.execute(text("DELETE FROM images WHERE case_id = :c"), {"c": case_id})
+    counts["images"] = res.rowcount or 0
+    res = await db.execute(text("DELETE FROM ehr_documents WHERE case_id = :c"), {"c": case_id})
+    counts["ehr_documents"] = res.rowcount or 0
+    res = await db.execute(text("DELETE FROM cases WHERE id = :c"), {"c": case_id})
+    counts["cases"] = res.rowcount or 0
+    return counts
+
+
+@patients_router.delete("/patients/{patient_id}", status_code=status.HTTP_200_OK)
+async def delete_patient(patient_id: str, db: AsyncSession = Depends(get_db)):
+    """Hard-delete a patient and ALL their cases and dependent rows.
+
+    Intended primarily for rollback after a failed upload that left an orphan
+    patient/case behind. Use with care.
+    """
+    patient = await db.get(PatientDB, patient_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    case_rows = await db.execute(text("SELECT id FROM cases WHERE patient_id = :p"), {"p": patient_id})
+    case_ids = [r[0] for r in case_rows.fetchall()]
+    total: dict[str, int] = {}
+    for cid in case_ids:
+        counts = await _cascade_delete_case(db, cid)
+        for k, v in counts.items():
+            total[k] = total.get(k, 0) + v
+
+    res = await db.execute(text("DELETE FROM patients WHERE id = :p"), {"p": patient_id})
+    total["patients"] = res.rowcount or 0
+    await db.commit()
+    logger.info("Deleted patient %s cascading: %s", patient_id, total)
+    return {"patient_id": patient_id, "deleted": total}
 
 
 def _patient_dict(p: PatientDB) -> dict:
@@ -98,6 +154,22 @@ async def get_case(case_id: str, db: AsyncSession = Depends(get_db)):
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     return _case_dict(case)
+
+
+@cases_router.delete("/cases/{case_id}", status_code=status.HTTP_200_OK)
+async def delete_case(case_id: str, db: AsyncSession = Depends(get_db)):
+    """Hard-delete a case and all dependent rows (images, results, jobs, artifacts).
+
+    Intended primarily for rollback after a failed upload that left an orphan
+    case behind. Use with care.
+    """
+    case = await db.get(CaseDB, case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    counts = await _cascade_delete_case(db, case_id)
+    await db.commit()
+    logger.info("Deleted case %s cascading: %s", case_id, counts)
+    return {"case_id": case_id, "deleted": counts}
 
 
 @cases_router.patch("/cases/{case_id}")

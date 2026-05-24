@@ -320,6 +320,8 @@ def _bundle_dict(b: ResultBundleDB) -> dict:
                     "embedding_contribution_pct": getattr(gr, "shap_embedding_pct", None),
                     "pattern_contribution_pct": getattr(gr, "shap_pattern_pct", None),
                     "top_pattern_dims": getattr(gr, "shap_top_patterns", None),
+                    "pattern_shap_signed": getattr(gr, "shap_pattern_signed", None),
+                    "pattern_shap_directions": getattr(gr, "shap_pattern_directions", None),
                 } if getattr(gr, "shap_embedding_pct", None) is not None else None,
                 "choquet_shapley": _sanitize_choquet_payload(
                     {

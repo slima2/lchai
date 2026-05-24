@@ -26,15 +26,30 @@ api.interceptors.request.use(async (config) => {
 export const createPatient = (data: any) => api.post('/patients', data);
 export const getPatients = (query?: string) => api.get('/patients', { params: { query } });
 export const getPatient = (id: string) => api.get(`/patients/${id}`);
+export const deletePatient = (id: string) => api.delete(`/patients/${id}`);
 
 // Cases
 export const createCase = (data: any) => api.post('/cases', data);
 export const getCases = (patientId?: string) => api.get('/cases', { params: { patientId } });
 export const getCase = (id: string) => api.get(`/cases/${id}`);
 export const updateCase = (id: string, data: any) => api.patch(`/cases/${id}`, data);
+export const deleteCase = (id: string) => api.delete(`/cases/${id}`);
 
-// Images — upload via API proxy (avoids CORS issues with direct S3 upload)
+// Images
+// Upload strategy:
+//   - Files ≤ MULTIPART_THRESHOLD: single POST through the API proxy (simple, validated server-side).
+//   - Files >  MULTIPART_THRESHOLD: presigned multipart upload directly to S3 (bypasses gateway timeouts and
+//     server-side memory load). The backend supports this via :request-upload + :complete-multipart.
+const SINGLE_UPLOAD_THRESHOLD = 200 * 1024 * 1024;  // 200 MB; above this we go presigned
+
 export const uploadImage = async (caseId: string, file: File, onProgress?: (pct: number) => void) => {
+  if (file.size <= SINGLE_UPLOAD_THRESHOLD) {
+    return uploadImageSingle(caseId, file, onProgress);
+  }
+  return uploadImageMultipart(caseId, file, onProgress);
+};
+
+async function uploadImageSingle(caseId: string, file: File, onProgress?: (pct: number) => void) {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -48,7 +63,65 @@ export const uploadImage = async (caseId: string, file: File, onProgress?: (pct:
     },
   });
   return { data: image };
-};
+}
+
+async function uploadImageMultipart(caseId: string, file: File, onProgress?: (pct: number) => void) {
+  const { data: req } = await api.post(`/cases/${caseId}/images:request-upload`, {
+    filename: file.name,
+    size_bytes: file.size,
+  });
+
+  if (!req.multipart) {
+    // Backend chose single presigned PUT (file under its server-side threshold).
+    await axios.put(req.presigned_url, file, {
+      headers: { 'Content-Type': req.content_type || 'application/octet-stream' },
+      timeout: 0,
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100));
+      },
+    });
+    const { data: image } = await api.post(`/cases/${caseId}/images:confirm-upload`, {
+      image_id: req.image_id,
+    });
+    return { data: image };
+  }
+
+  // Multipart path
+  const partSize: number = req.part_size;
+  const partUrls: { part_number: number; presigned_url: string }[] = req.part_urls;
+  const totalParts = partUrls.length;
+  const completedBytesByPart = new Array<number>(totalParts).fill(0);
+
+  const parts: { ETag: string; PartNumber: number }[] = [];
+  for (let i = 0; i < totalParts; i++) {
+    const pn = partUrls[i].part_number;
+    const start = (pn - 1) * partSize;
+    const end = Math.min(file.size, start + partSize);
+    const blob = file.slice(start, end);
+    const resp = await axios.put(partUrls[i].presigned_url, blob, {
+      headers: { 'Content-Type': req.content_type || 'application/octet-stream' },
+      timeout: 0,
+      onUploadProgress: (e) => {
+        if (onProgress) {
+          completedBytesByPart[i] = e.loaded;
+          const total = completedBytesByPart.reduce((a, b) => a + b, 0);
+          onProgress(Math.min(99, Math.round((total / file.size) * 100)));
+        }
+      },
+    });
+    const etag = (resp.headers['etag'] || resp.headers['ETag'] || '').replace(/"/g, '');
+    if (!etag) throw new Error(`Part ${pn} did not return an ETag header`);
+    parts.push({ ETag: etag, PartNumber: pn });
+  }
+
+  const { data: image } = await api.post(`/cases/${caseId}/images:complete-multipart`, {
+    image_id: req.image_id,
+    upload_id: req.upload_id,
+    parts,
+  });
+  if (onProgress) onProgress(100);
+  return { data: image };
+}
 export const getImages = (caseId: string) => api.get(`/cases/${caseId}/images`);
 export const getViewerUrl = (imageId: string) => api.get(`/images/${imageId}/viewer-url`);
 

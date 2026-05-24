@@ -86,6 +86,8 @@ class GeneticResultDB(Base):
     shap_embedding_pct: Mapped[float | None] = mapped_column(Float)
     shap_pattern_pct: Mapped[float | None] = mapped_column(Float)
     shap_top_patterns: Mapped[dict | None] = mapped_column(JSON)
+    shap_pattern_signed: Mapped[dict | None] = mapped_column(JSON)
+    shap_pattern_directions: Mapped[dict | None] = mapped_column(JSON)
     # v2 Choquet Shapley
     choquet_shapley_values: Mapped[dict | None] = mapped_column(JSON)
     choquet_interaction_indices: Mapped[dict | None] = mapped_column(JSON)

@@ -48,6 +48,7 @@ async def get_case_subgraph(
             pattern_results=kwargs.get("pattern_results"),
             genetic_results=kwargs.get("genetic_results"),
             discovered_relations=kwargs.get("discovered_relations"),
+            case_label=kwargs.get("case_label"),
         )
         if not nodes:
             nodes, edges = _mock_case_graph(case_id)

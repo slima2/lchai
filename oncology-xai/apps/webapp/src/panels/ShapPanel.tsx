@@ -567,12 +567,24 @@ export default function ShapPanel({ resultBundleId }: Props) {
                     <div className="mt-2 text-[10px] text-gray-500">
                       Top contributing: {shapDecomp.top_pattern_dims
                         .filter((p: string) => !isDisallowedPatternName(p))
-                        .map((p: string) => (
-                        <span key={p} className="capitalize bg-gray-100 rounded px-1 py-0.5 mr-1">
-                          <span className="w-1.5 h-1.5 rounded-full inline-block mr-0.5" style={{ backgroundColor: patternColor(p) }} />
-                          {p}
-                        </span>
-                      ))}
+                        .map((p: string) => {
+                          const dir = shapDecomp.pattern_shap_directions?.[p];
+                          const val = shapDecomp.pattern_shap_signed?.[p];
+                          const isPos = dir === 'positive' || (val != null && val > 0);
+                          const isNeg = dir === 'negative' || (val != null && val < 0);
+                          const arrow = isPos ? '▲' : isNeg ? '▼' : '•';
+                          const arrowColor = isPos ? 'text-emerald-600' : isNeg ? 'text-rose-600' : 'text-gray-400';
+                          const title = val != null
+                            ? `${p}: signed SHAP = ${val.toFixed(4)} (${isPos ? 'pushes toward mutated' : isNeg ? 'pushes toward wild-type' : 'neutral'})`
+                            : p;
+                          return (
+                            <span key={p} className="capitalize bg-gray-100 rounded px-1 py-0.5 mr-1" title={title}>
+                              <span className="w-1.5 h-1.5 rounded-full inline-block mr-0.5" style={{ backgroundColor: patternColor(p) }} />
+                              {p}
+                              <span className={`ml-1 font-bold ${arrowColor}`}>{arrow}</span>
+                            </span>
+                          );
+                        })}
                     </div>
                   )}
                   <p className="text-[9px] text-gray-400 mt-2 italic leading-tight">

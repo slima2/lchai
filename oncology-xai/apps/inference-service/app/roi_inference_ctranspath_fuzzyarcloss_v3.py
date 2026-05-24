@@ -98,6 +98,8 @@ class SHAPDecompositionEntry:
     embedding_contribution_pct: float = 0.0
     pattern_contribution_pct: float = 0.0
     top_pattern_dims: list[str] = field(default_factory=list)
+    pattern_shap_signed: dict[str, float] = field(default_factory=dict)
+    pattern_shap_directions: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -1249,6 +1251,8 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
                         embedding_contribution_pct=decomp.embedding_contribution_pct,
                         pattern_contribution_pct=decomp.pattern_contribution_pct,
                         top_pattern_dims=decomp.top_pattern_dims,
+                        pattern_shap_signed=decomp.pattern_shap_signed,
+                        pattern_shap_directions=decomp.pattern_shap_directions,
                     ))
                     if decomp.bar_plot_bytes:
                         result.shap_artifacts[f"shap_decomp_{gene}_bar.png"] = decomp.bar_plot_bytes
@@ -1300,6 +1304,23 @@ def run_inference(image_bytes: bytes, config: InferenceConfig, progress_callback
     return result
 
 
+def _tissue_mask_from_image(pil_img: Image.Image) -> np.ndarray:
+    """Binary tissue mask from a rendered overview image.
+
+    Returns a uint8 array with the same H×W as the input image, valued 1 where there's tissue
+    and 0 over the glass background. Uses grayscale < 220 (same heuristic as `_build_overlay`'s
+    pattern overlay) and a small dilation to bridge thin gaps so contours don't get clipped at
+    capillary spaces inside the section.
+    """
+    gray = np.array(pil_img.convert("L"))
+    mask = (gray < 220).astype(np.uint8)
+    # Slight closing so tile-level holes inside tissue don't break the mask.
+    kernel = np.ones((9, 9), np.uint8)
+    import cv2 as _cv2
+    mask = _cv2.morphologyEx(mask, _cv2.MORPH_CLOSE, kernel)
+    return mask
+
+
 def _build_attention_overlay(
     img: Image.Image,
     tile_coords: list[tuple[int, int]],
@@ -1308,10 +1329,12 @@ def _build_attention_overlay(
     tile_size: int,
     alpha: int = 180,
 ) -> bytes:
-    """Build attention overlay: original image + cyan fill + white contour borders.
+    """Build attention overlay: original image + cyan fill + black contour borders.
 
     Top-K attended tiles are filled with semi-transparent cyan and outlined
-    with white contour lines around the attended regions.
+    with black contour lines around the attended regions. Black is used
+    (instead of white) so the ROI outlines remain visible on the white glass
+    background of H&E slides.
     """
     from PIL import ImageFilter
     import cv2
@@ -1372,20 +1395,37 @@ def _build_attention_overlay(
     result = base_arr * (1 - blend_strength) + cyan * blend_strength
     result = np.clip(result, 0, 255).astype(np.uint8)
 
-    # White contour lines around attended regions
+    # Black contour lines around attended regions — chosen over white because the white glass
+    # background of H&E slides was washing out the ROI outlines on low-magnification overviews.
     heat_smooth = cv2.GaussianBlur(heat, (0, 0), sigmaX=max(render_size // 2, 8))
     if heat_smooth.max() > 0:
         heat_smooth /= heat_smooth.max()
 
-    for thresh, lw in [(0.15, 2), (0.35, 3), (0.55, 4)]:
+    # Restrict the heatmap to actual tissue so MIL attention "spilling" into the glass background
+    # never produces contour lines outside the section boundary.
+    tissue_mask = _tissue_mask_from_image(img)
+    heat_smooth = heat_smooth * tissue_mask.astype(np.float32)
+
+    # Line widths scale with image dimensions so contours stay visible at any zoom level —
+    # at full slide resolution they're thick enough to survive a browser-side downscale to
+    # the ABMIL Attention Heatmap thumbnail (~250 px). The top threshold (highest attention)
+    # gets the boldest line so the most-attended region stands out.
+    base_lw = max(2, min(w, h) // 400)
+    for thresh, lw_mult in [(0.15, 1), (0.35, 2), (0.55, 4)]:
         binary = (heat_smooth >= thresh).astype(np.uint8) * 255
+        # Re-restrict to tissue (the threshold may keep edge fringe outside).
+        binary = binary * tissue_mask
         contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         min_area = (render_size * 0.5) ** 2
+        lw = base_lw * lw_mult
         for cnt in contours:
             if cv2.contourArea(cnt) < min_area:
                 continue
             smooth_cnt = cv2.approxPolyDP(cnt, epsilon=render_size * 0.3, closed=True)
-            cv2.drawContours(result, [smooth_cnt], -1, (255, 255, 255), lw, cv2.LINE_AA)
+            # Draw twice for the highest threshold to deepen the black (compensates AA fade).
+            cv2.drawContours(result, [smooth_cnt], -1, (0, 0, 0), lw, cv2.LINE_AA)
+            if lw_mult >= 4:
+                cv2.drawContours(result, [smooth_cnt], -1, (0, 0, 0), lw, cv2.LINE_AA)
 
     buf = io.BytesIO()
     Image.fromarray(result, "RGB").save(buf, format="PNG")
@@ -1401,11 +1441,13 @@ def _build_combined_overlay(
     tile_size: int,
     pattern_alpha: int = 120,
 ) -> bytes:
-    """Build combined overlay: pattern colours + white attention region contours.
+    """Build combined overlay: pattern colours + black attention region contours.
 
     Patterns are shown as coloured regions (same as pattern overlay).
-    Attention is shown as white contour lines tracing the boundaries of
-    high-attention regions at multiple intensity levels.
+    Attention is shown as black contour lines tracing the boundaries of
+    high-attention regions at multiple intensity levels. Black is used
+    (instead of white) so the ROI outlines stay visible on the white glass
+    background of H&E slides.
     """
     from PIL import ImageFilter, ImageDraw
     import cv2
@@ -1492,19 +1534,31 @@ def _build_combined_overlay(
     if heat_smooth.max() > 0:
         heat_smooth /= heat_smooth.max()
 
-    # 3) Extract contours at multiple threshold levels and draw white lines
-    thresholds = [0.15, 0.30, 0.50, 0.70]
-    line_widths = [1, 2, 3, 4]
+    # 3) Restrict the heatmap to tissue so contour lines never sit on the glass background.
+    tissue_mask = _tissue_mask_from_image(img)
+    heat_smooth = heat_smooth * tissue_mask.astype(np.float32)
 
-    for thresh, lw in zip(thresholds, line_widths):
+    # 4) Extract contours at multiple threshold levels and draw black lines.
+    # Widths scale with image size and grow with attention threshold so the most-attended
+    # area gets the boldest, most visually dominant contour.
+    base_lw = max(2, min(w, h) // 400)
+    thresholds = [0.15, 0.30, 0.50, 0.70]
+    width_multipliers = [1, 2, 3, 4]
+
+    for thresh, lw_mult in zip(thresholds, width_multipliers):
         binary = (heat_smooth >= thresh).astype(np.uint8) * 255
+        binary = binary * tissue_mask
         contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         min_area = (render_size * 0.5) ** 2
+        lw = base_lw * lw_mult
         for cnt in contours:
             if cv2.contourArea(cnt) < min_area:
                 continue
             smooth_cnt = cv2.approxPolyDP(cnt, epsilon=render_size * 0.3, closed=True)
-            cv2.drawContours(result_arr, [smooth_cnt], -1, (255, 255, 255), lw, cv2.LINE_AA)
+            cv2.drawContours(result_arr, [smooth_cnt], -1, (0, 0, 0), lw, cv2.LINE_AA)
+            # Reinforce the top-attention contour so it reads darker after AA + browser downscale.
+            if lw_mult >= 4:
+                cv2.drawContours(result_arr, [smooth_cnt], -1, (0, 0, 0), lw, cv2.LINE_AA)
 
     buf = io.BytesIO()
     Image.fromarray(result_arr, "RGB").save(buf, format="PNG")

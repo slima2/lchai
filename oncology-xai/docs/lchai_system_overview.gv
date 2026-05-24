@@ -1,0 +1,242 @@
+// LCHAI v2.0 — Diagrama de Sistema (vista resumida)
+// Lung Cancer Histologic Analysis with AI
+// Render:
+//   dot -Tpng docs/lchai_system_overview.gv -o docs/lchai_system_overview.png -Gdpi=160
+//   dot -Tsvg docs/lchai_system_overview.gv -o docs/lchai_system_overview.svg
+
+digraph LCHAI_overview {
+  compound=true;
+  rankdir=TB;
+  splines=spline;
+  nodesep=0.45;
+  ranksep=0.65;
+  pad=0.35;
+  bgcolor="white";
+
+  graph [fontname="Segoe UI", fontsize=16,
+         label=<<B>LCHAI v2.0 — Arquitectura del sistema (resumen)</B><BR/>
+                <FONT POINT-SIZE="11">FuzzyArcLoss V2 · PI-ABMIL · FC-MIL · 6 niveles de interpretabilidad · Explicaciones ancladas en NCIt/MONDO</FONT>>,
+         labelloc=t, labeljust=c];
+  node  [fontname="Segoe UI", fontsize=10, shape=box,
+         style="rounded,filled", margin="0.18,0.10"];
+  edge  [fontname="Segoe UI", fontsize=8, color="#666666"];
+
+  // ─────────────────────────────────────────────────────────────
+  // Actores
+  // ─────────────────────────────────────────────────────────────
+  subgraph cluster_actors {
+    label=<<B>Actores</B>>; labelloc=t; style="rounded,dashed";
+    color="#888888"; bgcolor="#FAFAFA";
+    pathologist [label="Patólogo /\nOncólogo",
+                 shape=ellipse, fillcolor="#BBDEFB", color="#1565C0"];
+    admin      [label="Admin /\nAuditor",
+                 shape=ellipse, fillcolor="#C8E6C9", color="#2E7D32"];
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Frontend
+  // ─────────────────────────────────────────────────────────────
+  subgraph cluster_frontend {
+    label=<<B>Frontend</B>  <FONT POINT-SIZE="9">(React 18 · Vite · Tailwind · TanStack Query)</FONT>>;
+    labelloc=t; style=rounded; bgcolor="#E3F2FD"; color="#90CAF9";
+    webapp [label=<<B>Webapp :3000</B><BR/>
+      <FONT POINT-SIZE="9">Images · Viewer (estilo QuPath)<BR/>
+      Graph · Explainability<BR/>
+      Active Learning · Admin</FONT>>,
+      fillcolor="#BBDEFB", color="#1E88E5"];
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // API Gateway
+  // ─────────────────────────────────────────────────────────────
+  gateway [label=<<B>API Gateway :8000</B><BR/>
+    <FONT POINT-SIZE="9">FastAPI · OIDC/JWT · RBAC · reverse proxy</FONT>>,
+    fillcolor="#FFE0B2", color="#FB8C00"];
+
+  // ─────────────────────────────────────────────────────────────
+  // Servicios de aplicación
+  // ─────────────────────────────────────────────────────────────
+  subgraph cluster_services {
+    label=<<B>Microservicios</B>  <FONT POINT-SIZE="9">(FastAPI + SQLAlchemy 2.0 async)</FONT>>;
+    labelloc=t; style=rounded; bgcolor="#E8F5E9"; color="#A5D6A7";
+
+    case_svc  [label=<<B>case :8001</B><BR/>
+      <FONT POINT-SIZE="9">Pacientes y casos</FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+    image_svc [label=<<B>image :8002</B><BR/>
+      <FONT POINT-SIZE="9">Carga WSI · SHA-256<BR/>URLs prefirmadas</FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+    infer_svc [label=<<B>inference :8003</B><BR/>
+      <FONT POINT-SIZE="9">Orquestador del pipeline ML<BR/>jobs · progreso · parámetros</FONT>>,
+      fillcolor="#FFCDD2", color="#E53935"];
+    ehr_svc   [label=<<B>ehr :8004</B><BR/>
+      <FONT POINT-SIZE="9">NER + mapeo a<BR/>NCIt / MONDO</FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+    graph_svc [label=<<B>graph :8005</B><BR/>
+      <FONT POINT-SIZE="9">Knowledge Graph · SPARQL<BR/>Explicaciones LLM</FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+    onto_svc  [label=<<B>ontology-admin :8006</B><BR/>
+      <FONT POINT-SIZE="9">Versionado de ontologías<BR/>DeepSearch (PubMed/arXiv)</FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+    audit_svc [label=<<B>audit :8007</B><BR/>
+      <FONT POINT-SIZE="9">Audit log idempotente<BR/>(consumidor de eventos)</FONT>>,
+      fillcolor="#C8E6C9", color="#43A047"];
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Worker GPU + Pipeline ML
+  // ─────────────────────────────────────────────────────────────
+  subgraph cluster_ml {
+    label=<<B>Worker GPU + Pipeline ML</B>  <FONT POINT-SIZE="9">(Celery · PyTorch CUDA · NVIDIA RTX)</FONT>>;
+    labelloc=t; style=rounded; bgcolor="#FFF3E0"; color="#FFB74D";
+
+    wsi    [label=<<B>WSI</B><BR/><FONT POINT-SIZE="9">SVS / TIFF / BIF<BR/>OpenSlide</FONT>>,
+            fillcolor="#FFE0B2", color="#FB8C00"];
+    tiling [label=<<B>Tiling 224 px</B><BR/>
+      <FONT POINT-SIZE="9">rechazo de artefactos<BR/>(oscuro · marcador · saturación)</FONT>>,
+      fillcolor="#FFE0B2", color="#FB8C00"];
+    ctp    [label=<<B>CTransPath</B><BR/>
+      <FONT POINT-SIZE="9">Swin Tiny · embedding 512-d<BR/>por tile (batch=64, GPU)</FONT>>,
+      fillcolor="#FFCC80", color="#F57C00"];
+    farc   [label=<<B>FuzzyArcLoss V2</B><BR/>
+      <FONT POINT-SIZE="9">Cabeza coseno · 6 patrones (ANORAK)<BR/>lepidic · acinar · papillary<BR/>micropapillary · solid · cribriform</FONT>>,
+      fillcolor="#FFCC80", color="#F57C00"];
+
+    routing [label=<<B>Enrutado por gen (Finding 2)</B>>,
+             shape=diamond, fillcolor="#FFE082", color="#F9A825"];
+
+    b2     [label=<<B>B2 — ABMIL</B><BR/>
+      <FONT POINT-SIZE="9">solo embeddings<BR/><B>TP53 · EGFR</B></FONT>>,
+      fillcolor="#FFCDD2", color="#E53935"];
+    piab   [label=<<B>PI-ABMIL</B><BR/>
+      <FONT POINT-SIZE="9">concat(emb₅₁₂, pat₆)<BR/><B>STK11 · KEAP1</B></FONT>>,
+      fillcolor="#FFCDD2", color="#E53935"];
+    fcmil  [label=<<B>FC-MIL</B><BR/>
+      <FONT POINT-SIZE="9">Choquet integral fuzzy<BR/><B>KRAS · RBM10</B></FONT>>,
+      fillcolor="#FFCDD2", color="#E53935"];
+
+    pred   [label=<<B>Predicciones de mutación</B><BR/>
+      <FONT POINT-SIZE="9">multi-etiqueta · 6 genes<BR/>+ etiqueta lingüística difusa</FONT>>,
+      fillcolor="#F8BBD0", color="#C2185B"];
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Salidas de Interpretabilidad (6 niveles)
+  // ─────────────────────────────────────────────────────────────
+  interp [label=<<B>Interpretabilidad (6 niveles)</B><BR/>
+    <FONT POINT-SIZE="9" FACE="Segoe UI">
+    1. Probabilidades de patrón por tile<BR/>
+    2. Mapas de atención espacial<BR/>
+    3. Permutation importance (patrones)<BR/>
+    4. DeepSHAP (emb vs patrón)<BR/>
+    5. Choquet Shapley + interacciones<BR/>
+    6. Etiquetas lingüísticas difusas
+    </FONT>>,
+    fillcolor="#E1BEE7", color="#8E24AA"];
+
+  // ─────────────────────────────────────────────────────────────
+  // Capa de Explicabilidad
+  // ─────────────────────────────────────────────────────────────
+  subgraph cluster_xai {
+    label=<<B>Explicabilidad (anti-alucinación dual)</B>>;
+    labelloc=t; style=rounded; bgcolor="#EDE7F6"; color="#B39DDB";
+
+    kg     [label=<<B>Knowledge Graph 3-tier</B><BR/>
+      <FONT POINT-SIZE="9">NCIt + MONDO (verificadas)<BR/>filtro dinámico por caso<BR/>+ DeepSearch (literatura)</FONT>>,
+      fillcolor="#D1C4E9", color="#673AB7"];
+    fuzzy  [label=<<B>Restricción difusa</B><BR/>
+      <FONT POINT-SIZE="9">funciones trapezoidales<BR/>número → término calibrado</FONT>>,
+      fillcolor="#D1C4E9", color="#673AB7"];
+    llm    [label=<<B>LLM Explainer</B><BR/>
+      <FONT POINT-SIZE="9">LangGraph · OpenAI<BR/>racionales clínicas anclados</FONT>>,
+      fillcolor="#B39DDB", color="#512DA8"];
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Infraestructura
+  // ─────────────────────────────────────────────────────────────
+  subgraph cluster_infra {
+    label=<<B>Infraestructura</B>  <FONT POINT-SIZE="9">(Docker Compose / AWS EKS)</FONT>>;
+    labelloc=t; style=rounded; bgcolor="#ECEFF1"; color="#B0BEC5";
+
+    pg     [label=<<B>PostgreSQL 16</B><BR/><FONT POINT-SIZE="9">19 tablas · Alembic</FONT>>,
+            fillcolor="#CFD8DC", color="#546E7A"];
+    rmq    [label=<<B>RabbitMQ</B><BR/><FONT POINT-SIZE="9">topic exchange · broker Celery</FONT>>,
+            fillcolor="#CFD8DC", color="#546E7A"];
+    redis  [label=<<B>Redis</B><BR/><FONT POINT-SIZE="9">backend Celery · progreso</FONT>>,
+            fillcolor="#CFD8DC", color="#546E7A"];
+    minio  [label=<<B>MinIO</B><BR/><FONT POINT-SIZE="9">objetos S3 · WSI · overlays</FONT>>,
+            fillcolor="#CFD8DC", color="#546E7A"];
+    kc     [label=<<B>Keycloak</B><BR/><FONT POINT-SIZE="9">OIDC · JWT · realm oncology</FONT>>,
+            fillcolor="#CFD8DC", color="#546E7A"];
+    fuseki [label=<<B>Apache Fuseki</B><BR/><FONT POINT-SIZE="9">SPARQL · NCIt + MONDO</FONT>>,
+            fillcolor="#CFD8DC", color="#546E7A"];
+    obs    [label=<<B>Observabilidad</B><BR/>
+      <FONT POINT-SIZE="9">OpenTelemetry · Jaeger · Prometheus</FONT>>,
+      fillcolor="#CFD8DC", color="#546E7A"];
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Conexiones principales
+  // ─────────────────────────────────────────────────────────────
+  pathologist -> webapp [label="HTTPS"];
+  admin       -> webapp [label="HTTPS"];
+
+  webapp -> gateway [label="REST + JWT"];
+
+  gateway -> case_svc;
+  gateway -> image_svc;
+  gateway -> infer_svc;
+  gateway -> ehr_svc;
+  gateway -> graph_svc;
+  gateway -> onto_svc;
+  gateway -> audit_svc [style=dashed, label="lectura"];
+
+  // El servicio de inferencia despacha al worker GPU (pipeline ML)
+  infer_svc -> wsi [lhead=cluster_ml, label="Celery (RabbitMQ)\n+ progreso (Redis)"];
+
+  // Pipeline ML (orden lógico)
+  wsi    -> tiling;
+  tiling -> ctp;
+  ctp    -> farc;
+  farc   -> routing;
+  routing -> b2;
+  routing -> piab;
+  routing -> fcmil;
+  b2    -> pred;
+  piab  -> pred;
+  fcmil -> pred;
+
+  // Interpretabilidad y explicabilidad
+  pred -> interp [label="artefactos XAI"];
+  interp -> kg    [lhead=cluster_xai, label="evidencia\nestructurada"];
+  kg     -> llm;
+  fuzzy  -> llm;
+  llm    -> webapp [constraint=false, style=dashed, color="#7E57C2",
+                    label="rationale clínica"];
+
+  // Persistencia y mensajería
+  case_svc  -> pg;
+  image_svc -> pg;
+  image_svc -> minio [label="WSI + overlays"];
+  infer_svc -> pg;
+  infer_svc -> minio [label="tiles · XAI"];
+  ehr_svc   -> pg;
+  graph_svc -> pg;
+  graph_svc -> fuseki [label="SPARQL"];
+  onto_svc  -> fuseki;
+  audit_svc -> pg;
+
+  // Eventos
+  case_svc  -> rmq [style=dotted, label="eventos"];
+  image_svc -> rmq [style=dotted];
+  infer_svc -> rmq [style=dotted];
+  ehr_svc   -> rmq [style=dotted];
+  graph_svc -> rmq [style=dotted];
+  rmq -> audit_svc [style=dotted, label="consume"];
+
+  // Auth y observabilidad (transversal)
+  gateway -> kc [style=dashed, label="OIDC"];
+  gateway -> obs [style=dashed, label="trazas / métricas"];
+
+}
