@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   api,
@@ -203,18 +203,30 @@ function InteractiveOverlayImage({
   mode,
   patterns,
   className,
+  thumbnailUri,
+  disabledPatterns,
 }: {
   imageUri: string;
   regionMapUri?: string;
   mode: 'pattern' | 'attention';
   patterns?: any[];
   className?: string;
+  // Thumbnail of the raw H&E used as the pixel source for the pattern-toggle mask. Only used
+  // in 'pattern' mode — when supplied, tiles whose pattern is in `disabledPatterns` get the
+  // original H&E re-drawn on top of the overlay PNG so the colour disappears for those tiles.
+  thumbnailUri?: string;
+  disabledPatterns?: Set<string>;
 }) {
   const imgRef = useRef<HTMLImageElement>(null);
+  const thumbImgRef = useRef<HTMLImageElement>(null);
+  const maskCanvasRef = useRef<HTMLCanvasElement>(null);
   const [regionMap, setRegionMap] = useState<any[] | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; data: any } | null>(null);
   const [imgError, setImgError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [thumbLoaded, setThumbLoaded] = useState(false);
   const imgUrl = getArtifactUrl(imageUri);
+  const thumbUrl = thumbnailUri ? getArtifactUrl(thumbnailUri) : null;
 
   useEffect(() => {
     if (regionMapUri) {
@@ -226,6 +238,87 @@ function InteractiveOverlayImage({
     }
   }, [regionMapUri]);
 
+  useEffect(() => { setThumbLoaded(false); }, [thumbUrl]);
+
+  // True (non-inflated) per-tile stride recovered from the region map itself: the worker
+  // inflates wn/hn so the rectangles are visible on the thumbnail, but the tile *origins*
+  // sit on the real grid stride. Using that stride for hit-testing prevents ghost tooltips
+  // on glass background just outside an inflated tile boundary.
+  const trueTileSize = useMemo(() => {
+    if (!regionMap || regionMap.length === 0) return null;
+    const minPositiveDiff = (vals: number[]): number | null => {
+      const uniq = Array.from(new Set(vals)).sort((a, b) => a - b);
+      let best = Infinity;
+      for (let i = 1; i < uniq.length; i++) {
+        const d = uniq[i] - uniq[i - 1];
+        if (d > 1e-6 && d < best) best = d;
+      }
+      return Number.isFinite(best) ? best : null;
+    };
+    const dx = minPositiveDiff(regionMap.map((r: any) => r.xn));
+    const dy = minPositiveDiff(regionMap.map((r: any) => r.yn));
+    if (dx == null || dy == null) return null;
+    return { wn: dx, hn: dy };
+  }, [regionMap]);
+
+  // Repaint the masking canvas: for every tile whose pattern is currently disabled, blit the
+  // matching crop of the raw H&E thumbnail on top of the overlay PNG.
+  //
+  // We position the canvas in absolute coordinates *inside the gray-100 flex parent* so the
+  // visible <img> can keep its original max-h-full / max-w-full / object-contain classes —
+  // wrapping the <img> in a sized div breaks the percentage chain and overflows the panel,
+  // hiding the legend below. Instead we read the <img>'s offset and rendered size in JS
+  // and set canvas.style.left/top/width/height to match it pixel-perfect.
+  useEffect(() => {
+    const canvas = maskCanvasRef.current;
+    const img = imgRef.current;
+    const thumb = thumbImgRef.current;
+    if (!canvas || !img || !imgLoaded || mode !== 'pattern') return;
+
+    const cssW = img.clientWidth;
+    const cssH = img.clientHeight;
+    if (cssW <= 0 || cssH <= 0) return;
+
+    // Align the canvas with the <img>'s rendered box inside their shared positioned parent.
+    canvas.style.left = `${img.offsetLeft}px`;
+    canvas.style.top = `${img.offsetTop}px`;
+    canvas.style.width = `${cssW}px`;
+    canvas.style.height = `${cssH}px`;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.max(1, Math.round(cssW * dpr));
+    canvas.height = Math.max(1, Math.round(cssH * dpr));
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    const disabled = disabledPatterns || new Set<string>();
+    const showMask = disabled.size > 0
+      && regionMap && regionMap.length > 0
+      && thumb && thumbLoaded
+      && thumb.naturalWidth > 0 && thumb.naturalHeight > 0;
+    if (!showMask) return;
+
+    const tw = thumb.naturalWidth;
+    const th = thumb.naturalHeight;
+    for (const r of regionMap) {
+      const p = (r.pattern || '').toLowerCase();
+      if (!disabled.has(p)) continue;
+      const sx = r.xn * tw;
+      const sy = r.yn * th;
+      const sw = r.wn * tw;
+      const sh = r.hn * th;
+      const dx = r.xn * cssW;
+      const dy = r.yn * cssH;
+      const dw = r.wn * cssW;
+      const dh = r.hn * cssH;
+      try { ctx.drawImage(thumb, sx, sy, sw, sh, dx, dy, dw, dh); } catch { /* ignore */ }
+    }
+  }, [disabledPatterns, regionMap, imgLoaded, thumbLoaded, mode]);
+
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLImageElement>) => {
       if (!regionMap || !imgRef.current) {
@@ -235,16 +328,24 @@ function InteractiveOverlayImage({
       const rect = imgRef.current.getBoundingClientRect();
       const xn = (e.clientX - rect.left) / rect.width;
       const yn = (e.clientY - rect.top) / rect.height;
+      const hitW = trueTileSize?.wn ?? regionMap[0]?.wn ?? 0;
+      const hitH = trueTileSize?.hn ?? regionMap[0]?.hn ?? 0;
       const hit = regionMap.find(
-        (r: any) => xn >= r.xn && xn <= r.xn + r.wn && yn >= r.yn && yn <= r.yn + r.hn,
+        (r: any) => xn >= r.xn && xn <= r.xn + hitW && yn >= r.yn && yn <= r.yn + hitH,
       );
       if (hit) {
+        // Suppress the tooltip for patterns the user just hid via the legend — keeps the
+        // image and tooltip consistent.
+        if (mode === 'pattern' && disabledPatterns && disabledPatterns.has((hit.pattern || '').toLowerCase())) {
+          setTooltip(null);
+          return;
+        }
         setTooltip({ x: e.clientX, y: e.clientY, data: hit });
       } else {
         setTooltip(null);
       }
     },
-    [regionMap],
+    [regionMap, mode, disabledPatterns, trueTileSize],
   );
 
   if (imgError) {
@@ -261,6 +362,13 @@ function InteractiveOverlayImage({
     );
   }
 
+  // Fragment (no wrapping <div>) so the visible <img> stays the direct flex child of the
+  // gray-100 panel and keeps the caller's max-h-full / max-w-full / object-contain sizing.
+  // Wrapping it would either break the percentage chain (image renders at native resolution
+  // and overflows the panel, hiding the legend) or create a circular size constraint between
+  // wrapper and img. The masking canvas is positioned absolutely inside the same flex parent
+  // (which is already position: relative) and its left/top/width/height are set by the effect
+  // above to match the <img>'s actual rendered box.
   return (
     <>
       <img
@@ -269,9 +377,26 @@ function InteractiveOverlayImage({
         alt={mode === 'pattern' ? 'Pattern overlay' : 'ABMIL attention'}
         className={`${className || ''} cursor-crosshair`}
         onError={() => setImgError(true)}
+        onLoad={() => setImgLoaded(true)}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setTooltip(null)}
       />
+      {mode === 'pattern' && thumbUrl && (
+        <img
+          ref={thumbImgRef}
+          src={thumbUrl}
+          alt=""
+          onLoad={() => setThumbLoaded(true)}
+          onError={() => setThumbLoaded(false)}
+          style={{ display: 'none' }}
+        />
+      )}
+      {mode === 'pattern' && (
+        <canvas
+          ref={maskCanvasRef}
+          className="pointer-events-none absolute"
+        />
+      )}
       {tooltip && (
         <div
           className="fixed z-50 pointer-events-none shadow-lg rounded px-3 py-1.5 text-xs font-bold"
@@ -797,8 +922,23 @@ function GeneAnalysisView({
   // attention contours) lives in the Viewer tab where the user can toggle it explicitly.
   const roiArt = artifacts.find((a: any) => a.artifact_type === 'roi_overlay');
   const attnArt = artifacts.find((a: any) => a.artifact_type === 'attention_overlay');
+  const thumbArt = artifacts.find((a: any) => a.artifact_type === 'thumbnail');
   const patternRegionArt = artifacts.find((a: any) => a.artifact_type === 'pattern_region_map');
   const attentionRegionArt = artifacts.find((a: any) => a.artifact_type === 'attention_region_map');
+
+  // Per-pattern visibility for the PATTERN OVERLAY panel below. Click a legend entry to hide
+  // its tiles from the overlay; click again to show. The state is local to this gene view —
+  // each gene tab gets its own toggle set. Default = empty (all patterns visible).
+  const [disabledPatterns, setDisabledPatterns] = useState<Set<string>>(new Set());
+  const togglePattern = useCallback((p: string) => {
+    const key = (p || '').toLowerCase();
+    setDisabledPatterns((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
 
   return (
     <div className="space-y-5">
@@ -831,16 +971,27 @@ function GeneAnalysisView({
       {/* ── Visual Grid: Pattern Overlay + ABMIL Attention ── */}
       <div className="grid grid-cols-2 gap-4">
         <div className="border rounded-lg overflow-hidden">
-          <div className="bg-emerald-50 border-b border-emerald-200 px-3 py-1.5">
+          <div className="bg-emerald-50 border-b border-emerald-200 px-3 py-1.5 flex items-center justify-between">
             <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wide">Pattern Overlay</h4>
+            {disabledPatterns.size > 0 && (
+              <button
+                onClick={() => setDisabledPatterns(new Set())}
+                className="text-[10px] text-emerald-700 hover:text-emerald-900 underline"
+                title="Show every pattern in the overlay"
+              >
+                Show all
+              </button>
+            )}
           </div>
           <div className="bg-gray-100 h-64 flex items-center justify-center relative">
             {roiArt ? (
               <InteractiveOverlayImage
                 imageUri={roiArt.uri}
                 regionMapUri={patternRegionArt?.uri}
+                thumbnailUri={thumbArt?.uri}
                 mode="pattern"
                 patterns={patterns}
+                disabledPatterns={disabledPatterns}
                 className="max-h-full max-w-full object-contain"
               />
             ) : (
@@ -853,12 +1004,21 @@ function GeneAnalysisView({
                 const c = PATTERN_COLORS[p];
                 const pResult = patterns.find((pr: any) => (pr.pattern || '').toLowerCase() === p);
                 const pct = pResult?.percentage ?? (mp as any)?.[`pct_${p}`] ?? 0;
+                const hidden = disabledPatterns.has(p);
                 return (
-                  <span key={p} className="flex items-center gap-1">
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => togglePattern(p)}
+                    title={hidden ? `Show ${p}` : `Hide ${p}`}
+                    className={`flex items-center gap-1 rounded transition-opacity ${
+                      hidden ? 'opacity-40 hover:opacity-70' : 'hover:opacity-80'
+                    }`}
+                  >
                     <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: c }} />
-                    <span className="capitalize font-medium">{p}</span>
+                    <span className={`capitalize font-medium ${hidden ? 'line-through text-gray-500' : ''}`}>{p}</span>
                     <span className="font-mono text-gray-500">{pct.toFixed(1)}%</span>
-                  </span>
+                  </button>
                 );
               })}
             </div>

@@ -1408,10 +1408,12 @@ def _build_attention_overlay(
 
     # Line widths scale with image dimensions so contours stay visible at any zoom level —
     # at full slide resolution they're thick enough to survive a browser-side downscale to
-    # the ABMIL Attention Heatmap thumbnail (~250 px). The top threshold (highest attention)
-    # gets the boldest line so the most-attended region stands out.
+    # the ABMIL Attention Heatmap thumbnail (~250 px). Four thresholds give the user a clear
+    # gradient between "barely attended" and "very high attention" so the intermediate Low /
+    # Moderate / High / Very-High bands remain visually distinguishable instead of collapsing
+    # into a single contour. The top threshold also gets a double pass for extra emphasis.
     base_lw = max(2, min(w, h) // 400)
-    for thresh, lw_mult in [(0.15, 1), (0.35, 2), (0.55, 4)]:
+    for thresh, lw_mult in [(0.15, 1), (0.30, 2), (0.50, 3), (0.70, 4)]:
         binary = (heat_smooth >= thresh).astype(np.uint8) * 255
         # Re-restrict to tissue (the threshold may keep edge fringe outside).
         binary = binary * tissue_mask
@@ -1422,8 +1424,8 @@ def _build_attention_overlay(
             if cv2.contourArea(cnt) < min_area:
                 continue
             smooth_cnt = cv2.approxPolyDP(cnt, epsilon=render_size * 0.3, closed=True)
-            # Draw twice for the highest threshold to deepen the black (compensates AA fade).
             cv2.drawContours(result, [smooth_cnt], -1, (0, 0, 0), lw, cv2.LINE_AA)
+            # Draw twice for the highest threshold to deepen the black (compensates AA fade).
             if lw_mult >= 4:
                 cv2.drawContours(result, [smooth_cnt], -1, (0, 0, 0), lw, cv2.LINE_AA)
 
@@ -1491,6 +1493,18 @@ def _build_combined_overlay(
     overlay = Image.merge("RGBA", (r_img, g_img, b_img, a_img))
     blur_radius = max(tile_size // 6, 4)
     overlay = overlay.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+
+    # Clip the pattern overlay to tissue only — Gaussian blur otherwise bleeds the pattern
+    # colours onto the white glass background, which is misleading because no classification
+    # actually exists there. Match the masking used by _build_overlay (roi_overlay).
+    img_arr_rgb = np.array(img.convert("RGB"))
+    img_gray = img_arr_rgb.mean(axis=2)
+    tissue_binary_pat = (img_gray < 220).astype(np.uint8) * 255
+    tissue_mask_pat = Image.fromarray(tissue_binary_pat, "L").filter(ImageFilter.MaxFilter(size=5))
+    ov_r, ov_g, ov_b, ov_a = overlay.split()
+    ov_a_arr = np.array(ov_a)
+    ov_a_arr[np.array(tissue_mask_pat) == 0] = 0
+    overlay = Image.merge("RGBA", (ov_r, ov_g, ov_b, Image.fromarray(ov_a_arr, "L")))
 
     base = img.convert("RGBA")
     combined = Image.alpha_composite(base, overlay).convert("RGB")

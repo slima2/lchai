@@ -49,7 +49,16 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
     attention_rank?: number;
   } | null>(null);
   const [regionMap, setRegionMap] = useState<any[] | null>(null);
+  // Per-pattern visibility for the overlay. Empty set = all patterns visible (default).
+  // When a pattern is in this set, the canvas mask redraws the original H&E in its tiles,
+  // effectively "erasing" the colour from the overlay without re-running inference.
+  const [disabledPatterns, setDisabledPatterns] = useState<Set<string>>(new Set());
   const imgRef = useRef<HTMLImageElement>(null);
+  // Hidden image element holding the raw H&E thumbnail, used as the drawImage source
+  // for the masking canvas below.
+  const thumbImgRef = useRef<HTMLImageElement>(null);
+  const [thumbLoaded, setThumbLoaded] = useState(false);
+  const maskCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Active Learning: Correction mode with lasso drawing
   const [correctionMode, setCorrectionMode] = useState(false);
@@ -157,6 +166,99 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
     : (combinedUrl || patternUrl || originalUrl);
 
   useEffect(() => { setImgLoaded(false); setImgError(false); }, [activeUrl]);
+
+  // True (non-inflated) tile stride in normalised image coordinates. The inference worker
+  // inflates `wn`/`hn` to a minimum visible thumbnail size (~40 px) so single tiles are
+  // perceptible — but tile *origins* `xn`/`yn` are still on the real grid stride, so
+  // adjacent inflated rectangles overlap ~10× at thumbnail resolution. Recovering the true
+  // stride from the data (min positive diff between unique xn / yn) gives us non-overlapping
+  // rectangles for the "Show Tiles" grid without re-running inference.
+  const trueTileSize = useMemo(() => {
+    if (!regionMap || regionMap.length === 0) return null;
+    const minPositiveDiff = (vals: number[]): number | null => {
+      const uniq = Array.from(new Set(vals)).sort((a, b) => a - b);
+      let best = Infinity;
+      for (let i = 1; i < uniq.length; i++) {
+        const d = uniq[i] - uniq[i - 1];
+        if (d > 1e-6 && d < best) best = d;
+      }
+      return Number.isFinite(best) ? best : null;
+    };
+    const xs = regionMap.map((r: any) => r.xn);
+    const ys = regionMap.map((r: any) => r.yn);
+    const dx = minPositiveDiff(xs);
+    const dy = minPositiveDiff(ys);
+    if (dx == null || dy == null) return null;
+    return { wn: dx, hn: dy };
+  }, [regionMap]);
+
+  // Reset thumb-loaded flag whenever the source URL changes (slide switch / cacheBust).
+  useEffect(() => { setThumbLoaded(false); }, [thumbnailUrl]);
+
+  // Toggle a pattern's visibility (used by the legend in the right sidebar).
+  const togglePattern = useCallback((p: string) => {
+    const key = (p || '').toLowerCase();
+    setDisabledPatterns((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  // Repaint the masking canvas: for every tile whose pattern is currently disabled,
+  // blit the matching crop of the raw H&E thumbnail on top of the overlay PNG. Sized
+  // to the rendered <img> in CSS pixels and drawn at devicePixelRatio so the masked
+  // tiles stay crisp at any zoom level.
+  useEffect(() => {
+    const canvas = maskCanvasRef.current;
+    const img = imgRef.current;
+    const thumb = thumbImgRef.current;
+    if (!canvas || !img || !imgLoaded) return;
+
+    const cssW = img.clientWidth;
+    const cssH = img.clientHeight;
+    if (cssW <= 0 || cssH <= 0) return;
+
+    // Bump the canvas backing-store resolution with zoom so masked tiles stay crisp when
+    // the user scales the viewer up (transform: scale stretches every pixel of this canvas).
+    // Clamped to keep memory bounded on very high zoom.
+    const dpr = Math.min(window.devicePixelRatio || 1, 2) * Math.min(Math.max(zoom, 1), 4);
+    canvas.width = Math.max(1, Math.round(cssW * dpr));
+    canvas.height = Math.max(1, Math.round(cssH * dpr));
+    canvas.style.width = `${cssW}px`;
+    canvas.style.height = `${cssH}px`;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    // Masking only makes sense on layers that actually paint pattern colours.
+    const showMask = (layer === 'pattern' || layer === 'combined')
+      && disabledPatterns.size > 0
+      && regionMap && regionMap.length > 0
+      && thumb && thumbLoaded
+      && thumb.naturalWidth > 0 && thumb.naturalHeight > 0;
+    if (!showMask) return;
+
+    const tw = thumb.naturalWidth;
+    const th = thumb.naturalHeight;
+    for (const r of regionMap) {
+      const p = (r.pattern || '').toLowerCase();
+      if (!disabledPatterns.has(p)) continue;
+      const sx = r.xn * tw;
+      const sy = r.yn * th;
+      const sw = r.wn * tw;
+      const sh = r.hn * th;
+      const dx = r.xn * cssW;
+      const dy = r.yn * cssH;
+      const dw = r.wn * cssW;
+      const dh = r.hn * cssH;
+      try { ctx.drawImage(thumb, sx, sy, sw, sh, dx, dy, dw, dh); } catch { /* ignore */ }
+    }
+  }, [disabledPatterns, regionMap, imgLoaded, thumbLoaded, layer, activeUrl, zoom]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -413,17 +515,30 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
                     const rect = img.getBoundingClientRect();
                     const xn = (e.clientX - rect.left) / rect.width;
                     const yn = (e.clientY - rect.top) / rect.height;
+                    // Hit-test against the TRUE (non-inflated) tile span. The backend writes
+                    // an inflated wn/hn (~40 px on thumbnails) so single tiles are visible,
+                    // but using that for hit-testing makes the active zone extend ~10× into
+                    // the glass background and yields ghost tooltips over non-tissue areas.
+                    const hitW = trueTileSize?.wn ?? regionMap[0]?.wn ?? 0;
+                    const hitH = trueTileSize?.hn ?? regionMap[0]?.hn ?? 0;
                     const hit = regionMap.find((r: any) =>
-                      xn >= r.xn && xn <= r.xn + r.wn && yn >= r.yn && yn <= r.yn + r.hn
+                      xn >= r.xn && xn <= r.xn + hitW && yn >= r.yn && yn <= r.yn + hitH
                     );
                     if (!hit) { setTooltip(null); return; }
                     // Show pattern on "pattern"/"combined" and attention on "attention"/"combined".
+                    // If the tile's pattern is currently toggled off via the legend, the
+                    // overlay is hiding it visually, so the tooltip suppresses its label too.
+                    const hitPatternKey = (hit.pattern || '').toLowerCase();
+                    const patternHidden = disabledPatterns.has(hitPatternKey);
+                    const showPattern = (layer === 'pattern' || layer === 'combined') && !patternHidden;
+                    const showAttention = (layer === 'attention' || layer === 'combined');
+                    if (!showPattern && !showAttention) { setTooltip(null); return; }
                     setTooltip({
                       x: e.clientX,
                       y: e.clientY,
-                      pattern: (layer === 'pattern' || layer === 'combined') ? hit.pattern : undefined,
-                      attention_percentile: (layer === 'attention' || layer === 'combined') ? hit.attention_percentile : undefined,
-                      attention_rank: (layer === 'attention' || layer === 'combined') ? hit.attention_rank : undefined,
+                      pattern: showPattern ? hit.pattern : undefined,
+                      attention_percentile: showAttention ? hit.attention_percentile : undefined,
+                      attention_rank: showAttention ? hit.attention_rank : undefined,
                     });
                   }}
                   onMouseLeave={() => setTooltip(null)}
@@ -432,6 +547,34 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
                     opacity: imgLoaded ? (layer === 'original' ? 1 : overlayOpacity) : 0,
                     imageRendering: zoom > 3 ? 'pixelated' : 'auto',
                   }} />
+                {/* Hidden raw H&E thumbnail kept in the DOM as the pixel source for the
+                    pattern-toggle masking canvas below. Decoded once per slide. */}
+                {thumbnailUrl && (
+                  <img
+                    ref={thumbImgRef}
+                    src={thumbnailUrl}
+                    alt=""
+                    onLoad={() => setThumbLoaded(true)}
+                    onError={() => setThumbLoaded(false)}
+                    style={{ display: 'none' }}
+                  />
+                )}
+                {/* Pattern-toggle mask. Draws the original H&E pixels back on top of the
+                    overlay PNG inside tiles whose pattern is disabled via the legend, so
+                    the user can hide individual histopathological patterns from the view
+                    without re-running inference. Only active on Patterns and Combined. */}
+                {(layer === 'pattern' || layer === 'combined') && (
+                  <canvas
+                    ref={maskCanvasRef}
+                    className="pointer-events-none"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      opacity: imgLoaded ? overlayOpacity : 0,
+                    }}
+                  />
+                )}
                 {/* Tile grid — drawn on top of the image so the user can see the exact
                     segmentation size the pipeline used. Uses a normalised SVG viewBox so
                     one element renders all tiles efficiently (>1000 tiles per slide).
@@ -441,36 +584,43 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
                     saturated colour absent from the pattern palette
                     (blue/red/yellow/green/maroon/cyan) and from the attention overlay's
                     cyan fill + black contours. */}
-                {showTiles && imgLoaded && regionMap && regionMap.length > 0 && (
-                  <svg
-                    className="absolute inset-0 w-full h-full pointer-events-none"
-                    viewBox="0 0 1 1"
-                    preserveAspectRatio="none"
-                  >
-                    {/* Dark halo pass */}
-                    {regionMap.map((r: any, i: number) => (
-                      <rect
-                        key={`h-${i}`}
-                        x={r.xn} y={r.yn} width={r.wn} height={r.hn}
-                        fill="none"
-                        stroke="rgba(0, 0, 0, 0.55)"
-                        strokeWidth={2.4}
-                        vectorEffect="non-scaling-stroke"
-                      />
-                    ))}
-                    {/* Bright magenta foreground pass */}
-                    {regionMap.map((r: any, i: number) => (
-                      <rect
-                        key={`f-${i}`}
-                        x={r.xn} y={r.yn} width={r.wn} height={r.hn}
-                        fill="none"
-                        stroke="#FF00FF"
-                        strokeWidth={1.2}
-                        vectorEffect="non-scaling-stroke"
-                      />
-                    ))}
-                  </svg>
-                )}
+                {showTiles && imgLoaded && regionMap && regionMap.length > 0 && (() => {
+                  // Use the true (non-inflated) per-tile stride for the rendered rectangles
+                  // so neighbours don't overlap at any zoom. Fall back to the JSON `wn/hn` if
+                  // we can't infer the stride (e.g. degenerate single-tile slide).
+                  const tileW = trueTileSize?.wn ?? regionMap[0].wn;
+                  const tileH = trueTileSize?.hn ?? regionMap[0].hn;
+                  return (
+                    <svg
+                      className="absolute inset-0 w-full h-full pointer-events-none"
+                      viewBox="0 0 1 1"
+                      preserveAspectRatio="none"
+                    >
+                      {/* Dark halo pass */}
+                      {regionMap.map((r: any, i: number) => (
+                        <rect
+                          key={`h-${i}`}
+                          x={r.xn} y={r.yn} width={tileW} height={tileH}
+                          fill="none"
+                          stroke="rgba(0, 0, 0, 0.55)"
+                          strokeWidth={2.4}
+                          vectorEffect="non-scaling-stroke"
+                        />
+                      ))}
+                      {/* Bright magenta foreground pass */}
+                      {regionMap.map((r: any, i: number) => (
+                        <rect
+                          key={`f-${i}`}
+                          x={r.xn} y={r.yn} width={tileW} height={tileH}
+                          fill="none"
+                          stroke="#FF00FF"
+                          strokeWidth={1.2}
+                          vectorEffect="non-scaling-stroke"
+                        />
+                      ))}
+                    </svg>
+                  );
+                })()}
               </div>
             </div>
           ) : (
@@ -592,36 +742,66 @@ export default function ViewerPanel({ caseId, imageId, resultBundleId }: Props) 
 
         {/* Sidebar */}
         <div className="w-56 bg-gray-900 border-l border-gray-700 overflow-y-auto flex-shrink-0 p-3">
-          <h4 className="text-gray-300 text-xs font-bold mb-3 uppercase tracking-wide">Mutation Report</h4>
-          {genetics.length > 0 ? genetics.map((gr: any) => (
-            <div key={gr.mutation} className="mb-2 p-2 rounded bg-gray-800">
-              <div className="flex justify-between items-center">
-                <span className="text-white text-sm font-bold">{gr.mutation}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                  isDynConcl(gr.mutation) ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'
-                }`}>{isDynConcl(gr.mutation) ? 'Conclusive' : 'Inconclusive'}</span>
-              </div>
-              <div className="flex justify-between mt-1">
-                <span className="text-gray-400 text-xs">P(mut)</span>
-                <span className="text-white text-xs font-mono">{((gr.score || 0) * 100).toFixed(1)}%</span>
-              </div>
-              {gr.shap_decomposition?.embedding_contribution_pct != null && (gr.prediction_method || '').includes('proposed') && (
-                <div className="mt-1 h-1.5 rounded bg-gray-700 overflow-hidden flex" title={`Emb ${gr.shap_decomposition.embedding_contribution_pct}% / Pat ${gr.shap_decomposition.pattern_contribution_pct}%`}>
-                  <div className="bg-blue-500 h-full" style={{ width: `${gr.shap_decomposition.embedding_contribution_pct}%` }} />
-                  <div className="bg-red-400 h-full" style={{ width: `${gr.shap_decomposition.pattern_contribution_pct}%` }} />
-                </div>
-              )}
-            </div>
-          )) : <p className="text-gray-500 text-xs">Process an image first</p>}
+          {/* ── PATTERNS (top) ─────────────────────────────────────────────
+             Moved above the mutation report so toggling pattern visibility — the
+             most frequent interactive action in the viewer — is reachable without
+             scrolling past six gene cards. */}
+          <div className="flex items-center justify-between mb-1.5">
+            <h4 className="text-gray-300 text-xs font-bold uppercase tracking-wide">Patterns</h4>
+            {disabledPatterns.size > 0 && (
+              <button
+                onClick={() => setDisabledPatterns(new Set())}
+                className="text-[10px] text-blue-300 hover:text-blue-200 underline"
+                title="Show every pattern in the overlay"
+              >
+                Show all
+              </button>
+            )}
+          </div>
+          <p className="text-gray-500 text-[10px] mb-1.5">Click a pattern to hide it from the overlay.</p>
+          {patterns.map((p: any) => {
+            const key = (p.pattern || '').toLowerCase();
+            const hidden = disabledPatterns.has(key);
+            return (
+              <button
+                key={p.pattern}
+                onClick={() => togglePattern(p.pattern)}
+                className={`w-full flex items-center gap-1.5 mb-1 px-1 py-0.5 rounded text-left transition-colors ${
+                  hidden ? 'opacity-40 hover:opacity-70' : 'hover:bg-gray-800'
+                }`}
+                title={hidden ? `Show ${p.pattern}` : `Hide ${p.pattern}`}
+              >
+                <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: patternColor(p.pattern) }} />
+                <span className={`text-xs capitalize flex-1 ${hidden ? 'text-gray-500 line-through' : 'text-gray-300'}`}>{p.pattern}</span>
+                <span className="text-gray-400 text-xs font-mono">{(p.percentage || 0).toFixed(1)}%</span>
+              </button>
+            );
+          })}
 
-          <h4 className="text-gray-300 text-xs font-bold mt-4 mb-2 uppercase tracking-wide">Patterns</h4>
-          {patterns.map((p: any) => (
-            <div key={p.pattern} className="flex items-center gap-1.5 mb-1">
-              <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: patternColor(p.pattern) }} />
-              <span className="text-gray-300 text-xs capitalize flex-1">{p.pattern}</span>
-              <span className="text-gray-400 text-xs font-mono">{(p.percentage || 0).toFixed(1)}%</span>
-            </div>
-          ))}
+          {/* ── MUTATION REPORT (compact) ───────────────────────────────────
+             Single-line per gene: name + status pill + P(mut). The emb/pat blue/red
+             contribution bar was dropped — it carried no decision-relevant signal at
+             this glance level (every mutation showed the same bar), and the detailed
+             SHAP decomposition is already available in the Analysis tab. */}
+          <div className="mt-4 pt-3 border-t border-gray-700">
+            <h4 className="text-gray-300 text-xs font-bold mb-2 uppercase tracking-wide">Mutation Report</h4>
+            {genetics.length > 0 ? genetics.map((gr: any) => {
+              const concl = isDynConcl(gr.mutation);
+              return (
+                <div
+                  key={gr.mutation}
+                  className="mb-1 px-2 py-1 rounded bg-gray-800 flex items-center gap-2"
+                  title={`${gr.mutation} — ${concl ? 'Conclusive' : 'Inconclusive'} · P(mut) ${((gr.score || 0) * 100).toFixed(1)}%`}
+                >
+                  <span className="text-white text-xs font-bold flex-1">{gr.mutation}</span>
+                  <span className={`text-[9px] px-1 py-0.5 rounded font-bold ${
+                    concl ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'
+                  }`}>{concl ? 'Concl.' : 'Inconcl.'}</span>
+                  <span className="text-white text-xs font-mono w-12 text-right">{((gr.score || 0) * 100).toFixed(1)}%</span>
+                </div>
+              );
+            }) : <p className="text-gray-500 text-xs">Process an image first</p>}
+          </div>
 
           <div className="mt-4 pt-3 border-t border-gray-700">
             <h4 className="text-gray-300 text-xs font-bold mb-2 uppercase tracking-wide">Layers</h4>
