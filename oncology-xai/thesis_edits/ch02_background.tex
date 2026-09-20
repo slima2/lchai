@@ -1,7 +1,7 @@
 % ============================================================================
 % Chapter 2: Theoretical Background
-% Thesis: Fuzzy Margin Representation Learning for Explainable
-%         Architecture–Genotype Associations in Lung Adenocarcinoma
+% Thesis: Pattern-Informed Fuzzy Deep Learning for Interpretable
+%         Genotype–Phenotype Inference in Lung Adenocarcinoma
 %         under Data Scarcity
 % Author: Servio F. Lima
 % University of Fribourg
@@ -10,10 +10,10 @@
 \chapter{Theoretical Background}
 \label{ch:background}
 
-This chapter establishes the theoretical foundations required for a computer scientist to understand the interdisciplinary research presented in this thesis.
-The exposition proceeds from the application domain---digital pathology---through the machine learning and fuzzy logic building blocks that underpin the proposed artifacts, to the design science research methodology that structures the overall investigation.
-Medical domain knowledge, including histological pattern definitions, oncogenic driver mutations, treatment implications, and clinical datasets, is deferred to Chapter~\ref{ch:usecase}, which is written for a multidisciplinary audience including histopathologists and oncologists.
-Each section introduces established concepts from the literature, providing the reader with the prerequisite knowledge to follow the implementation and evaluation chapters that follow.
+This chapter establishes the theoretical foundations underpinning the thesis.
+The exposition proceeds from the application domain---digital pathology---through the machine learning and fuzzy logic building blocks that underpin the proposed artefacts, to the design science research methodology that structures the overall investigation.
+Medical domain knowledge---histological pattern definitions, oncogenic driver mutations, treatment implications, and clinical datasets---is presented in Chapter~\ref{ch:usecase}.
+Each section introduces established concepts from the literature, providing the prerequisite knowledge to follow the implementation and evaluation chapters that follow.
 
 
 % ============================================================================
@@ -42,14 +42,14 @@ This paradigm---tile extraction, feature encoding, and aggregation---forms the b
 % ============================================================================
 
 Lung adenocarcinoma (LUAD) is the most common histological subtype of non-small-cell lung cancer, accounting for approximately 40\% of all lung malignancies~\cite{who2021thoracic}.
-For the computer scientist, LUAD presents a structured multi-class classification problem at the tile level (six histological growth patterns recognised by the WHO) and a binary prediction problem at the slide level (somatic mutation status per gene).
+Computationally, LUAD defines a structured multi-class classification problem at the tile level (six histological growth patterns recognised by the WHO) and a binary prediction problem at the slide level (somatic mutation status per gene).
 
 A critical characteristic of LUAD is \emph{intra-tumoral heterogeneity}: most tumours exhibit a mixture of two or more patterns within the same slide~\cite{warth2012interobserver}.
 This heterogeneity has two computational consequences.
 First, tile-level classification must cope with continuous morphological transitions between patterns rather than clean boundaries---the primary motivation for FuzzyArcLoss~V2's adaptive margin mechanism (Chapter~\ref{ch:methodology}).
 Second, slide-level mutation prediction must aggregate information from a heterogeneous collection of tiles, each potentially representing a different pattern---the motivation for the Fuzzy Choquet integral's capacity to model interactions between co-occurring patterns (Artifact~3).
 
-The detailed clinical descriptions of the six histological patterns, their morphological features, grading significance, molecular correlates, and treatment implications are presented in Chapter~\ref{ch:usecase} (Sections~\ref{sec:uc:luad_histology}--\ref{sec:uc:gene_walkthrough}), which is written for a multidisciplinary audience including pathologists and oncologists.
+The detailed clinical descriptions of the six histological patterns, their morphological features, grading significance, molecular correlates, and treatment implications are presented in Chapter~\ref{ch:usecase} (Sections~\ref{sec:uc:luad_histology}--\ref{sec:uc:gene_walkthrough}).
 
 
 % ============================================================================
@@ -334,14 +334,14 @@ Second, the Fuzzy Choquet aggregation (Section~\ref{sec:bg:choquet}) replaces th
 % ============================================================================
 
 The intersection of fuzzy logic with angular margin loss functions constitutes the primary methodological novelty of this thesis.
-This section formalises the complete family of fuzzy margin variants evaluated in the benchmark (Chapter~\ref{ch:evaluation}), totalling ten loss functions numbered~9--16 in the benchmark enumeration of Table~\ref{tab:loss_variants_bg}.
+This section formalises the complete family of fuzzy margin variants evaluated in the benchmark (Chapter~\ref{ch:evaluation}), totalling eight loss functions numbered~9--16 in the benchmark enumeration of Table~\ref{tab:loss_variants_bg}.
 
 \subsection{The Motivation: Morphological Ambiguity}
 \label{sec:bg:fuzzy_margin:motivation}
 
-In histopathological pattern classification, inter-class boundaries are inherently gradual~\cite{thunnissen2014reproducibility}.
+In histopathological pattern classification, inter-class boundaries are inherently gradual~\cite{thunnissen2012reproducibility}.
 A tile at the transition between acinar and papillary morphology may exhibit partial features of both patterns; a region of solid growth interspersed with residual glandular lumina is not cleanly assignable to either class.
-Thunnissen et al.\ reported only fair inter-observer agreement ($\kappa = 0.38$) for the predominant pattern among 27~pathologists, with acinar--papillary distinction being particularly difficult~\cite{thunnissen2014reproducibility}.
+Thunnissen et al.\ reported only fair inter-observer agreement ($\kappa = 0.38$) for the predominant pattern among 26~pathologists, with acinar--papillary distinction being particularly difficult~\cite{thunnissen2012reproducibility}.
 Standard ArcFace applies a fixed margin $m$ to all training samples equally.
 For unambiguous samples (clearly solid, clearly lepidic), this margin encourages tight clustering around the class prototype.
 For ambiguous samples at morphological boundaries, however, the same margin forces the model to make confident but potentially incorrect assignments, which can destabilise training on small datasets.
@@ -728,12 +728,106 @@ interpretability framework).
 
 
 % ============================================================================
-\section{Explainability in Machine Learning}
+\section{Interpretability and Explainability in Machine Learning}
 \label{sec:bg:xai}
 % ============================================================================
 
-Explainability---the ability of a model to provide human-understandable justifications for its predictions---is a critical requirement for clinical decision support systems in medicine~\cite{tjoa2021survey}.
-This section reviews the explainability methods relevant to this thesis.
+The thesis title commits to \emph{interpretable} genotype--phenotype
+inference, and the LCHAI system reviewed in
+Chapter~\ref{ch:methodology} also produces natural-language
+\emph{explanations} via a knowledge-graph--grounded LLM agent.
+The two terms are routinely conflated in the clinical-AI
+literature~\cite{tjoa2021survey} but denote distinct properties in
+the machine-learning community; this section adopts the
+distinction explicitly, so that later chapters can be precise
+about which property of LCHAI is being claimed and which has
+actually been evaluated.
+
+\subsection{Definitions: Interpretability vs.\ Explainability}
+\label{sec:bg:xai:definitions}
+
+\textbf{Interpretability} is, following Doshi-Velez and
+Kim~\cite{doshivelez2017rigorous}, ``the ability to explain or
+to present in understandable terms to a human,'' and is taken to
+be a property of the model itself: its internal mechanisms are
+either directly inspectable (\emph{transparent} or
+\emph{simulatable} in Lipton's
+taxonomy~\cite{lipton2018mythos}) or expose semantically
+meaningful intermediate quantities that a human can reason about
+without an auxiliary explainer.
+Rudin~\cite{rudin2019stop} sharpens this view for high-stakes
+decisions and argues that, where possible, one should
+\emph{design} a model to be intrinsically interpretable rather
+than wrap a black box in post-hoc explanations whose faithfulness
+is not guaranteed.
+
+\textbf{Explainability}, in contrast, is the production of
+human-readable justifications for individual predictions of an
+otherwise opaque model, typically through post-hoc tools such as
+saliency maps, feature attribution (e.g., SHAP, LIME) or
+natural-language rationales~\cite{gilpin2018explaining,arrieta2020xai}.
+A model can be explainable without being interpretable (a black
+box wrapped in SHAP), and---less commonly---interpretable without
+being explainable (a transparent model whose mechanism is exposed
+but whose per-prediction rationale is not rendered in natural
+language).
+
+\paragraph{Position of LCHAI.}
+Under this distinction, the system delivers both, but at different
+evidence levels:
+\begin{itemize}
+    \item \textbf{Interpretability} is a structural property of
+    the artefacts.
+    The pattern channel exposes a fixed 6-dimensional categorical
+    output over expert-validated histological growth patterns
+    (Section~\ref{sec:bg:dual_interpretability}); the 2-additive
+    Choquet integral of FC-MIL exposes its six singleton Shapley
+    values and fifteen pairwise interaction indices as
+    \emph{intrinsic} parameters of the trained model
+    (Section~\ref{sec:bg:choquet:secondorder}); and the system
+    instruments six complementary inspection levels (attention,
+    pattern overlay, SHAP, intrinsic Shapley, channel ablation,
+    fuzzy linguistic labels) that must be considered jointly to
+    reach a conclusion about a slide.
+    Interpretability claims of this thesis are therefore
+    \emph{empirically evaluated} in
+    Chapter~\ref{ch:evaluation} at two distinct levels of evidence:
+    (i)~\emph{per-slide}, through the representative-case
+    analysis on individual TCGA slides (qualitative inspection of
+    the six interpretability outputs against expert morphology); and
+    (ii)~\emph{per-gene at the cohort level}, through the
+    Conclusive/Inconclusive flag, which is a
+    \emph{population-level} (cohort-wide) verdict computed from the
+    held-out 5-fold cross-validation AUROC on TCGA-LUAD
+    (a gene is Conclusive if and only if AUROC~$\geq 0.70$,
+    Hosmer--Lemeshow threshold)
+    and is therefore a property of a gene's signal under the
+    proposed architecture, not a per-case attribute of any
+    individual slide.
+    \item \textbf{Explainability} is delivered through the
+    knowledge-graph--grounded LLM agent that converts the
+    six-level interpretability outputs into natural-language
+    explanations constrained by NCIt/MONDO ontology terms and
+    fuzzy linguistic labels (Chapter~\ref{ch:methodology};
+    Section~\ref{sec:meth:interp:fuzzy_labels}).
+    The dual constraint of fuzzy labels (controlling
+    \emph{how} the LLM speaks) and the curated knowledge graph
+    (controlling \emph{what} it can claim) is intended as an
+    anti-hallucination mechanism, but the resulting explanations
+    have \emph{not} been formally evaluated in this thesis: no
+    reader study, no faithfulness audit against the underlying
+    interpretability outputs, and no quantitative explanation-quality
+    metric is reported.
+    Explainability is therefore claimed only as a
+    system capability, not as an evaluated property; a
+    formal evaluation is left for future work
+    (Section~\ref{sec:disc:future}).
+\end{itemize}
+
+The remainder of this section reviews the post-hoc explanation
+tools (SHAP, attention) that LCHAI uses as instrumentation, and
+then describes the six-level interpretability framework that the
+artefacts together expose.
 
 \subsection{SHAP: Shapley Additive Explanations}
 \label{sec:bg:shap}
@@ -754,11 +848,11 @@ artifact's architecture.
 Two SHAP variants are employed:
 \begin{itemize}
     \item \textbf{TreeSHAP}~\cite{lundberg2020treeshap}: applied to the
-    XGBoost baseline (condition~B1) to attribute mutation predictions to
+    XGBoost floor baseline (condition~B1) to attribute mutation predictions to
     individual pattern features.  TreeSHAP exploits the tree structure
     for exact, polynomial-time Shapley value computation.
     \item \textbf{DeepSHAP}: applied to the ABMIL variants
-    (conditions~B2, P, A) to decompose predictions across the
+    (conditions~B2, PI-ABMIL, A) to decompose predictions across the
     518-dimensional enriched tile representations into contributions from
     embedding dimensions (0--511) and pattern dimensions (512--517).
     Concretely, DeepSHAP produces a SHAP value $\phi_j$ for each of
@@ -1054,25 +1148,33 @@ relevant problems. &
 The clinical problem is the gap between routine H\&E morphology assessment
 and actionable molecular profiling (NGS) under real-world data scarcity
 and interpretability requirements.
-The pipeline targets explainable decision support for oncology workflows by
-producing pattern-informed mutation predictions linked to curated
-biomedical knowledge---specifically for the $\sim$668 publicly available
-LUAD patients, two orders of magnitude below proprietary SOTA datasets. \\[4pt]
+The pipeline targets \emph{interpretable} decision support
+(in the sense of Section~\ref{sec:bg:xai:definitions})---a
+multi-level inspection layer over pattern-informed mutation
+predictions, complemented by an \emph{explainability} layer of
+knowledge-graph--grounded natural-language rationales---for the
+$\sim$668 publicly available LUAD patients, two orders of magnitude
+below proprietary SOTA datasets. \\[4pt]
 
 3. Design evaluation &
 The utility, quality, and efficacy of the artefact must be rigorously
 demonstrated. &
-Evaluation proceeds at four levels:
+Evaluation proceeds at five levels:
 (i)~quantitative ablation of 18 loss functions on pattern classification
 (15-run macro-F1, paired $t$-tests, Cohen's~$d$);
 (ii)~mutation prediction on TCGA-LUAD (5-fold patient-stratified AUROC
-for 6 genes, 6 conditions, 180 models);
-(iii)~six-level interpretability analysis via LCHAI~v2.0 pattern overlays,
-ABMIL attention maps, SHAP decomposition, Choquet Shapley values,
-and per-slide feature channel ablation
-on representative TCGA slides with trained checkpoints; and
+for 6 genes, 6 conditions, 180 models), with a cohort-level
+Conclusive/Inconclusive reliability flag derived from the held-out
+AUROC (Hosmer--Lemeshow threshold $\geq 0.70$);
+(iii)~per-slide six-level interpretability analysis on representative
+TCGA cases with trained checkpoints (ABMIL attention maps, pattern
+overlays, post-hoc SHAP decomposition, intrinsic Choquet Shapley
+values, per-slide feature channel ablation, fuzzy linguistic labels);
 (iv)~system-level demonstration of LCHAI~v2.0 showing end-to-end
-operation from WSI upload to knowledge graph explanation (KPI~6, KPI~7). \\[4pt]
+operation from WSI upload to knowledge graph explanation (RQ6, RQ7);
+and (v)~explainability of the LLM--KG agent, claimed only as a
+\emph{system capability}, with formal evaluation deferred to future
+work (Section~\ref{sec:bg:xai:definitions}). \\[4pt]
 
 4. Research contributions &
 Contributions in the areas of the artefact, design foundations, and
@@ -1089,8 +1191,17 @@ interpretable fuzzy measure providing intrinsic Shapley values and
 interaction indices;
 (iv)~\textbf{Ontology explanation layer}: three-tier knowledge graph
 grounding mutations in NCIt+MONDO with PMID provenance (RQ6, RQ7);
-(v)~\textbf{Analytical insight}: gene-dependent utility of fuzzy
-representations connects fuzzy formalism to cancer biology;
+(v)~\textbf{Analytical contribution}: an empirical taxonomy of
+H\&E-mutation signal location across the six TCGA-LUAD targets,
+classifying each gene under one of three failure modes when the
+ANORAK 6-pattern softmax is the only morphological prior---%
+\emph{label-space mismatch}~\cite{lipton2018labelshift} (signal lies
+outside the pattern vocabulary; STK11, KEAP1, RBM10), \emph{no
+morphological projection} (no consistent H\&E correlate at WSI
+resolution; KRAS), and \emph{collapse-to-prior}~\cite{bowman2016posteriorcollapse}
+(signal too weak to lift the model off prevalence; low-prevalence
+genes); the thesis-specific contribution is the empirical assignment
+of genes to mechanisms, not the names themselves;
 (vi)~\textbf{LCHAI~v2.0}: integrative clinical prototype with unified
 Analysis tab, fuzzy linguistic labels (anti-hallucination), active
 learning, and four-level fuzzy coherence (training, representation,
@@ -1181,7 +1292,7 @@ Hong~et~al.~\cite{hong2022stk11biomedinf} specifically targeted \textit{STK11} p
 
 A systematic review of the mutation prediction literature reveals a consistent trade-off: methods that achieve high AUROCs (DeepGEM, EAGLE, GigaPath) operate as opaque end-to-end systems, while interpretable approaches (XGBoost on pattern features, rule-based systems) typically achieve lower discriminative performance.
 No prior work explicitly injects validated histological pattern knowledge---particularly through fuzzy membership representations---into the MIL aggregation for mutation prediction.
-This gap defines the contribution of the present thesis.
+Closing this gap is one of the contributions of the present thesis (Artefacts~2 and~3, PI-ABMIL and FC-MIL); the others---summarised in Table~\ref{tab:dsr_mapping}---are the per-sample fuzzy margin loss (Artefact~1, FuzzyArcLoss~V2), the empirical three-mechanism taxonomy of H\&E--mutation signal location, the ontology-grounded explanation layer (NCIt+MONDO with PMID provenance), and the LCHAI~v2.0 clinical prototype that integrates them.
 
 Table~\ref{tab:literature_comparison} summarises the quantitative landscape.
 
@@ -1236,15 +1347,41 @@ Fuzzy set theory, fuzzy membership functions, and the Choquet integral provide t
 The complete family of eight fuzzy loss variants (V1, three V2 configurations, two V3 configurations, FuzzyCosFace~V2, and FuzzySphereFace~V2) was formalised.
 The \texttt{FuzzyMeasure} module parameterisation was presented, with an explicit mapping to where each Choquet component appears in the thesis pipeline and in the LCHAI~v2.0 interface (Table~\ref{tab:choquet_pipeline_map}).
 
-\textbf{Explainability.}
-Two complementary Shapley-value--based mechanisms were distinguished (Table~\ref{tab:shapley_distinction}): SHAP/DeepSHAP as a \emph{post-hoc} method applied externally to trained models (decomposing predictions into embedding vs.\ pattern contributions), and the Choquet Shapley values as \emph{intrinsic} parameters of the learned fuzzy measure in Artifact~3 (revealing which growth patterns the model globally associates with each mutation).
+\textbf{Interpretability and explainability.}
+Following Doshi-Velez and Kim~\cite{doshivelez2017rigorous},
+Lipton~\cite{lipton2018mythos}, and Rudin~\cite{rudin2019stop},
+the two terms were formally distinguished
+(Section~\ref{sec:bg:xai:definitions}): \emph{interpretability} as
+a structural property of the model itself (instrumented in this
+thesis through a six-level framework, Section~\ref{sec:bg:dual_interpretability}),
+and \emph{explainability} as the post-hoc production of human-readable
+rationales (delivered through the LCHAI~v2.0 LLM agent grounded in
+the NCIt+MONDO knowledge graph).
+Within the interpretability layer, two complementary
+Shapley-value--based mechanisms were distinguished
+(Table~\ref{tab:shapley_distinction}): SHAP/DeepSHAP as a \emph{post-hoc}
+method applied externally to trained models (decomposing predictions
+into embedding vs.\ pattern contributions), and the Choquet Shapley
+values as \emph{intrinsic} parameters of the learned fuzzy measure
+in Artifact~3 (revealing which growth patterns the model globally
+associates with each mutation).
 Attention maps provide spatial localisation of informative tile regions.
 
 \textbf{Related work.}
 The literature on H\&E-based mutation prediction was surveyed, from pioneering end-to-end approaches (Coudray~et~al., 2018) through MIL-based methods (CLAM, TransMIL) to large-scale proprietary studies (DeepGEM, EAGLE) and foundation models (CHIEF, GigaPath).
-This thesis is positioned as a methodological contribution---interpretable, domain-knowledge--informed, and reproducible from public data---rather than a scale competition.
+Against this landscape, the thesis is positioned not as a scale
+competition but as a multi-pronged contribution
+(Table~\ref{tab:dsr_mapping}, Row~4): \emph{methodological}
+(three fuzzy artefacts---FuzzyArcLoss~V2, PI-ABMIL, FC-MIL---%
+interpretable and reproducible from public data),
+\emph{analytical} (an empirical three-mechanism taxonomy of
+H\&E--mutation signal location across the six TCGA-LUAD targets,
+established in Chapter~\ref{ch:evaluation}), \emph{explanatory}
+(an ontology-grounded knowledge-graph layer with PMID provenance,
+RQ6--RQ7), and \emph{integrative} (the LCHAI~v2.0 clinical
+prototype, DSR instantiation).
 
 \textbf{Methodology.}
-Design Science Research---and its fuzzy extension~\cite{meier2009fuzzy}---provides the research framework that structures the creation and evaluation of the three proposed artifacts, complemented by the ontology explanation layer and the LCHAI~v2.0 clinical prototype as the DSR instantiation.
+Design Science Research---and its fuzzy extension~\cite{meier2009fuzzy}---provides the research framework that structures the creation and evaluation of the contributions enumerated above, with the seven Hevner guidelines mapped to chapters in Table~\ref{tab:dsr_mapping}.
 
 The following chapter introduces the cancer use case in detail, including the histological pattern definitions, oncogenic driver mutations, gene-specific clinical associations, the clinical datasets, and the research questions that the implementation and evaluation chapters will address.

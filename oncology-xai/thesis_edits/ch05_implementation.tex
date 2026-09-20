@@ -1,7 +1,7 @@
 % ============================================================================
 % Chapter 5: Implementation
-% Thesis: Fuzzy Margin Representation Learning for Explainable
-%         Architecture–Genotype Associations in Lung Adenocarcinoma
+% Thesis: Pattern-Informed Fuzzy Deep Learning for Interpretable
+%         Genotype–Phenotype Inference in Lung Adenocarcinoma
 %         under Data Scarcity
 % Author: Servio F. Lima
 % University of Fribourg
@@ -19,24 +19,30 @@ Section~\ref{sec:impl:lchai} presents the LCHAI system prototype, and Section~\r
 
 \begin{figure}[ht!]
     \centering
-    \includegraphics[width=0.92\textwidth]{chapters/figures/implementation_pipeline.png}
+    \includegraphics[width=\textwidth]{chapters/figures/implementation_pipeline.png}
     \caption[Implementation pipeline]{%
         The three-stage implementation pipeline.
-        \textbf{Stage~1} acquires 687 TCGA-LUAD whole-slide images
-        and mutation labels from the GDC, performs tissue detection
-        and tiling ($\sim$17 million tiles).
-        \textbf{Stage~2} fine-tunes CTransPath with FuzzyArcLoss~V2
-        on the Zenodo dataset (637 tiles, 6 classes), then extracts
-        512-d embeddings and 6-d pattern probabilities for every tile
-        across 6$\times$ H100 GPUs ($\sim$3--4\,h).
-        \textbf{Stage~3} constructs tile-level representations for
-        six experimental conditions, trains 180 models (6 genes
-        $\times$ 6 conditions $\times$ 5 folds), and evaluates with
-        AUROC, SHAP attributions, and Choquet Shapley values.
-        The LCHAI~v2.0 prototype integrates all outputs into a
-        clinical decision support interface.
-        Cylinder nodes indicate persistent storage; grey annotations
-        show tools and approximate computation times.}
+        \textbf{Stage~1} (blue) acquires 687 TCGA-LUAD whole-slide
+        images and mutation labels from the GDC, performs tissue
+        detection, tiling ($\sim$17 million tiles), and data
+        verification (687$\times$6 label matrix, no missing values).
+        \textbf{Stage~2} (amber) fine-tunes CTransPath with
+        FuzzyArcLoss~V2 (Optuna: $s{=}46.1$, $m{=}0.518$,
+        $\tau{=}0.448$) on the Zenodo dataset (637 tiles, 6 classes),
+        benchmarks 18 losses (15 runs each), and extracts 512-d
+        embeddings $+$ 6-d pattern probabilities across
+        6$\times$H100 GPUs ($\sim$3--4\,h; $\sim$20\,GB storage).
+        \textbf{Stage~3} (red) trains 180 models across six
+        experimental conditions---including the floor baseline B1
+        (XGBoost, 7-d) and ceiling baseline B2 (ABMIL embeddings,
+        512-d)---and evaluates with 5-fold patient-stratified CV,
+        AUROC, AUPRC, SHAP decomposition, and Choquet Shapley values.
+        \textbf{LCHAI~v2.0} (purple) integrates all outputs into a
+        clinical prototype with six-level interpretability (attention
+        maps, pattern overlay, SHAP, Choquet Shapley, per-slide
+        ablation, fuzzy linguistic labels), a knowledge graph with
+        PubMed citations, confidence labels, active learning, and
+        LLM-generated explanations.}
     \label{fig:implementation_pipeline}
 \end{figure}
 % ============================================================================
@@ -110,7 +116,9 @@ The implementation is structured into four logical modules:
 
     \item \textbf{Mutation prediction benchmark.}
     The six-condition, six-gene, five-fold cross-validation benchmark,
-    including XGBoost baseline, ABMIL variants, and Fuzzy Choquet MIL.
+    including the XGBoost floor baseline (B1), ABMIL ceiling baseline
+    (B2), ABMIL variants (B3, PI-ABMIL, A), and Fuzzy Choquet MIL
+    (FC-MIL).
     Ground-truth mutation labels are derived from TCGA Masked Somatic
     Mutation MAF files (Section~\ref{sec:impl:data:maf}).
 
@@ -409,6 +417,11 @@ Prior angular margin methods (ArcFace, CosFace, SphereFace) apply a
 uniform penalty; FuzzyArcLoss~V2 adapts the margin based on
 classification confidence, benefiting minority classes at ambiguous
 morphological boundaries.
+The empirical evaluation of this artefact---5-fold cross-validated
+benchmark of 18 loss-function variants and the per-class analysis of
+the boundary-dependent benefit---is reported in
+Section~\ref{sec:eval:pattern:kfold} and answered as RQ1 in
+Section~\ref{sec:eval:rq1}.
 
 \subsection{Network Architecture}
 \label{sec:impl:pattern:arch}
@@ -461,29 +474,140 @@ Table~\ref{tab:loss_variants} lists the complete set.
 \textbf{\#} & \textbf{Loss function} & \textbf{Key parameters} \\
 \hline
 1  & Softmax Cross-Entropy & --- \\
-2  & Label Smoothing CE & $\epsilon = 0.1$ \\
-3  & Focal Loss & $\gamma = 2$, $\alpha = $ class-balanced \\
-4  & ArcFace & $s = 30$, $m = 0.5$ \\
-5  & CosFace & $s = 30$, $m = 0.35$ \\
-6  & SphereFace & $s = 30$, $m = 4$ (integer) \\
-7  & AdaptiveFace & $s = 30$, $m = 0.5$ \\
-8  & Combined Margin (Arc+Cos) & $s = 30$, $m_1 = 0.3$, $m_2 = 0.2$ \\
-9  & FuzzyArcLoss V1 & $s = 30$, $m = 0.5$, linear $\mu$ \\
+2  & Label Smoothing CE~\cite{szegedy2016rethinking} & $\epsilon = 0.1$ \\
+3  & Focal Loss~\cite{lin2017focal} & $\gamma = 2$, $\alpha = $ class-balanced \\
+4  & ArcFace~\cite{deng2019arcface} & $s = 30$, $m = 0.5$ \\
+5  & CosFace~\cite{wang2018cosface} & $s = 30$, $m = 0.35$ \\
+6  & SphereFace~\cite{liu2017sphereface} & $s = 30$, $m = 4$ (integer) \\
+7  & AdaptiveFace~\cite{liu2019adaptiveface} & $s = 30$, $m = 0.5$ \\
+8  & Combined Margin (Arc+Cos)~\cite{deng2019arcface} & $s = 30$, $m_1 = 0.3$, $m_2 = 0.2$ \\
+9  & FuzzyArcLoss V1~\cite{lima2025fuzzy} & $s = 30$, $m = 0.5$, linear $\mu$ \\
 10 & FuzzyArcLoss V2 (default) & $s = 30$, $m = 0.5$, $\tau = 0.5$ \\
-11 & FuzzyArcLoss V2 (Optuna) & $s = 46.1$, $m = 0.518$, $\tau = 0.448$ \\
+11 & FuzzyArcLoss V2 (Optuna~\cite{akiba2019optuna}) & $s = 46.1$, $m = 0.518$, $\tau = 0.448$ \\
 12 & FuzzyArcLoss V2 ClassParams & Per-class $m_k$, $\tau_k$ \\
 13 & FuzzyArcLoss V3 SubCenters & $C = 4$, $s = 30$, $m = 0.5$ \\
 14 & FuzzyArcLoss V3 (Optuna) & $C = 4$, Optuna-tuned \\
 15 & FuzzyCosFace V2 & Cosine margin with fuzzy $\mu$ \\
 16 & FuzzySphereFace V2 & Multiplicative margin with fuzzy $\mu$ \\
 17 & Triplet + Angular & Combined metric learning \\
-18 & Center Loss + Softmax & Center loss $\lambda = 0.003$ \\
+18 & Center Loss~\cite{wen2016centerloss} + Softmax & $\lambda = 0.003$ \\
 \hline
 \end{tabular}
 \end{table}
 
 All 18 variants share the same backbone architecture, projection head, training protocol, and augmentation pipeline, differing only in the loss computation module.
 This design ensures that performance differences are attributable to the loss function alone.
+
+\subsection{Optuna Search Configuration}
+\label{sec:impl:pattern:optuna_config}
+
+Section~\ref{sec:meth:pattern:optuna} fixes the search space (the
+three FuzzyArcLoss~V2 hyperparameters $s$, $m$, $\tau$) and the
+validation objective (avgPR, Equation~\ref{eq:avgpr_optuna}).
+The concrete search-loop configuration used to realise that design is:
+\begin{itemize}
+    \item \textbf{Sampler.} Tree-structured Parzen Estimator
+    (TPE)~\cite{bergstra2011tpe} as implemented in
+    Optuna~\cite{akiba2019optuna}, with default kernel-density
+    settings.
+    \item \textbf{Search ranges.}
+    $s \in [10, 64]$ (uniform); $m \in [0.1, 1.0]$ (uniform);
+    $\tau \in [0.1, 0.8]$ (uniform).
+    The lower bound on $s$ is set to the lowest value that still
+    sharpens the softmax beyond a uniform output; the upper bound
+    keeps the angular logits within fp32 range.
+    \item \textbf{Trial budget.} 50 trials.
+    \item \textbf{Per-trial schedule.} Each trial trains for 60 epochs
+    rather than the full 120-epoch protocol; this yields a 2$\times$
+    speed-up in wall-clock time per trial without altering the
+    ranking of the candidates, which we verified by re-training the
+    top-3 trials at the full 120-epoch budget.
+    \item \textbf{Pruner.} \texttt{MedianPruner} with a 20-epoch
+    warmup: a trial is terminated early if its avgPR after epoch~20
+    is below the median avgPR of the completed trials at the same
+    epoch.
+\end{itemize}
+The optimum identified by this configuration is
+$(s^*, m^*, \tau^*) = (46.1, 0.518, 0.448)$
+(Equation~\ref{eq:optuna_result}).
+The 50-trial trajectory is visualised in
+Figure~\ref{fig:optuna_search}.
+
+\subsection{Training Protocol}
+\label{sec:impl:pattern:training_protocol}
+
+The methodological decisions for the pattern classifier's training
+protocol are stated in Section~\ref{sec:meth:pattern:training}.
+The concrete training schedule that realises them is:
+\begin{itemize}
+    \item \textbf{Optimiser:} AdamW~\cite{loshchilov2019adamw} with
+    weight decay $10^{-4}$.
+    \item \textbf{Learning rate schedule:} Initial learning rate
+    $10^{-4}$, with linear warmup for 5 epochs followed by cosine
+    annealing~\cite{loshchilov2017sgdr} to $10^{-6}$.
+    \item \textbf{Warmup formula:}
+    $\text{lr}_{\text{epoch}} = \text{lr}_{\text{base}}
+    \cdot (\text{epoch} + 1) / \text{warmup\_epochs}$.
+    \item \textbf{Epochs:} 120 (empirically reduced from an initial
+    150 to prevent overfitting on the 69-tile/$\sim$55-tile-per-class
+    ANORAK dataset).
+    \item \textbf{Precision:} fp32. Mixed-precision (fp16) was found
+    to corrupt angular margin gradients; see
+    Section~\ref{sec:uc:pipeline_fixes}.
+    \item \textbf{Batch size:} 32 with \texttt{drop\_last=True} and
+    plain shuffle (no \texttt{WeightedRandomSampler}).
+    \item \textbf{Augmentation:} Random horizontal/vertical flip,
+    random rotation ($\pm 90^{\circ}$), colour jitter (brightness,
+    contrast, saturation, hue), Gaussian blur. MixUp and CutMix are
+    explicitly disabled because they would interpolate the angular
+    margin targets and break the FuzzyArcLoss~V2 modulation.
+    \item \textbf{Combined loss weighting.}
+    $\mathcal{L} = \alpha\,\mathcal{L}_{\text{CE-smooth}} + (1-\alpha)\,
+    \mathcal{L}_{\text{focal}}$ with $\alpha = 0.6$,
+    label-smoothing $\epsilon = 0.1$, focal $\gamma = 2.0$.
+    \item \textbf{Gradient clipping:} disabled.
+    \item \textbf{Model selection:} The checkpoint with the highest
+    avgPR on the held-out fold is selected.
+    \item \textbf{Evaluation logits:} Margin-free logits
+    ($s\cos\theta_k$, without the margin term) are used for all
+    evaluation metrics.
+\end{itemize}
+
+Table~\ref{tab:hyper_pattern_classifier} summarises the full
+implementation-level training configuration.
+
+\begin{table}[ht!]
+\centering
+\small
+\caption{Implementation-level training hyperparameters of the
+FuzzyArcLoss~V2 pattern classifier.
+Methodological decisions ($s$, $m$, $\tau$, fp32, 4-channel input,
+combined-loss design) are reported in
+Table~\ref{tab:hyper_fuzzyarc2}.}
+\label{tab:hyper_pattern_classifier}
+\begin{tabular}{l l c}
+\hline
+\textbf{Parameter} & \textbf{Description} & \textbf{Value} \\
+\hline
+Optimiser               & Decoupled-WD~\cite{loshchilov2019adamw}             & AdamW \\
+Initial learning rate   &                                                     & 1e-4 \\
+Weight decay            &                                                     & 1e-4 \\
+Scheduler               & Cosine annealing~\cite{loshchilov2017sgdr} + warmup & yes \\
+Warmup epochs           &                                                     & 5 \\
+Final learning rate     & Cosine floor                                        & 1e-6 \\
+Epochs                  & Empirically reduced from 150                        & 120 \\
+Batch size              & With \texttt{drop\_last=True}                       & 32 \\
+Combined-loss weight    & $\alpha$ in $\alpha\mathcal{L}_{\text{CE-smooth}} + (1-\alpha)\mathcal{L}_{\text{focal}}$ & 0.6 \\
+Label-smoothing         & $\epsilon$~\cite{szegedy2016rethinking}             & 0.1 \\
+Focal loss              & $\gamma$~\cite{lin2017focal}                        & 2.0 \\
+MixUp / CutMix          & Disabled (would interpolate angular targets)        & off \\
+Gradient clipping       &                                                     & off \\
+Model selection         & avgPR (Eq.~\ref{eq:avgpr_optuna}) on held-out fold  & best ckpt \\
+Evaluation logits       & Margin-free $s\cos\theta_k$                         & yes \\
+Random seed             &                                                     & 42 \\
+\hline
+\end{tabular}
+\end{table}
 
 \subsection{Embedding Extraction Pipeline}
 \label{sec:impl:embedding_extraction}
@@ -522,11 +646,7 @@ compute-intensive stage:
 \end{enumerate}
 
 \textbf{Computational cost.}
-Extracting embeddings for all 687 LUAD slides ($\sim$17 million tiles) % <-- CHANGED: 505→687, 12.6M→17M
-required approximately 3--4 hours on 6$\times$ H100 GPUs. % <-- CHANGED: 2–3→3–4 h (more tiles)
-The resulting data occupies approximately 20\,GB (embeddings in float16) % <-- CHANGED: 15→~20 GB
-plus 400\,MB (pattern probabilities in float32). % <-- CHANGED: 300→~400 MB
-
+Extracting embeddings for all 687 LUAD slides ($\sim$17 million tiles)required approximately 3--4 hours on 6$\times$ H100 GPUs.The resulting data occupies approximately 20\,GB (embeddings in float16)plus 400\,MB (pattern probabilities in float32).
 
 \subsection{Data Completeness Verification}
 \label{sec:impl:data_completeness}
@@ -551,6 +671,10 @@ alone.
 This fusion enables the six-level interpretability framework
 (Section~\ref{sec:impl:lchai:ui:analysis}) that distinguishes
 \emph{what} the model attends to from \emph{whether} it helps.
+The empirical evaluation of PI-ABMIL on the 6-condition,
+6-gene, 5-fold benchmark is reported in
+Section~\ref{sec:eval:mutation:luad} and answered as RQ2 in
+Section~\ref{sec:eval:rq2}.
 
 \subsection{Benchmark Input Preparation}
 \label{sec:impl:mutation:prep}
@@ -559,17 +683,14 @@ The benchmark input preparation module performs
 the following steps:
 
 \begin{enumerate}
-    \item \textbf{Parse MAF files} for LUAD and LUSC, extracting the binary
+    \item \textbf{Parse the LUAD MAF file} to extract the binary
     mutation matrix for the six target genes.
-    \item \textbf{Classify slides} by cancer type using the TCGA barcode
-    (cross-referencing with the LUAD and LUSC MAFs).
-    \item \textbf{Filter to LUAD-only:} 687 slides matched to the LUAD MAF; % <-- CHANGED: 505→687
-    LUSC slides were excluded at this stage
-    (the mixed-cohort experiment with 150 LUSC slides was an earlier
-    exploratory analysis documented in Section~\ref{sec:uc:tcga:luad_only}). % <-- CHANGED: clarified
+    \item \textbf{Match slides} to the LUAD cohort using the TCGA
+    barcode, yielding 687 LUAD slides
+    (Section~\ref{sec:uc:tcga:luad_only}).
     \item \textbf{Build a slide-level data structure}
     containing, for each slide: the case ID, the patient ID (first 12
-    characters of the TCGA barcode), the path to the embeddings file, % <-- NEW: patient ID added
+    characters of the TCGA barcode), the path to the embeddings file,
     the path to the pattern probabilities file, and the mutation labels
     for all six genes.
 \end{enumerate}
@@ -597,7 +718,22 @@ A separate model instance is created and trained for each (condition, gene) pair
 Each ABMIL model is trained with the following configuration:
 
 \begin{itemize}
-    \item \textbf{Optimiser:} Adam with learning rate $2 \times 10^{-4}$ and weight decay $10^{-5}$.
+    \item \textbf{Optimiser:} Adam with learning rate
+    $2 \times 10^{-4}$ and weight decay $10^{-5}$.
+    \emph{Note on optimiser choice across artefacts.}
+    The pattern classifier (Artefact~1) and the FC-MIL aggregator
+    (Artefact~3, Table~\ref{tab:hyper_choquet2}) use AdamW, whose
+    decoupled weight-decay is well-known to interact better with the
+    angular margin of FuzzyArcLoss~V2 and with the soft monotonicity
+    penalty of the Choquet branch (Equation~\ref{eq:mono_penalty}).
+    The vanilla ABMIL aggregator (Artefact~2; conditions B2, B3,
+    PI-ABMIL, A) is intentionally kept on Adam to match the optimiser
+    used in the original ABMIL benchmark of
+    Ilse et~al.~\cite{ilse2018attention} and to ensure that any
+    measured advantage of the pattern channel is attributable to the
+    representation, not to a more aggressive regulariser.
+    This separation is a deliberate methodological choice rather than
+    an oversight.
     \item \textbf{Learning rate schedule:} Cosine annealing with warm restarts~\cite{loshchilov2017sgdr} (restart period $T_0 = 10$ epochs).
     \item \textbf{Epochs:} 50 with early stopping (patience = 15 epochs, monitored on validation AUROC).
     \item \textbf{Batch size:} 1 slide per batch (standard in MIL, as each slide has a variable number of tiles).
@@ -622,21 +758,21 @@ configuration for the ABMIL mutation prediction benchmark.
 \hline
 \textbf{Parameter} & \textbf{Description} & \textbf{Value} \\
 \hline
-Embedding dim.      & CTransPath projection output        & 512 \\
-Pattern dim.        & FuzzyArcLoss~V2 soft probabilities  & 6 \\
-PI-ABMIL dim.       & Total input (condition PI-ABMIL, ours)  & 518 \\
-Attention hidden    & Gated attention hidden size         & 256 \\
+Embedding dim.      & CTransPath~\cite{wang2022ctranspath} projection & 512 \\
+Pattern dim.        & FuzzyArcLoss~V2~\cite{lima2025fuzzy} soft probs & 6 \\
+PI-ABMIL dim.       & Total input (PI-ABMIL, ours)        & 518 \\
+Attention hidden    & Gated attention~\cite{ilse2018attention} hidden & 256 \\
 Attention dim       & $\mathbf{w}$, $\mathbf{V}$, $\mathbf{U}$ size & 128 \\
-Dropout             & After attention and encoder         & 0.25 \\
+Dropout~\cite{srivastava2014dropout} & After attention and encoder & 0.25 \\
 Learning rate       &                                     & 2e-4 \\
 Weight decay        &                                     & 1e-5 \\
 Epochs              & Maximum training epochs             & 50 \\
 Early stopping      & Patience (validation AUROC)         & 15 \\
 Optimiser           &                                     & Adam \\
-LR scheduler        & Cosine annealing (warm restarts) $T_0$   & 10 epochs \\
+LR scheduler        & Cosine annealing~\cite{loshchilov2017sgdr} $T_0$ & 10 epochs \\
 Loss function       & Binary cross-entropy with logits    & Sigmoid + CE \\
-Batch size          & Slides per batch                    & 1 \\
-Gradient accumulation & Steps before optimiser update    & 4 \\
+Batch size          & Slides per batch (standard MIL)     & 1 \\
+Gradient accumulation & Steps before optimiser update     & 4 \\
 Max tiles per slide & Subsampled during training          & 4{,}096 \\
 Folds               & Patient-stratified $K$-fold         & 5 \\
 Seed                &                                     & 42 \\
@@ -656,16 +792,16 @@ The benchmark runner orchestrates the complete evaluation:
     \item \textbf{Middle loop:} For each experimental condition
     $c \in \{B1, B2, B3, \text{PI-ABMIL}, A, \text{FC-MIL}\}$ (6 conditions).
     \item \textbf{Inner loop:} For each fold $k \in \{1, \ldots, 5\}$
-    (5-fold patient-stratified CV). % <-- CHANGED: added "patient-stratified"
+    (5-fold patient-stratified CV).
     \begin{enumerate}
         \item Split the 668 patients into train ($\sim$534) and test
-        ($\sim$134), using stratified $K$-fold splitting on % <-- CHANGED: 505→668 patients, 404→534, 101→134
+        ($\sim$134), using stratified $K$-fold splitting on
         the binary mutation label for gene $g$.
         All slides from a given patient are assigned to the same
-        fold to prevent data leakage. % <-- NEW: explains patient-level constraint
+        fold to prevent data leakage.
         This yields approximately 549 training slides and 138 test
         slides per fold (exact counts vary by fold due to the
-        19 multi-slide patients). % <-- NEW: slide counts clarified
+        19 multi-slide patients).
         \item Construct the tile-level representations $\mathbf{h}_i$
         according to the condition
         (Table~\ref{tab:tile_representations}).
@@ -709,9 +845,12 @@ that establishes the minimum performance achievable from pattern
 information alone via simple feature engineering, without deep
 learning or attention mechanisms.
 B1 operates on slide-level features rather than tile-level
-representations; the primary experimental baseline is B2
-(Section~\ref{sec:meth:mutation:representations}), against which all
-pattern-informed methods are compared.
+representations.
+The ceiling baseline is B2 (ABMIL on embeddings,
+Section~\ref{sec:meth:mutation:representations}), which uses the
+same architecture as the proposed methods without pattern
+information; performance above B2 demonstrates the incremental
+value of domain knowledge.
 For each slide, the seven features (six pattern fractions + entropy) are computed from the pre-extracted pattern probabilities:
 
 \begin{verbatim}
@@ -732,7 +871,8 @@ hyperparameters.
 \begin{table}[ht!]
 \centering
 \small
-\caption{Hyperparameters for the XGBoost baseline (condition~B1).}
+\caption{Hyperparameters for the XGBoost~\cite{chen2016xgboost} floor
+baseline (condition~B1).}
 \label{tab:hyper_xgboost2}
 \begin{tabular}{l l c}
 \hline
@@ -767,6 +907,11 @@ over classifier outputs~\cite{bhowal2021fuzzybach,mccurley2023mici}.
 The 21-parameter fuzzy measure provides intrinsic interpretability
 through Shapley values and interaction indices that no attention-based
 method can offer.
+The empirical evaluation of FC-MIL---including the constructive
+lepidic$\times$solid interaction on KRAS and the architectural
+negative control on RBM10---is reported in
+Section~\ref{sec:eval:interp:choquet} and answered as RQ3 in
+Section~\ref{sec:eval:rq3}.
 
 \subsection{Choquet Integral Module}
 \label{sec:impl:choquet:module}
@@ -777,7 +922,7 @@ The key implementation challenge is that the Choquet integral requires sorting t
 The implementation follows a three-step procedure for each input vector $\mathbf{x} \in \mathbb{R}^6$:
 
 \begin{enumerate}
-    \item \textbf{Sort:} Obtain the permutation $\sigma$ such that $x_{\sigma(1)} \leq x_{\sigma(2)} \leq \ldots \leq x_{\sigma(6)}$. Implemented using \texttt{torch.sort}, which provides gradients through the sorted values.
+    \item \textbf{Sort:} Obtain the permutation $\sigma$ such that $x_{\sigma(1)} \leq x_{\sigma(2)} \leq \ldots \leq x_{\sigma(6)}$. Implemented using PyTorch's differentiable sort, which provides gradients through the sorted values.
 
     \item \textbf{Evaluate the fuzzy measure:} For each $i = 1, \ldots, 6$, compute $g(A_i)$ where $A_i = \{\sigma(i), \sigma(i+1), \ldots, \sigma(6)\}$ is the set of indices with values $\geq x_{\sigma(i)}$. Using the 2-additive parameterisation:
     \begin{equation*}
@@ -785,11 +930,24 @@ The implementation follows a three-step procedure for each input vector $\mathbf
     \end{equation*}
     This is computed as a sum over the Shapley values and interaction indices for the elements in $A_i$.
 
-    \item \textbf{Integrate:} Compute the Choquet integral as:
-    \begin{equation*}
-        \mathcal{C}_g(\mathbf{x}) = \sum_{i=1}^{6} (x_{\sigma(i)} - x_{\sigma(i-1)}) \cdot g(A_i),
-    \end{equation*}
+    \item \textbf{Integrate (vector form).}
+    Rather than collapsing the integral into a scalar, the module
+    returns the six rank-ordered differential terms as a vector
+    $\mathbf{c}_s \in \mathbb{R}^6$:
+    \begin{equation}
+    \label{eq:choquet_integral_impl}
+        c_{s,(i)} = (x_{\sigma(i)} - x_{\sigma(i-1)}) \cdot g(A_i),
+        \quad i = 1, \ldots, 6,
+    \end{equation}
     with $x_{\sigma(0)} = 0$.
+    The classical scalar Choquet integral is recovered as
+    $\mathcal{C}_g(\mathbf{x}) = \mathbf{1}^\top \mathbf{c}_s$.
+    Returning the six-component decomposition (rather than its sum)
+    preserves per-rank pattern identity for concatenation with the
+    embedding pathway in
+    Equation~\ref{eq:choquet_merge}, and is consistent with the
+    methodological definition of $\mathbf{c}_s$ in
+    Section~\ref{sec:meth:choquet:architecture}.
 \end{enumerate}
 
 All operations are differentiable, and gradients flow back through the Shapley values $\psi_k$ (unconstrained parameters before softmax) and the interaction indices $I_{jk}$.
@@ -797,14 +955,18 @@ All operations are differentiable, and gradients flow back through the Shapley v
 \subsection{Fuzzy Measure Parameterisation}
 \label{sec:impl:choquet:measure}
 
-The Shapley values are parameterised via softmax to ensure non-negativity and normalisation:
-
-The fuzzy measure stores 6 singleton importance values (Shapley
-parameters) and 15 pairwise interaction weights as unconstrained
-learnable parameters.
-At inference time, the Shapley values are normalised via softmax,
-and the interaction indices are regularised toward zero during
-training (Equation~\ref{eq:interaction_reg}).
+The 21-parameter fuzzy measure (6 Shapley + 15 interaction;
+formal definition in Equation~\ref{eq:fuzzy_measure_method}) is
+realised as two PyTorch \texttt{Parameter} tensors:
+\texttt{psi} of shape $(6,)$ holding unconstrained Shapley logits
+$\psi_k$ that are passed through softmax at each forward pass
+(Equation~\ref{eq:shapley_param}, enforcing non-negativity and
+normalisation $\sum_k \phi_k = 1$), and \texttt{I} of shape $(15,)$
+holding the unconstrained interaction indices that enter the loss
+through the L$_1$ regulariser of Equation~\ref{eq:interaction_reg}.
+This implementation choice---storing $\psi_k$ rather than $\phi_k$
+directly---decouples the simplex constraint from the optimiser, so
+that AdamW can update the parameters without projection.
 
 \subsection{Monotonicity Constraint}
 \label{sec:impl:choquet:monotonicity}
@@ -833,29 +995,29 @@ the full dual-pathway model has $\sim$266{,}000.}
 \hline
 \textbf{Parameter} & \textbf{Description} & \textbf{Value} \\
 \hline
-\multicolumn{3}{l}{\textit{Fuzzy measure (interpretable component --- 21 params)}} \\
+\multicolumn{3}{l}{\textit{Fuzzy measure~\cite{grabisch2009aggregation} (interpretable --- 21 params)}} \\
 Number of criteria  & Histological patterns (input dim)   & 6 \\
-Interaction order   & 2-additive approximation            & 2 \\
-Shapley parameters  & Learnable per-pattern importance    & 6 \\
-Interaction params  & Learnable pairwise interactions     & 15 \\
-Interaction reg.    & L1 on interaction terms $\lambda_I$ & 0.01 \\
-Monotonicity reg.   & Soft penalty weight $\lambda_M$     & 0.1 \\
+Interaction order   & 2-additive~\cite{grabisch1997kapprox} & 2 \\
+Shapley params~\cite{shapley1953value} & Per-pattern importance & 6 \\
+Interaction params  & Pairwise interactions               & 15 \\
+Interaction reg.    & L1 on $I_{jk}$, $\lambda_I$         & 0.01 \\
+Monotonicity reg.   & Soft penalty, $\lambda_M$            & 0.1 \\
 Choquet scale       & Learnable scale parameter           & 10.0 (init) \\
 \hline
-\multicolumn{3}{l}{\textit{Embedding pathway (shared with ABMIL)}} \\
+\multicolumn{3}{l}{\textit{Embedding pathway (shared with ABMIL~\cite{ilse2018attention})}} \\
 Encoder             & Linear($512 \to 256$) + LayerNorm   & 131{,}840 params \\
-Gated attention     & $\mathbf{V}$, $\mathbf{U}$: $256 \to 128$; $\mathbf{w}$: $128 \to 1$ & 65{,}920 params \\
+Gated attention~\cite{lu2021data} & $\mathbf{V}$, $\mathbf{U}$: $256 \to 128$; $\mathbf{w}$: $128 \to 1$ & 65{,}920 params \\
 \hline
 \multicolumn{3}{l}{\textit{Merge and classifier}} \\
 Projection          & Linear($262 \to 256$) + LayerNorm   & 67{,}840 params \\
 Classifier          & Linear($256 \to 1$)                 & 257 params \\
 \hline
 \multicolumn{3}{l}{\textit{Training configuration}} \\
-Dropout             &                                     & 0.25 \\
+Dropout~\cite{srivastava2014dropout} &                    & 0.25 \\
 Learning rate       &                                     & 2e-4 \\
 Epochs              & Maximum training epochs             & 50 \\
 Early stopping      & Patience (validation AUROC)         & 15 \\
-Optimiser           &                                     & AdamW \\
+Optimiser           & AdamW~\cite{loshchilov2019adamw}    & AdamW \\
 \hline
 \textbf{Total params} & \textbf{Full model}              & \textbf{$\sim$266{,}k} \\
 \hline
@@ -868,7 +1030,12 @@ Optimiser           &                                     & AdamW \\
 % ============================================================================
 
 LCHAI (Lung Cancer Histopathology AI) is an integrative clinical decision support prototype that demonstrates the translational potential of the three artifacts.
-Version~1.2, implemented as a web-based application, integrates the following components.
+Version~2.0, implemented as a web-based application, integrates the following components.
+The end-to-end demonstration of LCHAI~v2.0 on six representative
+TCGA-LUAD slides is reported in Section~\ref{sec:eval:lchai}, and
+the demonstration of the multi-level interpretability framework
+that LCHAI surfaces is answered as RQ4 in
+Section~\ref{sec:eval:rq4}.
 
 \subsection{System Architecture}
 \label{sec:impl:lchai:arch}
@@ -892,7 +1059,7 @@ LCHAI follows a modular architecture with four processing layers:
     numeric XAI outputs into calibrated intensity terms injected into
     LLM-generated explanations.
 
-    \item \textbf{Knowledge layer:} Links mutation predictions to a biomedical knowledge graph encoding gene $\to$ pathway $\to$ drug associations, and provides literature references through a DeepSearch module that queries PubMed and bioRxiv.
+    \item \textbf{Knowledge layer:} Links mutation predictions to a three-layer biomedical knowledge graph (Section~\ref{sec:impl:ontology}) encoding pattern $\to$ gene $\to$ treatment associations with PMID provenance, and provides literature enrichment through the DeepSearch pipeline that queries PubMed, Semantic Scholar, and arXiv (Section~\ref{sec:impl:ontology:deepsearch}).
 \end{enumerate}
 
 \subsection{Clinical Slide Filtering: Pen Marker and Artefact Rejection}
@@ -946,6 +1113,27 @@ slides containing diverse pen colours and artefacts, with the
 requirement that $< 1\%$ of true tissue tiles are falsely rejected.
 On clinical slides, this stage rejects an additional 25--40\% of
 tile candidates beyond Stages~0 and~1.
+Figure~\ref{fig:pen_marker_filters} summarises the complete Stage~2
+filtering pipeline.
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/pen_marker_filters.png}
+\caption[Stage~2 pen marker and artefact rejection filters]{%
+    Stage~2 colour-specific pen marker and structural artefact
+    rejection filters, applied only to clinical hospital slides.
+    \textbf{Left (blue cluster):} six colour filters for blue pen,
+    red pen, green marker, olive/yellow marker, light blue/teal, and
+    India ink, each with pixel-percentage thresholds.
+    \textbf{Right (amber cluster):} structural filters for
+    straight-edge artefacts (barcodes, labels) and non-H\&E colour
+    cast.
+    Tiles failing any filter are rejected; passing tiles proceed as
+    accepted tissue.
+    Calibrated on 12 hospital slides with $< 1\%$ false tissue
+    rejection rate.}
+\label{fig:pen_marker_filters}
+\end{figure}
 
 Additionally, the pattern overlay is clipped to a per-pixel tissue
 mask derived from the original image (pixels with greyscale
@@ -956,13 +1144,23 @@ from bleeding onto white background regions.
 \subsection{Confidence Calibration}
 \label{sec:impl:lchai:confidence}
 
-LCHAI labels each mutation prediction as ``Conclusive'' or ``Inconclusive'' based on the per-class reliability estimated from the K-fold evaluation.
+LCHAI gates each mutation prediction by a
+\emph{per-gene cohort-level} reliability flag (a population-level
+verdict on the held-out folds, not a per-slide attribute) computed
+from the K-fold evaluation.
+The flag is derived \emph{from AUROC alone}: a gene is declared
+\emph{Conclusive} if and only if its 5-fold mean AUROC is at or above
+the discrimination floor, and \emph{Inconclusive} otherwise.
 The threshold is set at AUROC~$= 0.70$, following the widely adopted
 Hosmer--Lemeshow classification~\cite{hosmer2000applied} which defines
 AUROC in the range $[0.70, 0.80)$ as \emph{acceptable discrimination}
 (Table~5.2 in the original reference).
 Below 0.70, the model's ranking ability is considered insufficient
 for clinical decision support, even as a screening tool.
+A prevalence-aware extension that also incorporates AUPRC is
+identified as future work in Chapter~\ref{ch:discussion}; AUPRC is
+already reported in parallel in Chapter~\ref{ch:evaluation} but does
+not enter the gating criterion.
 
 \begin{itemize}
     \item \textbf{Conclusive} ($\geq 0.70$ AUROC in K-fold): TP53, EGFR. The prediction is presented with the confidence score.
@@ -989,13 +1187,23 @@ TCGA-99-8025-01A-01-TS1.
 
 The Analysis tab (Figure~\ref{fig:lchai_v2_images}) is the primary
 clinical dashboard, integrating image upload, mutation prediction results,
-and multi-level explainability into a single unified view.
+the six-level interpretability framework, and the
+ontology-grounded explanations into a single unified view.
 It is organised into gene sub-tabs sorted by descending $P(\text{mut})$,
 with the highest-probability mutation selected by default.
-Each gene sub-tab presents the following components:
+Each gene sub-tab presents the following components.
+Components~2--6 below materialise Levels~1--6 of the
+multi-level interpretability framework introduced in
+Section~\ref{sec:impl:lchai:arch}: the side-by-side overlays render
+Levels~1--2, the SHAP panel renders Level~3, the Choquet panel
+renders Level~4, the ablation panel renders Level~5, and the fuzzy
+linguistic labels woven through the explanation text render Level~6.
 
 \textbf{Component~1 --- Gene Header.}
-Displays the gene name, $P(\text{mut})$ as a percentage, a confidence label (\emph{Conclusive} if fold-AUROC~$\geq 0.70$, \emph{Inconclusive} otherwise), the prediction method (B2 embeddings, PI-ABMIL, or FC-MIL), and the model AUROC.
+Displays the gene name, $P(\text{mut})$ as a percentage, a confidence
+label (\emph{Conclusive} if the gene's 5-fold mean
+AUROC~$\geq 0.70$, \emph{Inconclusive} otherwise), the prediction
+method (B2 embeddings, PI-ABMIL, or FC-MIL), and the model AUROC.
 
 \textbf{Component~2 --- Side-by-Side Visual Overlays.}
 Two images are displayed simultaneously: (i)~a \emph{Pattern Overlay} showing the tile-level categorical colour map of the six growth patterns with a legend listing each pattern name and its composition percentage; and (ii)~an \emph{ABMIL Attention Heatmap} showing the spatial distribution of gated attention weights (top-200 tiles highlighted).
@@ -1076,9 +1284,11 @@ via numbered buttons:
     papillary, micropapillary, solid, cribriform), with adjustable
     opacity.  The overlay is clipped to tissue regions to prevent
     colour bleeding onto the glass background.
-    \item \textbf{Attention:} A heatmap of the ABMIL attention weights,
-    highlighting tiles the model considers most informative for
-    mutation prediction (blue = low attention, red = high attention).
+    \item \textbf{Attention:} A spatial attention map highlighting the
+    top-200 tiles by gated attention weight.
+    Attended tiles are filled with semi-transparent cyan, with intensity
+    proportional to the normalised attention weight; white contour lines
+    delineate the high-attention regions at multiple thresholds.
     \item \textbf{Combined:} A merged view superimposing both pattern
     colours and attention intensity, enabling simultaneous assessment
     of \emph{what} the model sees and \emph{where} it attends.
@@ -1102,8 +1312,8 @@ A colour legend at the bottom maps each pattern to its assigned colour.
     \textbf{Left}: Pattern overlay mode showing the tile-level categorical colour map
     with adjustable opacity (lepidic = blue, acinar = red, papillary = yellow,
     micropapillary = green, solid = dark red, cribriform = cyan).
-    \textbf{Right}: ABMIL attention map mode showing attention-weight heatmap
-    (blue = low, red = high attention).
+    \textbf{Right}: ABMIL attention map mode showing the top-200
+    attended tiles highlighted in cyan with white contour borders.
     Both overlays are clipped to tissue regions; the user can pan, zoom, and
     toggle between all four modes (Original, Patterns, Attention, Combined).}
 \label{fig:lchai_v2_viewer}
@@ -1123,12 +1333,23 @@ the six ANORAK classes and clicks ``Save \& Retrain.''
 The system submits the corrections to the \texttt{active-learning-service}
 microservice, which:
 \begin{enumerate}
-    \item Persists corrections in the database with provenance metadata.
-    \item Downloads the pre-computed tile embeddings
-    (\texttt{tile\_data.npz}) from object storage.
+    \item Persists corrections in the database with provenance metadata
+    (expert identity, timestamp, original vs corrected labels).
+    \item Downloads the pre-computed tile embeddings from object storage.
     \item Runs delta training: head-only fine-tuning of the
-    FuzzyArcLoss~V2 classification head for 10 epochs.
-    \item Saves the updated model as a new version in MinIO.
+    FuzzyArcLoss~V2 classification head for \textbf{10~epochs at
+    learning rate $10^{-5}$}, with a buffer of original tiles
+    (\texttt{buffer\_ratio = 0.3}, i.e.~30\,\% of the training batch
+    is drawn from the unmodified slide tiles to prevent catastrophic
+    forgetting of the classes the expert did \emph{not} correct).
+    The full run completes in $\sim$30~seconds on a single CPU core,
+    making the loop interactive and avoiding any GPU dependency at
+    point-of-care deployment.
+    \item Saves the updated model as a new immutable version in
+    object storage (MinIO/S3) using a timestamped naming convention
+    such as \texttt{model\_v2.0.1\_20260411.pth}.
+    The original checkpoint is never overwritten, enabling rollback
+    and full version audit.
     \item Re-runs the full inference pipeline with the corrected
     classifier, producing updated pattern overlays and mutation
     predictions.
@@ -1167,6 +1388,29 @@ workflow.
     mutation predictions are displayed.
     The feedback loop allows iterative refinement.}
 \label{fig:active_learning_workflow}
+\end{figure}
+
+Figure~\ref{fig:active_learning_delta} shows the corresponding model-side
+view of the same loop: which weights are frozen, which are updated, the
+buffer of original tiles that prevents catastrophic forgetting, and the
+versioned MinIO checkpoint that the microservice writes at the end of
+the run.
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=\textwidth]{chapters/figures/active_learning_delta_training.png}
+\caption[Delta training architecture for active learning]{%
+    Delta training architecture (model-side view of the same loop
+    illustrated in Figure~\ref{fig:active_learning_workflow}).
+    The CTransPath backbone and the $768 \to 512$ projection head are
+    \textbf{frozen}; only the FuzzyArcLoss~V2 cosine head
+    ($\mathbf{W} \in \mathbb{R}^{6 \times 512}$, $\sim$3{,}072
+    parameters) is fine-tuned on the corrected tile embeddings plus a
+    30\,\% buffer of original tiles drawn from the same slide.
+    The updated checkpoint is stored as a new immutable version in
+    MinIO/S3 with a timestamped filename, leaving the original
+    checkpoint intact for rollback and audit.}
+\label{fig:active_learning_delta}
 \end{figure}
 
 \subsubsection{Graph Tab}
@@ -1234,14 +1478,15 @@ Five fuzzy scales are defined:
 (5)~\textbf{ABMIL Attention Level} (Very Low to Very High Attention).
 All thresholds are configurable via the Admin~$\to$~Fuzzy Labels panel.
 
-\textbf{Anti-hallucination mechanism.}
-The fuzzy labels are computed deterministically by the system and injected
-verbatim into the LLM prompt with an explicit instruction:
-``Use these exact labels. Do NOT invent different intensity words.''
-Combined with the knowledge graph grounding of clinical associations,
-this creates a dual anti-hallucination layer: the KG constrains \emph{what}
-the LLM says (clinical facts), and the fuzzy labels constrain \emph{how}
-it says it (intensity and directionality).
+\textbf{Anti-hallucination mechanism (implementation of the design in
+Section~\ref{sec:meth:interp:fuzzy_labels}).}
+The fuzzy labels are computed deterministically by the backend and
+injected verbatim into the LLM prompt with an explicit instruction:
+``\emph{Use these exact labels.\ Do NOT invent different intensity
+words.}''
+Together with the KG grounding of clinical associations, this
+realises the dual anti-hallucination property analysed at the
+methodological level in Section~\ref{sec:meth:interp:fuzzy_labels}.
 
 \textbf{Fourth level of fuzzy logic.}
 This extends the coherent application of fuzzy logic to a fourth level:
@@ -1272,7 +1517,7 @@ linguistic labels on XAI outputs).
     absolute contribution of each histological pattern.
     Lepidic has the highest $|$SHAP$|$ value, followed by
     micropapillary and cribriform.
-    STK11 is associated with a variable, immune-cold microenvironment~\cite{skoulidis2018stk11immune}; the diffuse SHAP distribution across patterns
+    STK11 is associated with a variable, immune-cold microenvironment~\cite{skoulidis2015krassubsets,skoulidis2018stk11pd1}; the diffuse SHAP distribution across patterns
     is consistent with this characterisation.}
 \label{fig:lchai_v2_shap_decomp}
 \end{figure}
@@ -1363,6 +1608,12 @@ provides seven sub-tabs:
  
 This section describes the software implementation of the multi-ontology
 knowledge graph and explanation layer that addresses RQ6 and RQ7.
+The empirical evaluation of the knowledge-graph demo (NCIt/MONDO
+IRIs, provenance-tagged relations) is reported in
+Section~\ref{sec:eval:rq6}; the evaluation of the DeepSearch
+enrichment pipeline (50 candidate relations across PubMed,
+Semantic Scholar and arXiv with type-constraint validation) is
+reported in Section~\ref{sec:eval:rq7}.
  
 \subsection{Knowledge Graph Construction}
 \label{sec:impl:ontology:construction}
@@ -1383,10 +1634,14 @@ relationship types:
     \item \texttt{subtypeOf}: histological patterns as subtypes of
     adenocarcinoma (WHO 2021~\cite{who2021thoracic})
     \item \texttt{associatedWithMutation}: pattern--gene morphology-molecular
-    correlations, each backed by a specific PubMed citation
+    correlations, each backed by a specific PubMed citation;
+    where applicable, edges are cross-validated against
+    CIViC clinical-evidence assertions for the same
+    gene--diagnosis pair
     \item \texttt{treatedWith}: gene--drug therapeutic relations
     (OncoKB/FDA-approved)
-    \item \texttt{mutatedIn}: gene--diagnosis relations (COSMIC)
+    \item \texttt{mutatedIn}: gene--diagnosis relations
+    (COSMIC, with TCGA prevalence corroboration)
     \item \texttt{equivalentClass}: cross-ontology mapping
     (NCIt $\leftrightarrow$ MONDO)
 \end{itemize}
@@ -1397,22 +1652,35 @@ relationship types:
     Curated \texttt{associatedWithMutation} edges in the knowledge
     graph.  Each edge links a histological growth pattern to a driver
     gene based on published morphology--molecular correlation studies.
+    Percentages in the \emph{Evidence} column report co-occurrence
+    prevalence in the cited \emph{external literature cohorts}
+    (e.g., Suda~2017 Japanese cohort; Zhang~2022 Chinese cohort;
+    Rekhtman~2013 MSKCC cohort) used as \emph{a priori} provenance for
+    the curated edge; they are \emph{not} measured on the
+    TCGA-LUAD-687 cohort used for inference in this thesis.
     Patterns without established gene associations (acinar, cribriform)
     have no edges.}
 \label{tab:kg_curated_edges}
 \small
 \begin{tabular}{l l l l}
 \hline
-\textbf{Pattern} & \textbf{Gene} & \textbf{Evidence} & \textbf{PMID} \\
+\textbf{Pattern} & \textbf{Gene} & \textbf{Evidence} & \textbf{Reference} \\
 \hline
-Lepidic & EGFR & 90.5\% EGFR in lepidic (2017) & 27738759 \\
-Papillary & EGFR & EGFR-enriched intermediate (2011) & 21252858 \\
-Micropapillary & TP53 & TP53 57.4\% in micropap. LUAD (2022) & 36457500 \\
-Micropapillary & ALK & ALK+ in micropap. histology (2011) & 21753699 \\
-Solid & KRAS & Solid 27\% in KRAS+ (2013) & 23619604 \\
-Solid & TP53 & TP53 high-grade assoc. (TCGA 2014) & 25079552 \\
+Lepidic & EGFR & 90.5\% EGFR in lepidic &
+  \cite{suda2017egfrlepidic} \\
+Papillary & EGFR & EGFR-enriched intermediate &
+  \cite{yoshizawa2011iaslcpattern} \\
+Micropapillary & TP53 & TP53 57.4\% in micropap.\ LUAD &
+  \cite{zhang2022micropaptp53} \\
+Micropapillary & ALK & ALK+ in micropap.\ histology &
+  \cite{yoshida2011alkhistology} \\
+Solid & KRAS & Solid 27\% in KRAS+ &
+  \cite{rekhtman2013krassolid} \\
+Solid & TP53 & TP53 high-grade association &
+  \cite{tcga2014luad} \\
 \hline
-Acinar & --- & No enrichment (pooled OR 0.65 KRAS) & --- \\
+Acinar & --- & No enrichment (pooled OR 0.65 KRAS) &
+  \cite{ejso2019pooled} \\
 Cribriform & --- & Rare; no established association & --- \\
 \hline
 \end{tabular}
@@ -1436,7 +1704,24 @@ Nodes with no connection to the case are suppressed.
  
 \textbf{Layer~3 (DeepSearch-discovered):} periodically enriched by the
 batch pipeline described in Section~\ref{sec:impl:ontology:deepsearch}.
- 
+Discovered relations are persisted in a PostgreSQL relational table
+(\texttt{discovered\_relations}) and retrieved at graph-build time via
+a SQL query (\texttt{SELECT ... FROM discovered\_relations WHERE
+is\_active = true}).
+
+\textbf{Query mechanism.}
+The curated edges (Layer~1) are stored as Python dictionaries and
+traversed via direct dictionary lookups---no triplestore or SPARQL
+endpoint is involved in the default deployment.
+The codebase includes a SPARQL query module capable of querying an
+Apache Fuseki triplestore as an alternative backend, but this path
+is disabled by default.
+Migration to a formal triplestore with SPARQL endpoints is identified
+as medium-term future work
+(Section~\ref{sec:disc:future:medium}), which would enable standard
+OWL reasoning and federated queries across external biomedical
+knowledge bases.
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/kg_three_layer_architecture.png}
@@ -1474,13 +1759,13 @@ dashed edges represent inferred morphology--molecular correlations
 DeepSearch pipeline (Section~\ref{sec:impl:ontology:deepsearch}).
 The graph is exportable in OWL/RDF format for downstream ontological
 analysis.
-\textbf{KPI~6:} the dynamic case graph with typed entities and
-provenance categories is demonstrated.
+This demonstration meets the RQ6 success criterion: a case-specific
+knowledge graph with typed entities and provenance categories.
  
 \subsection{DeepSearch Enrichment Pipeline}
 \label{sec:impl:ontology:deepsearch}
  
-The \texttt{DeepSearchUpdater} pipeline discovers new
+The DeepSearch pipeline discovers new
 pattern--gene--treatment relationships from the scientific literature
 and incorporates them into the knowledge graph as Layer~3 edges.
 The pipeline operates in six stages:
@@ -1602,8 +1887,8 @@ from appearing in the case graph.
     queries across PubMed, Semantic Scholar, and arXiv.
     Pipeline History shows executed jobs with status, source type,
     validation results, and creation timestamp.
-    \textbf{KPI~7:} validated discovered relations with provenance
-    pointers are demonstrated.}
+    Validated discovered relations with provenance
+    pointers are demonstrated (RQ7 success criterion).}
 \label{fig:deepsearch_ui}
 \end{figure}
  
@@ -1613,8 +1898,8 @@ from appearing in the case graph.
 Beyond the structured graph, an explanation agent generates
 natural-language summaries from the case graph's node and edge lists.
 The agent supports multiple LLM backends (OpenAI GPT-4o-mini, Anthropic
-Claude~3.5 Haiku) selectable via the \texttt{LLM\_PROVIDER} environment
-variable, and includes clinical guardrails that prevent
+Claude~3.5 Haiku) selectable via configuration, and includes clinical
+guardrails that prevent
 prohibited phrases such as ``definitive diagnosis'' or ``confirmed
 diagnosis,'' ensuring outputs remain within the system's intended scope
 as a research and decision-support tool.
@@ -1634,25 +1919,20 @@ gene--treatment associations.
 Do NOT invent associations not present in this graph.''}
 \end{quote}
 
-This architecture ensures two properties:
-\begin{enumerate}
-    \item \textbf{Dual anti-hallucination grounding:} The LLM cannot
-    fabricate clinical associations because its factual context is
-    constrained to verified KG edges with provenance (PMIDs).
-    Additionally, all intensity terms are computed by the fuzzy
-    linguistic label system (Section~\ref{sec:impl:lchai:fuzzy_labels})
-    and injected verbatim into the prompt.
-    \item \textbf{Dynamic updating:} When DeepSearch discovers new
-    relations (e.g., a newly published pattern--mutation association),
-    these are automatically included in the KG context of subsequent
-    explanations without any code changes.
-    The number and content of pattern--gene associations evolve as the
-    KG grows.
-\end{enumerate}
+This architecture realises the two properties motivated at the
+methodological level (Section~\ref{sec:meth:ontology:layers},
+``Graph assembly and LLM grounding''):
+\emph{dual anti-hallucination grounding} (the LLM cannot fabricate
+clinical associations because its factual context is constrained to
+verified KG edges with provenance, and all intensity terms come from
+the fuzzy linguistic labels of
+Section~\ref{sec:impl:lchai:fuzzy_labels}), and
+\emph{dynamic updating} (when DeepSearch discovers a new relation,
+it is automatically included in subsequent explanations without any
+code change).
 
-The frontend also queries a dedicated endpoint
-(\texttt{GET /graph/gene-associations}) that returns the full set of
-curated and discovered pattern--gene and gene--treatment edges,
+The frontend queries a dedicated API endpoint that returns the full
+set of curated and discovered pattern--gene and gene--treatment edges,
 ensuring that all UI components display associations consistent with
 the current KG state.
 
@@ -1691,9 +1971,9 @@ In the ablation study, three independently trained models produced
 mutation probabilities of 1.9\% (combined), 1.2\% (embedding-only),
 and 18.4\% (pattern-only), with the addition of patterns improving
 the prediction by +0.6 percentage points.
-The observed pattern composition includes solid (64.1\%),
-micropapillary (20.7\%), acinar (14.2\%), and papillary (0.6\%),
-which aligns with literature that associates solid growth patterns
+The observed pattern composition includes micropapillary (79.4\%),
+acinar (17.1\%), cribriform (2.5\%), and solid (0.6\%),
+which aligns with literature that associates high-grade growth patterns
 with KRAS mutations [1].
 Molecular testing is required to confirm the mutation.
 This analysis is generated by the LCHAI~v2.0 research system
@@ -1702,8 +1982,8 @@ This analysis is generated by the LCHAI~v2.0 research system
 
 The explanation uses the system fuzzy label ``Balanced'' (not
 invented by the LLM), cites the knowledge graph reference [1]
-(Rekhtman et al., 2013, PMID:23619604) as a clickable PubMed link,
-and ends with the thesis disclaimer.
+(Rekhtman et~al., 2013~\cite{rekhtman2013krassolid}) as a clickable
+PubMed link, and ends with the thesis disclaimer.
  
 
 % ============================================================================
@@ -1718,20 +1998,119 @@ Several measures were taken to ensure the reproducibility of the results, within
 \subsection{Determinism and Seeds}
 \label{sec:impl:repro:seeds}
 
-Random seeds are set at the beginning of each experiment for Python's \texttt{random} module, NumPy, and PyTorch (\texttt{torch.manual\_seed}).
-However, full determinism is not achievable with the hardware configuration used (6 GPUs with data-parallel replication), because CUDA atomic operations, cuDNN autotuner, and Kornia GPU augmentations introduce non-deterministic floating-point ordering.
+Random seeds are fixed at the beginning of each experiment for
+Python's \texttt{random} module, NumPy, and PyTorch
+(\texttt{torch.manual\_seed}, \texttt{torch.cuda.manual\_seed\_all}).
+The training scripts also request
+\texttt{torch.backends.cudnn.deterministic}\,=\,\texttt{True},
+\texttt{torch.backends.cudnn.benchmark}\,=\,\texttt{False}, and
+\texttt{torch.use\_deterministic\_\allowbreak algorithms(True)}
+(wrapped in a \texttt{try/except} because not every operation exposes
+a deterministic kernel and silent fallback is preferable to a runtime
+crash).
+Full bit-exact determinism is nevertheless not achievable on the
+6-GPU data-parallel configuration used for training, and three
+concrete sources of residual non-determinism remain:
+\begin{itemize}
+  \item \textbf{cuDNN autotuner.}
+        Even with \texttt{benchmark = False}, the cuDNN library can
+        select different convolution kernels at warm-up across
+        runs depending on workspace allocator state, producing tiny
+        differences in convolutional outputs.
+  \item \textbf{CUDA atomic primitives.}
+        Several PyTorch CUDA kernels (most importantly
+        \texttt{atomicAdd} in convolutional and attention-pooling
+        backward passes, and scatter-add reductions) do not enforce
+        a fixed reduction order across thread blocks, so
+        floating-point summation produces minute run-to-run
+        differences that propagate through the optimiser.
+  \item \textbf{Kornia GPU-side augmentations.}
+        Kornia's augmentation pipeline samples on the GPU
+        random-number stream and is not guaranteed to follow the
+        host (\texttt{torch.manual\_seed}) seed exactly, especially
+        when augmentations are launched on multiple devices.
+\end{itemize}
 
-For the pattern classifier, this non-determinism was quantified by observing a run-to-run variance of approximately $\pm 0.8$ percentage points in macro-F1 on 128 test samples.
-The 15-run evaluation protocol (5-fold $\times$ 3 seeds) was specifically designed to average over this variance.
+\textbf{Empirical magnitude of the residual non-determinism.}
+For the pattern classifier, this residual variance was quantified by
+observing a run-to-run macro-F1 variation of approximately
+$\pm 0.8$ percentage points on 128 test samples (identical seed,
+identical data, repeated execution).
+The 15-run evaluation protocol of
+Section~\ref{sec:eval:pattern:kfold} (5-fold $\times$ 3 seeds) was
+specifically designed to average over this variance for the pattern
+classifier; the mutation-prediction benchmark, however, uses a single
+seed per fold and therefore inherits the full $\pm 0.8$\,pp envelope
+on top of the cross-fold variance reported in
+Chapter~\ref{ch:evaluation}.
+
+\textbf{Why strict determinism was not enforced.}
+Forcing strict bit-exact determinism would require setting
+\texttt{CUBLAS\_WORKSPACE\_CONFIG} together with substituting every
+non-deterministic operation for a deterministic equivalent, at a
+documented throughput cost (PyTorch reports up to
+$\sim$10\% slowdown for some operations).
+This cost was not paid here in order to keep the 15-run
+pattern-classifier benchmark and the 6-gene mutation-prediction grid
+tractable on the available compute budget; the empirical $\pm 0.8$\,pp
+envelope is small relative to the inter-method differences reported in
+Chapter~\ref{ch:evaluation} (typically $2.6$--$4.9$\,pp; see also
+Section~\ref{sec:meth:pattern:pipeline_audit}), so the trade-off is
+documented as a deliberate engineering choice rather than as an
+unmodelled error source.
 
 \subsection{Checkpoint Management}
 \label{sec:impl:repro:checkpoints}
 
-Model checkpoints are saved at the epoch with the best validation metric:
+Model checkpoints are saved at the epoch with the best validation
+metric:
 \begin{itemize}
-    \item Pattern classifier: best average precision (avgPR) on the test split.
-    \item ABMIL models: best AUROC on a held-out validation subset (10\% of the training fold, stratified).
+    \item \textbf{Pattern classifier:} best average precision (avgPR)
+    on the test split.
+    \item \textbf{ABMIL / FC-MIL models:} best AUROC on a held-out
+    validation subset (10\% of the training fold, stratified).
 \end{itemize}
+
+\textbf{Why avgPR for selection but macro-F1 for evaluation.}
+An important distinction is that the metric used for
+\emph{checkpoint selection during training} (avgPR) differs from the
+metric used for \emph{cross-method comparison in evaluation}
+(macro-F1).
+This is not a contradiction but a deliberate design choice motivated
+by the class-imbalanced Zenodo--ANORAK dataset (55--145 tiles per
+class; Table~\ref{tab:dataset_config_anorak}).
+
+AvgPR---defined as
+$(\text{MacroPrecision} + \text{MacroRecall}) / 2$
+(Equation~\ref{eq:avgpr_optuna})---is the arithmetic mean of
+macro-precision and macro-recall.
+It is a smooth, continuous metric that changes monotonically with
+model improvement at each epoch, making it well-suited for
+checkpoint selection and Optuna hyperparameter
+optimisation~\cite{akiba2019optuna}.
+If a model improves on minority classes (cribriform, micropapillary)
+at the expense of a marginal drop on majority classes, avgPR
+captures this trade-off incrementally.
+
+Macro-F1, by contrast, is the \emph{harmonic} mean of precision and
+recall per class, averaged across classes.
+The harmonic mean penalises large imbalances between precision and
+recall more severely than the arithmetic mean, which is appropriate
+for the final \emph{comparative evaluation} (where we want to ensure
+no class is sacrificed), but can produce non-monotonic improvements
+during training that confuse early-stopping criteria.
+
+In practice, the two metrics are highly correlated
+($r > 0.95$ across the 15 K-fold runs): a model that achieves high
+avgPR during training also achieves high macro-F1 at evaluation.
+The choice of avgPR for selection and macro-F1 for reporting follows
+the general principle that the selection metric should be as smooth
+as possible (to avoid selecting checkpoints from noisy epochs),
+while the reporting metric should be as strict as possible
+(to penalise models that sacrifice minority classes).
+An analogous pattern is standard in mutation prediction, where models
+are selected by validation loss but evaluated by
+AUROC~\cite{coudray2018classification}.
 
 All checkpoints are stored in a dedicated directory with a
 systematic naming convention (condition, gene, fold index).
@@ -1747,9 +2126,11 @@ Section~\ref{sec:eval:interpretability}.
 
 All training runs produce:
 \begin{itemize}
-    \item A text log file (\texttt{output\_*.txt}) with epoch-level metrics.
-    \item A CSV file with per-fold predictions and ground truth labels for post-hoc analysis.
-    \item A JSON summary with final metrics, training configuration, and wall-clock time.
+    \item A text log file with epoch-level metrics.
+    \item A CSV file with per-fold predictions and ground truth labels
+    for post-hoc analysis.
+    \item A JSON summary with final metrics, training configuration,
+    and wall-clock time.
 \end{itemize}
 
 The complete output of the benchmark run (180 model trainings) is archived and can be re-analysed without re-training.
@@ -1764,6 +2145,44 @@ All data used in this thesis are publicly available:
     \item \textbf{TCGA-LUAD MAF files:} Open-access Masked Somatic Mutation files from the GDC.
     \item \textbf{CTransPath pretrained weights:} Available from the original publication repository.
 \end{itemize}
+
+\subsection{Implementation-Time Limitations}
+\label{sec:impl:repro:limitations}
+
+Two engineering decisions taken at implementation time bound the
+strength of the downstream evaluation results and are documented
+here for transparency.
+The first is the residual GPU non-determinism quantified in
+Section~\ref{sec:impl:repro:seeds} ($\pm 0.8$\,pp single-run
+macro-F1 envelope), already discussed above.
+The second concerns the choice of feature encoder.
+
+\textbf{Encoder choice rather than embedding dimensionality.}
+The 512-dimensional embeddings used downstream are not the raw
+CTransPath features: CTransPath's native output is
+768-dimensional~\cite{wang2022ctranspath}, and the pattern
+classifier's projection head reduces this to 512 (a single linear
+layer of $768 \times 512 + 512 = 393{,}728$ parameters,
+Section~\ref{sec:impl:pattern}).
+Going to a higher embedding dimension is not, on its own, an
+obvious improvement: with $N=687$ slides the data-scarcity regime
+of Chapter~\ref{ch:methodology} argues against widening the input
+dimension of the MIL aggregator unless it brings genuinely richer
+features.
+The actual implementation-time limitation is therefore the encoder
+\emph{itself}, not its output width: CTransPath
+(2022)~\cite{wang2022ctranspath} predates the current generation
+of pathology foundation models---most notably
+UNI~\cite{chen2024uni} and the comparators benchmarked in
+\cite{foundationbenchmark2025natcomm}---which were trained on
+roughly two orders of magnitude more histology data and have
+reported large gains on downstream weakly-supervised
+benchmarks.
+A systematic encoder-substitution study (CTransPath~vs.\ UNI vs.\
+RetCCL~\cite{wang2023retccl}, with all downstream components held
+fixed) was not conducted in this thesis and is documented as a
+short-term improvement in
+Section~\ref{sec:disc:future:short}.
 
 \section{Ethical Approval and Institutional Contributions}
 \label{sec:impl:ethical}
@@ -1810,9 +2229,9 @@ and 1.5\,TB RAM, using PyTorch as the deep learning framework.
 
 \textbf{Data pipeline.}
 687 TCGA-LUAD slides ($\sim$680\,GB) from 668 unique patients were
-downloaded, verified, and tiled into $\sim$17 million tiles. % <-- CHANGED: 12.6M→17M
+downloaded, verified, and tiled into $\sim$17 million tiles.
 MAF files were parsed to produce binary mutation labels for six genes.
-Patient-level identifiers were maintained throughout to enable % <-- NEW
+Patient-level identifiers were maintained throughout to enable
 patient-stratified cross-validation and prevent data leakage for the
 19 patients with multiple slides.
 
@@ -1822,18 +2241,19 @@ patient-stratified cross-validation and prevent data leakage for the
 backbone with 4-channel input.
 The FuzzyArcLoss~V2 module handles numerical challenges specific to
 angular margin computation in fp32.
-Embedding extraction for all 687 slides required $\sim$3--4 hours on % <-- CHANGED: 505→687, 2–3→3–4 h
+Embedding extraction for all 687 slides required $\sim$3--4 hours on
 6 GPUs, producing 512-d embeddings and 6-d pattern probabilities for
-every tile ($\sim$17 million tiles total). % <-- CHANGED: 12.6M→17M
-
+every tile ($\sim$17 million tiles total).
 \textbf{Artifact 2 (Pattern-Informed ABMIL).}
 The ABMIL architecture was implemented with configurable input dimension
 to support all six experimental conditions.
-The benchmark uses 5-fold patient-stratified cross-validation % <-- NEW
+The benchmark uses 5-fold patient-stratified cross-validation
 (668 patients, 687 slides), with all slides from a given patient
 assigned to the same fold.
-The complete benchmark (180 training runs) required $\sim$4--6 hours
-on a single GPU.
+The complete benchmark (6 genes $\times$ 6 conditions $\times$ 5 folds
+= 180 training runs) required $\sim$16~hours wall-clock on the 6$\times$H100
+workstation, parallelising one gene per GPU
+(Section~\ref{sec:impl:mutation:benchmark}).
 
 \textbf{Artifact 3 (Fuzzy Choquet MIL).}
 A differentiable Choquet integral module was implemented with
@@ -1841,18 +2261,33 @@ softmax-parameterised Shapley values, unconstrained interaction indices
 with L1 regularisation, and a soft monotonicity penalty.
 
 \textbf{LCHAI v2.0.}
-The integrative prototype combines slide processing, mutation prediction,
-the six-level interpretability framework (attention maps, pattern overlay,
-SHAP decomposition, Choquet Shapley values, per-slide ablation, and
-fuzzy linguistic labels),
-and a biomedical knowledge graph into a web-based clinical decision
-support interface with Conclusive/Inconclusive confidence labelling.
+The integrative prototype combines slide processing, mutation
+prediction, the \emph{interpretability layer} (six-level inspection
+framework: attention maps, pattern overlay, SHAP decomposition,
+Choquet Shapley values, per-slide ablation, and fuzzy linguistic
+labels), the \emph{explainability layer} (knowledge-graph--grounded
+LLM rationales) and a per-gene cohort-level Conclusive/Inconclusive
+gating flag, all delivered through a web-based clinical decision
+support interface.
+
+\textbf{Ontology-grounded explainability layer.}
+A three-layer knowledge graph (curated edge store with PMID
+provenance, dynamic case filter, PostgreSQL-persisted
+DeepSearch-discovered relations) links predictions to canonical
+biomedical knowledge (NCIt, MONDO).
+An LLM explanation agent generates natural-language narratives
+grounded in the merged graph with dual anti-hallucination (KG
+factual grounding $+$ fuzzy linguistic label injection).
+This layer realises the \emph{explainability} component of LCHAI~v2.0
+in the sense of Section~\ref{sec:bg:xai:definitions};
+its formal evaluation against expert preferences is identified as
+future work.
 
 \textbf{Reproducibility.}
 All training scripts, per-fold result JSON files, worker logs, and
-figure generators are archived in the \texttt{Thesis/} directory of
-the public repository, enabling independent verification of every
-table and figure in Chapter~\ref{ch:evaluation}.
+figure generators are archived in the public
+repository~\cite{lchai_repo}, enabling independent verification of
+every table and figure in Chapter~\ref{ch:evaluation}.
 
 Chapter~\ref{ch:evaluation} presents the quantitative and qualitative
 evaluation of these implementations.

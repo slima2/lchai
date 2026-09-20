@@ -60,14 +60,12 @@ These resources are categorically unavailable to the vast majority of
 academic research groups.
 The largest publicly accessible LUAD cohort with paired WSIs and mutation
 annotations is The Cancer Genome Atlas (TCGA), comprising approximately
-668 patients (687 slides)~\cite{tcga2014luad}---two orders of % <-- CHANGED: 557 slides → 668 patients (687 slides)
-magnitude smaller than these industrial-scale datasets.\footnote{The
+668 patients (687 slides)~\cite{tcga2014luad}---two orders ofmagnitude smaller than these industrial-scale datasets.\footnote{The
 TCGA-LUAD project on the GDC has expanded since its original 2014 release.
 This thesis uses 687 slides from 668 unique patients; 19 patients
 contributed more than one slide.
 The commonly cited figure of $\sim$557 refers to the case count in the
-original TCGA publication~\cite{tcga2014luad}.} % <-- NEW footnote
-Methods that require massive data to achieve competitive performance are
+original TCGA publication~\cite{tcga2014luad}.}Methods that require massive data to achieve competitive performance are
 therefore not directly applicable in data-scarce research environments.
 \paragraph{The opportunity: domain knowledge as a computational prior.}
 LUAD is classified by the World Health Organisation (WHO) into five predominant growth patterns---lepidic, acinar, papillary, micropapillary, and solid---each with documented statistical associations with specific molecular subtypes~\cite{travis2011iaslc, tsao2015subtype}.  This thesis adopts the six ANORAK-annotated growth patterns (the five WHO patterns plus cribriform) as domain knowledge that has never been explicitly incorporated as a \emph{structured computational prior} into modern mutation prediction pipelines.  This thesis explores whether doing so can compensate for data scarcity while simultaneously providing the interpretable reasoning pathway that end-to-end models lack.
@@ -86,14 +84,58 @@ theory---can be injected into a deep learning mutation prediction
 pipeline to simultaneously
 (a)~achieve competitive predictive performance under data scarcity
 ($<$700 public slides), and
-(b)~provide multi-level, clinically verifiable explanations that no
-end-to-end black-box approach offers.}
+(b)~render the resulting predictions \textbf{interpretable} through
+a multi-level, clinically verifiable inspection framework---and,
+through that framework, \textbf{explainable} via knowledge-graph--grounded
+natural-language rationales---to a degree that no end-to-end black-box
+approach offers.}
 \end{quote}
 
-The hypothesis is \emph{falsifiable}: it would be rejected if the
-pattern-informed models performed significantly worse than
-embedding-only baselines across all genes, or if the interpretability
-outputs were clinically meaningless.
+The two italicised terms in clause~(b) carry the technical
+meanings established in
+Section~\ref{sec:bg:xai:definitions}---\emph{interpretability}
+as a structural property of the model (the six-level inspection
+framework, the intrinsic Choquet Shapley values, and the
+Conclusive/Inconclusive cohort flag) and \emph{explainability}
+as the post-hoc, knowledge-graph--grounded natural-language layer
+built on top of it---and they are claimed at different evidence
+levels: the interpretability claim is empirically tested in
+Chapter~\ref{ch:evaluation}; the explainability layer is
+implemented and inspected qualitatively, but its formal
+evaluation (faithfulness audit, knowledge-graph correctness, and
+reader study) is reserved for future work
+(Section~\ref{sec:disc:future}).
+
+The hypothesis is \emph{gene-conditional} and
+\emph{aggregator-conditional} rather than all-or-nothing: whether
+fuzzy pattern knowledge yields a predictive gain for a given gene
+depends jointly on (a) whether the discriminative signal for that
+gene admits a representation within the ANORAK 6-pattern ontology,
+and (b) whether the downstream aggregator can read that
+representation.
+Each gene in the panel therefore constitutes an independent test of
+\textbf{H}, and the verdict on \textbf{H} is the conjunction of the
+per-gene verdicts together with the system-level instrumentation
+test below.
+
+Operationally, the hypothesis is \emph{falsifiable} along three
+independent axes.
+It would be rejected if
+(i)~pattern-informed models systematically degraded predictive
+performance below embedding-only baselines for \emph{every} gene in
+the target panel;
+(ii)~no aggregation mechanism in the candidate space (additive
+concatenation, learned attention, or fuzzy Choquet integral) could
+exploit the pattern channel to outperform the embedding-only
+baseline for \emph{any} gene;
+or (iii)~the proposed pipeline could not be \emph{instrumented} to
+produce the six interpretability layers end to end, or the
+resulting explanations could not be grounded in provenance-tagged
+ontology IRIs.
+Genes for which no aggregator within the ANORAK simplex recovers a
+discriminative signal are themselves a finding to be characterised
+under RQ2(ii)---the \emph{coverage} limit of the pattern
+ontology---rather than evidence against the hypothesis as a whole.
 The seven research questions below operationalise this hypothesis
 into testable sub-questions.
 
@@ -108,20 +150,44 @@ Each RQ addresses a specific aspect of the central hypothesis (Section~\ref{sec:
 \begin{description}
     \item[\textbf{RQ1} (Fuzzy representation learning).]  \emph{How can fuzzy set theory be integrated into angular margin loss functions to produce an adaptive, per-sample margin modulation mechanism for histopathological pattern classification, and does the resulting loss function outperform fixed-margin baselines under conditions of small training sets and fuzzy inter-class boundaries?}
 
-    \item[\textbf{RQ2} (Pattern-informed multiple-instance learning).]  \emph{Can the explicit injection of fuzzy histological pattern probabilities---derived from a validated pattern classifier---as structured features into an attention-based MIL aggregator improve or preserve mutation prediction performance relative to using visual embeddings alone, thereby providing an interpretable morphological reasoning channel?}
+    \item[\textbf{RQ2} (Pattern-informed multiple-instance learning).]
+    This question is decomposed into two complementary sub-questions:
+    \begin{description}
+        \item[\textbf{RQ2(i)}.]
+        \emph{Can the explicit injection of fuzzy histological pattern
+        probabilities---derived from a validated pattern classifier---as
+        structured features into an attention-based MIL aggregator
+        improve or preserve mutation prediction performance relative to
+        using visual embeddings alone, thereby providing an interpretable
+        morphological reasoning channel?}
+        \item[\textbf{RQ2(ii)}.]
+        \emph{For the genes where pattern injection does not improve
+        performance, which mutations have no exploitable morphological
+        footprint within the ANORAK 6-pattern ontology, and what
+        mechanisms account for these failures?}
+    \end{description}
+    The two parts together frame RQ2 as a question about both the
+    \emph{utility} and the \emph{coverage} of the pattern channel.
 
     \item[\textbf{RQ3} (Fuzzy aggregation for mutation prediction).]  \emph{Does a fuzzy Choquet integral aggregation module, which models supra-additive interactions among histological pattern memberships through a learned fuzzy measure, capture biologically meaningful inter-pattern dependencies that standard attention pooling mechanisms miss?}
 
     \item[\textbf{RQ4} (Clinically meaningful interpretability).]
-\emph{Does the pattern-informed approach produce clinically
-meaningful explanations---through a six-level interpretability
-framework comprising spatial attention maps, pattern overlays,
-SHAP decomposition, intrinsic Choquet Shapley values, per-slide
-feature channel ablation, and fuzzy linguistic labels---that a
-pathologist can verify against the original slide?
+\emph{Does the pattern-informed approach yield
+\textbf{interpretability} (in the sense of
+Section~\ref{sec:bg:xai:definitions})---through a six-level
+inspection framework comprising spatial attention maps, pattern
+overlays, SHAP decomposition, intrinsic Choquet Shapley values,
+per-slide feature channel ablation, and fuzzy linguistic
+labels---that a pathologist could in principle verify against the
+original slide?
 Do fuzzy linguistic labels computed by the system and injected
-into LLM-generated explanations prevent hallucination of intensity
-terms while maintaining clinical accuracy?}
+into LLM-generated rationales prevent hallucination of intensity
+terms?}
+RQ4 concerns the \emph{structural} interpretability of the
+model and is evaluated empirically
+(Chapter~\ref{ch:evaluation}); its companion question
+RQ6 below concerns the \emph{post-hoc} natural-language
+explanation layer.
   \item[\textbf{RQ5} (Data scarcity).]
     \emph{Does the incorporation of domain knowledge (validated histological
     patterns) via fuzzy logic provide a greater relative benefit under data
@@ -129,25 +195,36 @@ terms while maintaining clinical accuracy?}
     offering a methodological alternative to the brute-force scaling pursued
     by foundation models?}
  
-    \item[\textbf{RQ6} (Ontology-grounded explanations).]
-    \emph{Can the pipeline produce ontology-grounded, provenance-tagged case
-    explanations that link predicted histological patterns, mutation
-    hypotheses, and therapeutic options in a clinically auditable knowledge
-    graph?}
+    \item[\textbf{RQ6} (Ontology-grounded explainability).]
+    \emph{Can the pipeline produce ontology-grounded,
+    provenance-tagged natural-language case explanations
+    (\textbf{explainability} in the sense of
+    Section~\ref{sec:bg:xai:definitions}) that link predicted
+    histological patterns, mutation hypotheses, and therapeutic
+    options in a clinically auditable knowledge graph?}
+    RQ6 establishes the explainability layer as a system
+    capability; its formal evaluation (faithfulness audit,
+    knowledge-graph correctness, and reader study) is left to
+    future work and is enumerated in
+    Section~\ref{sec:disc:future}.
  
     \item[\textbf{RQ7} (Knowledge graph enrichment).]
-    \emph{Does the DeepSearch enrichment pipeline produce validated new
-    biomedical relations with provenance pointers in the executed run,
-    and can these be incorporated as versioned additions into the knowledge
-    graph for subsequent cases?}
+    \emph{Does the DeepSearch enrichment pipeline produce candidate new
+    biomedical relations---each carrying a PMID provenance pointer and
+    a type-constraint validation against NCIt/MONDO---in the executed
+    run, and can these candidates be incorporated as versioned
+    additions into the knowledge graph for subsequent cases, pending
+    formal expert validation?}
 
     
 \end{description}
 
 These questions are deliberately framed from a computer science perspective.
 RQ1 addresses \emph{representation learning} with fuzzy-theoretic foundations.
-RQ2 addresses \emph{feature fusion} and \emph{prior knowledge injection} in
-deep learning architectures.
+RQ2 addresses \emph{feature fusion} and \emph{prior knowledge
+injection} in deep learning architectures, with sub-question RQ2(ii)
+asking the complementary \emph{ontology-coverage} question of which
+mutations have no exploitable morphological footprint.
 RQ3 addresses \emph{fuzzy aggregation operators} as alternatives to neural
 attention.
 RQ4 addresses \emph{clinically meaningful interpretability} through spatial
@@ -155,7 +232,10 @@ attention and pattern attribution.
 RQ5 addresses \emph{domain knowledge utility} under data scarcity.
 RQ6 and RQ7 address \emph{ontology-grounded explainability} and
 \emph{knowledge graph enrichment} as the explanation layer of the
-LCHAI~v2.0 instantiation.
+LCHAI~v2.0 instantiation (LCHAI = \emph{Lung Cancer Histologic
+Analysis with AI}, the integrative system that composes all
+three artefacts and the explanation layer into a single
+clinical-prototype application).
 The medical domain (LUAD mutation prediction) serves as the use case in which
 the artefacts are instantiated and evaluated.
 % ============================================================
@@ -210,8 +290,9 @@ artefacts.
     \textbf{Right-centre}: Six contributions produced by the thesis.
     \textbf{Far right}: Three prior publications by the author, each
     extended in this work.
-    Arrows indicate the primary mapping between questions, chapters,
-    contributions, and publications.}
+    Solid arrows indicate the primary mapping between questions,
+    chapters, contributions, and publications; dashed arrows mark
+    secondary anchorings that span more than one chapter.}
 \label{fig:thesis_visual_summary}
 \end{figure}
 
@@ -224,25 +305,71 @@ artefacts.
 The principal contributions of this thesis are:
 
 \begin{enumerate}
-    \item \textbf{FuzzyArcLoss V2:} A novel angular margin loss function that introduces a fuzzy membership function $\mu$ to adaptively modulate the angular penalty based on per-sample prediction confidence.  Unlike fixed-margin methods (ArcFace, CosFace, SphereFace), the margin strength is reduced for ambiguous samples near class boundaries---a property particularly suited to histopathology, where inter-class transitions are inherently fuzzy.  Evaluated across 18 loss functions, FuzzyArcLoss V2 achieves the highest mean macro-F1 of $92.31\% \pm 2.04$ with statistical significance over SphereFace ($p = 0.001$, $d = 1.00$).
+    \item \textbf{C1 --- FuzzyArcLoss~V2 (Artefact 1).}
+    A novel angular margin loss function that adapts the angular
+    penalty per-sample through an explicit fuzzy membership function
+    $\mu$, reducing the margin for ambiguous samples near class
+    boundaries.
+    The method is targeted at histopathological pattern classification,
+    where inter-class transitions are inherently fuzzy.
+    Specified in Chapter~\ref{ch:methodology}, evaluated against
+    fixed-margin baselines in Chapter~\ref{ch:evaluation}, and
+    discussed in Chapter~\ref{ch:discussion}.
 
+    \item \textbf{C2 --- Pattern-informed ABMIL (Artefact 2).}
+    The first attention-based MIL architecture to concatenate
+    validated fuzzy histological pattern probabilities with
+    self-supervised visual embeddings as input to a mutation
+    prediction aggregator, enabling a six-level interpretability
+    framework over the same trained model.
+    Designed in Chapter~\ref{ch:methodology}, implemented in
+    Chapter~\ref{ch:implementation}, evaluated in
+    Chapter~\ref{ch:evaluation}, and discussed in
+    Chapter~\ref{ch:discussion}.
 
-    \item \textbf{Pattern-informed ABMIL:} The first architecture to concatenate validated fuzzy histological pattern probabilities with visual embeddings as input to an attention-based MIL aggregator for mutation prediction.  This enables a six-level interpretability framework---spatial attention maps, pattern overlays, SHAP decomposition, Choquet Shapley values, per-slide feature channel ablation, and fuzzy linguistic labels for XAI outputs---that no prior work offers simultaneously.
+    \item \textbf{C3 --- Fuzzy Choquet MIL (Artefact 3).}
+    A novel MIL aggregation module based on the discrete Choquet
+    integral with a learned 2-additive fuzzy measure, designed to
+    capture supra-additive interactions between histological patterns
+    and to expose them as interpretable Shapley values and pairwise
+    interaction indices.
+    Specified in Chapter~\ref{ch:methodology}, evaluated against
+    attention-based aggregation in Chapter~\ref{ch:evaluation}, and
+    discussed in Chapter~\ref{ch:discussion}.
 
-    \item \textbf{Fuzzy Choquet integral aggregation:} A novel MIL aggregation module based on the discrete Choquet integral with a learned fuzzy measure.  This captures supra-additive interactions between histological patterns (e.g., the co-occurrence of solid and micropapillary patterns as a stronger TP53 signal than either alone) and produces interpretable Shapley values and interaction indices.
+    \item \textbf{C4 --- LCHAI~v2.0 clinical prototype.}
+    An integrative clinical decision-support system that demonstrates
+    the translational potential of artefacts C1--C3 within a unified
+    workflow on TCGA-LUAD~\cite{tcga2014luad}, combining tile-level
+    pattern classification, slide-level mutation prediction with
+    confidence calibration, the six-level interpretability framework
+    of C2, and a biomedical knowledge graph linking mutations to
+    therapeutic targets.
+    Implemented in Chapter~\ref{ch:implementation}, evaluated through
+    a multi-condition cross-validated benchmark in
+    Chapter~\ref{ch:evaluation}, and discussed in
+    Chapter~\ref{ch:discussion}.
 
-     \item \textbf{Comprehensive benchmark:}
-    A 6-condition, 6-gene, 5-fold cross-validated benchmark on
-    \textbf{687} TCGA-LUAD slides (668 patients)~\cite{tcga2014luad} % <-- CHANGED: 505→687, added patient count
-    comparing the proposed artefacts against XGBoost, standard ABMIL,
-    pattern-only ABMIL and one-hot ablation baselines, with statistical
-    significance testing and comparison to the published literature.
-    
-    \item \textbf{Ontology-grounded explanation layer:} A three-tier knowledge graph architecture (curated assertions from WHO/OncoKB/FDA with PMID provenance, dynamic case filtering, and DeepSearch literature enrichment) that links predicted mutations to therapeutic targets via provenance-tagged relations grounded in NCIt and MONDO ontologies (RQ6, RQ7).
+    \item \textbf{C5 --- Mechanism-bound utility of fuzzy
+    representations (analytical insight).}
+    An analytical contribution that characterises \emph{when} fuzzy
+    pattern encodings provide a measurable advantage over crisp
+    one-hot encodings in mutation prediction, framed in terms of the
+    aggregator's ability to model inter-pattern interactions rather
+    than as a property of any specific gene set.
+    Established through the per-gene and per-slide ablation analyses
+    of Chapter~\ref{ch:evaluation} and synthesised in
+    Chapter~\ref{ch:discussion}.
 
-    \item \textbf{LCHAI~v2.0 clinical prototype:} An integrated clinical decision-support system that combines tile-level pattern classification, attention-based mutation prediction with gene-dependent optimal method selection, a six-level interpretability framework, and a biomedical knowledge graph.
-    Key features include: a unified Analysis tab with gene sub-tabs sorted by $P(\text{mut})$; fuzzy linguistic labels (trapezoidal membership functions) that classify XAI outputs into calibrated intensity terms and are injected into LLM-generated explanations to prevent hallucination; interactive hover tooltips on pattern overlays and attention heatmaps; numbered PubMed citations from the knowledge graph; an active learning mechanism enabling expert pattern correction with head-only delta retraining; and an administrator-configurable fuzzy label editor.
-    Fuzzy logic is applied coherently across four levels of the pipeline: training (FuzzyArcLoss~V2), representation (soft probability vectors), aggregation (Choquet integral), and interpretation (fuzzy linguistic labels).
+    \item \textbf{C6 --- Ontology-grounded explanation layer.}
+    A three-tier knowledge graph architecture---a curated layer of
+    clinical assertions, a dynamic per-case filtering layer, and a
+    DeepSearch literature enrichment layer---that links predicted
+    mutations to therapeutic targets through provenance-tagged
+    relations grounded in NCIt and MONDO ontologies (RQ6, RQ7).
+    Designed in Chapter~\ref{ch:methodology}, implemented in
+    Chapter~\ref{ch:implementation}, and evaluated in
+    Chapter~\ref{ch:evaluation}.
 \end{enumerate}
 
 
@@ -373,9 +500,9 @@ Lima et al.\ (2025) IEEE~\cite{lima2025enhancing} &
 The remainder of this thesis is organised as follows:
 
 \begin{description}
-    \item[\cref{ch:background} --- Background.]  Presents the theoretical foundations required by a computer scientist to understand the subsequent chapters: fuzzy sets and fuzzy logic, angular margin loss functions, self-supervised learning for pathology (CTransPath), multiple-instance learning, the Choquet integral and related aggregation operators.
+    \item[\cref{ch:background} --- Background.]  Presents the theoretical foundations underpinning the subsequent chapters: fuzzy sets and fuzzy logic, angular margin loss functions, self-supervised learning for pathology (CTransPath), multiple-instance learning, the Choquet integral and related aggregation operators.
 
-    \item[\cref{ch:usecase} --- The Lung Adenocarcinoma Use Case.]  Introduces the medical use case in an engineer-friendly format: LUAD histology, the six growth patterns (five WHO-defined plus cribriform), oncogenic driver mutations, the TCGA--LUAD dataset and the evaluation protocol.  Medical terms are explained for a computer science audience; a glossary is provided in \cref{app:glossary}.
+    \item[\cref{ch:usecase} --- The Lung Adenocarcinoma Use Case.]  Introduces the medical use case: LUAD histology, the six growth patterns (five WHO-defined plus cribriform), oncogenic driver mutations, the TCGA--LUAD dataset and the evaluation protocol.  A glossary of clinical and ML terms is provided in \cref{app:glossary}.
 
     \item[\cref{ch:methodology} --- Artefact Design: Conceptual Framework.]  Specifies the three artefacts at the mathematical and architectural level: FuzzyArcLoss V2 (loss function design), pattern-informed ABMIL (feature fusion architecture) and Fuzzy Choquet MIL (aggregation module).  Also presents the multi-ontology knowledge graph and explanation layer design (RQ6, RQ7).
 
