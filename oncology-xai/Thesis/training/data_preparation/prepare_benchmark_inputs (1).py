@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
 """
 prepare_benchmark_inputs.py
 ============================
@@ -53,7 +54,7 @@ GENES = ["TP53", "EGFR", "KRAS", "STK11", "KEAP1", "RBM10"]
 
 # pattern column order must match your FuzzyArcLoss V2 label2id
 # adjust if your model uses a different order
-PATTERN_ORDER = ["acinar", "lepidic", "micropapillary", "mucinous", "papillary", "solid"]
+PATTERN_ORDER = ["micropapillary", "cribriform", "papillary", "lepidic", "solid", "acinar"]
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -239,6 +240,19 @@ def _detect_prob_columns(columns: List[str]) -> List[str]:
     Raises if any expected pattern is missing.
     """
     prob_cols_found = {c.replace("prob_", ""): c for c in columns if c.startswith("prob_")}
+    # [4-APR-2026] CSVs written before the pattern-name correction carry the
+    # legacy headers (prob_acinar ... prob_mucinous). Five of the six names are
+    # shared by both schemes, so the scheme is detected from the unique token
+    # (legacy "mucinous" / true "cribriform") and the legacy alias is used for
+    # ALL columns when the legacy scheme is found.
+    _true_to_legacy = {"micropapillary": "acinar", "cribriform": "lepidic", "papillary": "micropapillary",
+                       "lepidic": "mucinous", "solid": "papillary", "acinar": "solid"}
+    _keys_lower = {k.lower() for k in prob_cols_found}
+    if "mucinous" in _keys_lower and "cribriform" not in _keys_lower:
+        print("  [WARN] legacy (pre-4-Apr-2026) prob_* headers detected -> using legacy aliases")
+        prob_cols_found = {t: prob_cols_found[next(k for k in prob_cols_found if k.lower() == l)]
+                           for t, l in _true_to_legacy.items()
+                           if l in _keys_lower}
     ordered = []
     for pat in PATTERN_ORDER:
         if pat in prob_cols_found:
@@ -448,7 +462,7 @@ def main():
     ap.add_argument(
         "--pattern_order", nargs="+", default=None,
         help="Order of prob_* columns matching your model's label2id "
-             "(default: acinar lepidic micropapillary mucinous papillary solid)",
+             "(default: micropapillary cribriform papillary lepidic solid acinar)",
     )
     args = ap.parse_args()
 

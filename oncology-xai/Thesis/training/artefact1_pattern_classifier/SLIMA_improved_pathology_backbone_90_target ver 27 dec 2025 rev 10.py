@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
+# [4-APR-2026] true ANORAK class names in the ORIGINAL index order of the trained models
+# (= alphabetical order of the legacy names). Used to keep label2id stable.
+CLASS_ORDER_4APR2026 = ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
 """
 SLIMA Improved Training Pipeline - Pathology Foundation Models + Advanced Augmentation
 =======================================================================================
@@ -258,7 +262,7 @@ class Config:
     ROOT_DIR: str = "/home/rapids/notebooks/slima/Zenodo_Anorak_original"
     IMAGE_DIR: str = None
     MASK_DIR: str = None
-    XLS_PATH: str = "/home/rapids/notebooks/slima/overlay_index ver 9 nov 2025.xlsx"
+    XLS_PATH: str = "/home/rapids/notebooks/slima/overlay_index_corrected_4_apr_2026.xlsx"
     OUT_DIR: str = "/home/rapids/notebooks/slima/outputs/pathology_backbone_90_target"
     
     # Pathology model paths
@@ -270,7 +274,7 @@ class Config:
     CTRANSPATH_CHECKPOINT: str = "/home/rapids/notebooks/slima/models/ctranspath.pth"
     
     # Classes
-    INCLUDE_PATTERNS: str = "lepidic,acinar,papillary,micropapillary,solid,mucinous"
+    INCLUDE_PATTERNS: str = "cribriform,micropapillary,solid,papillary,acinar,lepidic"
     
     # Model - Backbone options: "uni", "ctranspath", "resnet101", "resnet50", "ensemble"
     # CTransPath: Swin-Tiny trained on 15M pathology patches (768-dim output)
@@ -332,9 +336,9 @@ class Config:
     
     # Class-weighted sampling - ENHANCED for minority classes
     USE_WEIGHTED_SAMPLER: bool = True
-    SOLID_CLASS_BOOST: float = 1.5  # Boost solid class
-    LEPIDIC_CLASS_BOOST: float = 2.0  # Boost lepidic class (smallest, worst performing)
-    ACINAR_CLASS_BOOST: float = 1.3  # Slight boost for acinar
+    ACINAR_CLASS_BOOST: float = 1.5  # Boost acinar class
+    CRIBRIFORM_CLASS_BOOST: float = 2.0  # Boost cribriform class (smallest, worst performing)
+    MICROPAPILLARY_CLASS_BOOST: float = 1.3  # Slight boost for micropapillary
     
     # Test-Time Augmentation
     USE_TTA: bool = True
@@ -1577,7 +1581,10 @@ def training_function():
         raise RuntimeError("Dataset empty after filtering!")
     
     # ==== 4. Label mappings ====
-    classes = sorted(df[label_col].unique().tolist())
+    # [4-APR-2026] keep the original class-index order of the trained models;
+    # sorted() over the corrected names would shuffle the indices.
+    classes = sorted(df[label_col].unique().tolist(), key=lambda _c: (CLASS_ORDER_4APR2026.index(str(_c).lower())
+                    if str(_c).lower() in CLASS_ORDER_4APR2026 else 99, str(_c)))
     label2id = {c: i for i, c in enumerate(classes)}
     id2label = {v: k for k, v in label2id.items()}
     n_classes = len(classes)
@@ -1653,9 +1660,9 @@ def training_function():
         
         # Get class IDs and boost values
         class_boosts = {
-            'solid': getattr(config, 'SOLID_CLASS_BOOST', 1.0),
-            'lepidic': getattr(config, 'LEPIDIC_CLASS_BOOST', 1.0),
             'acinar': getattr(config, 'ACINAR_CLASS_BOOST', 1.0),
+            'cribriform': getattr(config, 'CRIBRIFORM_CLASS_BOOST', 1.0),
+            'micropapillary': getattr(config, 'MICROPAPILLARY_CLASS_BOOST', 1.0),
         }
         
         # Map class names to IDs

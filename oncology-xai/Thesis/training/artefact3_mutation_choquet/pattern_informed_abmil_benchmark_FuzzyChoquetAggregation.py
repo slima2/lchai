@@ -1,3 +1,4 @@
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
 """
 Pattern-Informed ABMIL Benchmark for Lung Cancer Mutation Prediction
 =====================================================================
@@ -65,8 +66,8 @@ warnings.filterwarnings("ignore", category=UserWarning)
 GENES = ["TP53", "EGFR", "KRAS", "STK11", "KEAP1", "RBM10"]
 
 PATTERN_NAMES = [
-    "acinar", "lepidic", "micropapillary",
-    "mucinous", "papillary", "solid"
+    "micropapillary", "cribriform", "papillary",
+    "lepidic", "solid", "acinar"
 ]
 
 CONDITION_NAMES = [
@@ -331,7 +332,7 @@ class ABMIL(nn.Module):
 #
 # This replaces the standard attention-weighted mean with a fuzzy-theoretic
 # aggregation that explicitly models synergies/redundancies between patterns.
-# For example: μ({solid, micropapillary}) > μ({solid}) + μ({micropapillary})
+# For example: μ({acinar, papillary}) > μ({acinar}) + μ({papillary})
 # encodes that co-occurrence of both patterns carries supra-additive signal.
 #
 # Implementation note: a full fuzzy measure on K classes requires 2^K parameters.
@@ -403,7 +404,7 @@ class FuzzyChoquetAggregation(nn.Module):
     4. Concatenate with attention-weighted embedding mean for the final representation.
 
     The intuition: C_k measures the slide's "fuzzy predominance" of pattern k,
-    accounting for interactions between patterns (e.g. solid+micropapillary
+    accounting for interactions between patterns (e.g. acinar+papillary
     co-occurrence may have supra-additive relevance for TP53 mutation).
 
     Parameters
@@ -1222,7 +1223,7 @@ def generate_synthetic_data(data_dir: str, n_slides: int = 60, seed: int = 42):
 
         row = {"slide_id": sid}
         for gene in GENES:
-            # ~30% positive rate, correlated weakly with solid % (pattern 4)
+            # ~30% positive rate, correlated weakly with solid % (pattern 4 = solid in the corrected order)
             solid_pct = (labels == 4).mean()
             p_mut     = 0.2 + 0.3 * solid_pct + 0.1 * rng.random()
             row[gene] = int(rng.random() < p_mut)

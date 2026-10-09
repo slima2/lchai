@@ -1,3 +1,4 @@
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
 """
 Pattern-Informed ABMIL Benchmark for Lung Cancer Mutation Prediction
 =====================================================================
@@ -65,8 +66,8 @@ warnings.filterwarnings("ignore", category=UserWarning)
 GENES = ["TP53", "EGFR", "KRAS", "STK11", "KEAP1", "RBM10"]
 
 PATTERN_NAMES = [
-    "acinar", "lepidic", "micropapillary",
-    "papillary", "solid", "mucinous"
+    "micropapillary", "cribriform", "papillary",
+    "solid", "acinar", "lepidic"
 ]
 
 CONDITION_NAMES = [
@@ -793,7 +794,7 @@ def generate_synthetic_data(data_dir: str, n_slides: int = 60, seed: int = 42):
 
         row = {"slide_id": sid}
         for gene in GENES:
-            # ~30% positive rate, correlated weakly with solid % (pattern 4)
+            # ~30% positive rate, correlated weakly with solid % (pattern 4 = solid in the corrected order)
             solid_pct = (labels == 4).mean()
             p_mut     = 0.2 + 0.3 * solid_pct + 0.1 * rng.random()
             row[gene] = int(rng.random() < p_mut)

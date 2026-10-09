@@ -1,3 +1,4 @@
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
 """
 Attention Maps with Pattern Overlay — LUAD Thesis Visualisation
 ================================================================
@@ -52,24 +53,29 @@ LABELS_CSV  = "/home/rapids/notebooks/slima/data/labels.csv"
 OUT_DIR     = "/home/rapids/notebooks/slima/figures/attention_maps"
 
 # ─── Histological patterns ─────────────────────────────────────────────────
-PATTERN_NAMES = ["acinar", "lepidic", "micropapillary", "mucinous", "papillary", "solid"]
+PATTERN_NAMES = ["micropapillary", "cribriform", "papillary", "lepidic", "solid", "acinar"]
 
 # Perceptually distinct, print-safe, non-overlapping palette
 PATTERN_COLORS = {
-    "acinar":         "#1E90FF",   # dodger blue
-    "lepidic":        "#00C853",   # vivid green
-    "micropapillary": "#FF6F00",   # deep amber   (NOT pink — avoids confusion with solid)
-    "mucinous":       "#E040FB",   # purple
-    "papillary":      "#00E5FF",   # cyan
-    "solid":          "#FF1744",   # red
+    "micropapillary":         "#1E90FF",   # dodger blue
+    "cribriform":        "#00C853",   # vivid green
+    "papillary": "#FF6F00",   # deep amber   (NOT pink — avoids confusion with acinar)
+    "lepidic":       "#E040FB",   # purple
+    "solid":      "#00E5FF",   # cyan
+    "acinar":          "#FF1744",   # red
 }
 
-# Gene → pattern associations with strength
+# Gene → pattern associations with strength.
+# These are literature priors expressed in TRUE ANORAK class names (not legacy
+# labels), so they were NOT permuted by the 4-Apr-2026 remap. The former
+# "mucinous" entries (KRAS/STK11) are expressed through the lepidic×solid IMA
+# proxy used in the thesis (Table 6.12); STK11 enrichment in solid morphology
+# follows §6 [78].
 GENE_ASSOC = {
     "TP53":  {"solid": "strong", "micropapillary": "moderate"},
     "EGFR":  {"lepidic": "strong", "papillary": "moderate"},
-    "KRAS":  {"mucinous": "strong", "acinar": "moderate"},
-    "STK11": {"mucinous": "moderate", "lepidic": "moderate"},
+    "KRAS":  {"lepidic": "strong", "solid": "moderate"},
+    "STK11": {"lepidic": "moderate", "solid": "moderate"},
     "KEAP1": {},
     "RBM10": {"solid": "moderate", "acinar": "moderate"},
 }

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
+# [4-APR-2026] true ANORAK class names in the ORIGINAL index order of the trained models
+# (= alphabetical order of the legacy names). Used to keep label2id stable.
+CLASS_ORDER_4APR2026 = ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
 """
 Complete Ablation Study: All Loss Functions + FuzzyArcLoss v2 Variants
 ======================================================================
@@ -78,7 +82,7 @@ warnings.filterwarnings("ignore")
 class Config:
     # Data paths
     ROOT_DIR: str = "/home/rapids/notebooks/slima/Zenodo_Anorak_original"
-    XLS_PATH: str = "/home/rapids/notebooks/slima/overlay_index ver 9 nov 2025.xlsx"
+    XLS_PATH: str = "/home/rapids/notebooks/slima/overlay_index_corrected_4_apr_2026.xlsx"
     OUT_DIR: str = "/home/rapids/notebooks/slima/outputs/complete_ablation"
     CTRANSPATH_CHECKPOINT: str = "/home/rapids/notebooks/slima/models/ctranspath.pth"
     
@@ -619,8 +623,8 @@ def get_lung_adenocarcinoma_class_params(num_classes: int = 6):
     Based on ablation study per-class F1 analysis
     
     Strategy:
-    - Hard classes (acinar 45%, micropapillary 60%): gentle (low tau, low margin)
-    - Easy classes (papillary 97%, solid 85%): aggressive (high tau, high margin)
+    - Hard classes (micropapillary 45%, papillary 60%): gentle (low tau, low margin)
+    - Easy classes (solid 97%, acinar 85%): aggressive (high tau, high margin)
     """
     return {
         'class_tau': torch.tensor([0.35, 0.45, 0.35, 0.50, 0.60, 0.65])[:num_classes],
@@ -980,7 +984,10 @@ def main():
     df = df.merge(xls_filtered[['stem', 'pattern']], on='stem', how='inner')
     df = df.dropna(subset=['pattern'])
     
-    labels = sorted(df['pattern'].astype(str).unique())
+    # [4-APR-2026] keep the original class-index order of the trained models;
+    # sorted() over the corrected names would shuffle the indices.
+    labels = sorted(df['pattern'].astype(str).unique(), key=lambda _c: (CLASS_ORDER_4APR2026.index(str(_c).lower())
+                   if str(_c).lower() in CLASS_ORDER_4APR2026 else 99, str(_c)))
     label2id = {l: i for i, l in enumerate(labels)}
     id2label = {i: l for l, i in label2id.items()}
     num_classes = len(labels)

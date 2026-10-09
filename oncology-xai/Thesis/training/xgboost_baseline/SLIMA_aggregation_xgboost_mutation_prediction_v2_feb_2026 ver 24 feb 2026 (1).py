@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
 """
 SLIMA Aggregation + XGBoost Mutation Prediction (Feb 2026)
 ============================================================
@@ -11,7 +12,7 @@ PIPELINE:
 
 INPUT:
   Tile CSVs from inference v6: {slide_name}_tiles_512_v2.csv
-  Each CSV has: x, y, pred_class, pred_label, prob_acinar, ..., prob_solid
+  Each CSV has: x, y, pred_class, pred_label, prob_micropapillary, ..., prob_acinar
 
 OUTPUT:
   - morphologic_profiles_v2.csv (slide-level features)
@@ -20,8 +21,8 @@ OUTPUT:
   - Comparison table: old vs new profiles
 
 FEATURE VECTOR (per thesis §4.5):
-  pct_acinar, pct_lepidic, pct_micropapillary, pct_mucinous,
-  pct_papillary, pct_solid, n_tiles_total
+  pct_micropapillary, pct_cribriform, pct_papillary, pct_lepidic,
+  pct_solid, pct_acinar, n_tiles_total
 """
 
 import os, sys, json, warnings
@@ -58,7 +59,7 @@ MUTATION_LABELS_PATH = "/home/rapids/notebooks/slima/data/tcga_luad_mutation_lab
 GENES = ["EGFR", "TP53", "KRAS", "KEAP1", "STK11", "NF1"]
 
 # Pattern classes (must match inference output)
-PATTERNS = ["acinar", "lepidic", "micropapillary", "mucinous", "papillary", "solid"]
+PATTERNS = ["micropapillary", "cribriform", "papillary", "lepidic", "solid", "acinar"]
 
 # XGBoost settings
 XGBOOST_PARAMS = {

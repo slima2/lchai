@@ -1,3 +1,4 @@
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
 """
 Pattern-Informed ABMIL Benchmark — v2 LUAD Full Cohort
 =======================================================
@@ -57,7 +58,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # ══════════════════════════════════════════════════════════════════════════════
 GENES = ["TP53", "EGFR", "KRAS", "STK11", "KEAP1", "RBM10"]
 
-PATTERN_NAMES = ["acinar", "lepidic", "micropapillary", "mucinous", "papillary", "solid"]
+PATTERN_NAMES = ["micropapillary", "cribriform", "papillary", "lepidic", "solid", "acinar"]
 
 CONDITION_NAMES = [
     "baseline1_xgboost",

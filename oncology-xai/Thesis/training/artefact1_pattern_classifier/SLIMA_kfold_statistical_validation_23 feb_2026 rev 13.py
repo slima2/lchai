@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
+# [4-APR-2026] true ANORAK class names in the ORIGINAL index order of the trained models
+# (= alphabetical order of the legacy names). Used to keep label2id stable.
+CLASS_ORDER_4APR2026 = ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
 """
 SLIMA Statistical Validation — K-Fold × Multi-Seed (Feb 2026)
 ==============================================================
@@ -14,7 +18,7 @@ WHAT THIS PROVES FOR YOUR THESIS:
   - If V2's mean F1 ≥ SphereFace mean F1 → V2 wins (with CI)
   - If overlapping CIs → "no statistically significant difference"
     (still valid: V2 is a NOVEL contribution performing on par)
-  - Per-class stability (std on lepidic, micropapillary)
+  - Per-class stability (std on cribriform, papillary)
 
 SCOPE: Only runs the top contenders (not all 18) to save time:
   1. FuzzyArcLoss V2 (Optuna)     — your main contribution
@@ -72,7 +76,7 @@ ABLATION_SCRIPT = "/home/rapids/notebooks/slima/SLIMA_ablation_study_loss_functi
 class KFoldConfig:
     # Paths (same as ablation)
     ROOT_DIR: str = "/home/rapids/notebooks/slima/Zenodo_Anorak_original"
-    XLS_PATH: str = "/home/rapids/notebooks/slima/overlay_index ver 9 nov 2025.xlsx"
+    XLS_PATH: str = "/home/rapids/notebooks/slima/overlay_index_corrected_4_apr_2026.xlsx"
     OUT_DIR: str = "/home/rapids/notebooks/slima/outputs/kfold_validation"
     CTRANSPATH_CHECKPOINT: str = "/home/rapids/notebooks/slima/models/ctranspath.pth"
 
@@ -103,7 +107,7 @@ class KFoldConfig:
     # K-Fold settings
     N_FOLDS: int = 5
     SEEDS: list = None  # Set in __post_init__
-    INCLUDE_PATTERNS: str = "lepidic,acinar,papillary,micropapillary,solid,mucinous"
+    INCLUDE_PATTERNS: str = "cribriform,micropapillary,solid,papillary,acinar,lepidic"
     PRINT_FREQ: int = 10
 
     def __post_init__(self):
@@ -250,7 +254,10 @@ def run_kfold_validation():
     df = df[df[label_col].str.lower().isin(inc)].copy()
     df['label'] = df[label_col].str.lower()
 
-    labels = sorted(df['label'].unique().tolist())
+    # [4-APR-2026] keep the original class-index order of the trained models;
+    # sorted() over the corrected names would shuffle the indices.
+    labels = sorted(df['label'].unique().tolist(), key=lambda _c: (CLASS_ORDER_4APR2026.index(str(_c).lower())
+                   if str(_c).lower() in CLASS_ORDER_4APR2026 else 99, str(_c)))
     label2id = {l: i for i, l in enumerate(labels)}
     id2label = {i: l for l, i in label2id.items()}
     num_classes = len(labels)

@@ -51,7 +51,11 @@ Thesis/
 │   │   ├── ablation_results_v16_optuna.json
 │   │   ├── eval_results.json                    # Full-dataset evaluation (N=637 tiles)
 │   │   └── eval_results_val_set.json            # Held-out evaluation (N=128 tiles, 80/20 split)
-│   └── data_pipeline/                   # SVS download and 6-GPU embedding pipeline logs
+│   ├── data_pipeline/                   # SVS download and 6-GPU embedding pipeline logs
+│   └── tcga_tile_inference_dec2025/     # FuzzyArcLoss V2 tile inference on 322 TCGA slides (Nov-Dec 2025,
+│       ├── tcga_tiles_384_predictions_322_slides.zip   # x,y,pred_class,pattern  (corrected names)
+│       ├── tcga_*_histologic_patterns*.csv             # per-case / per-slide pattern % (B1 development input)
+│       └── pred_class_to_pattern_4apr2026.json         # index -> true class sidecar
 │
 ├── evaluation/
 │   ├── eval_pattern_confusion.py        # Confusion matrix of FuzzyArcLoss V2 (Figure 6.5)
@@ -73,7 +77,9 @@ Thesis/
 │
 ├── tools/
 │   ├── remap_pattern_names_4apr2026.py  # idempotent legacy -> true pattern-name remapper (JSON/TXT/CSV)
-│   ├── PATTERN_REMAP_4_apr_2026.py      # mapping table used by the remapper
+│   ├── remap_pattern_names_in_scripts.py # same remap for .py/.ipynb (+ stable class order for Artefact 1)
+│   ├── add_pattern_names_to_tile_predictions.py  # adds `pattern` (true name of pred_class) to tile CSVs
+│   ├── PATTERN_REMAP_4_apr_2026.py      # mapping table used by the remappers
 │   └── remap_manifest_dgx.json          # which DGX files were remapped, with checksums
 │
 ├── README_ADDENDUM_pattern_correction_and_provenance.md

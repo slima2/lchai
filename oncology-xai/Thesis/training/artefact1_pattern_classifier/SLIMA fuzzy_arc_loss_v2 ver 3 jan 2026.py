@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
+# [4-APR-2026] true ANORAK class names in the ORIGINAL index order of the trained models
+# (= alphabetical order of the legacy names). Used to keep label2id stable.
+CLASS_ORDER_4APR2026 = ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
 """
 FuzzyArcLoss v2: Histopathology-Optimized Angular Margin Loss
 ==============================================================
@@ -30,8 +34,8 @@ class FuzzyArcLossV2(nn.Module):
     - v2 gives FULL margin to confident samples → prevents overconfidence
     
     This flip is crucial for histopathology where:
-    - Easy classes (papillary, solid) need MORE regularization
-    - Hard classes (acinar, micropapillary) need gentler training
+    - Easy classes (solid, acinar) need MORE regularization
+    - Hard classes (micropapillary, papillary) need gentler training
     """
     
     def __init__(
@@ -298,12 +302,12 @@ def get_lung_adenocarcinoma_params():
     - Easy classes (high F1): higher tau, higher margin (aggressive)
     """
     return {
-        0: (0.35, 0.35, 25.0),  # acinar - HARD (45% F1) - be gentle
-        1: (0.45, 0.45, 28.0),  # lepidic - MEDIUM (74% F1)
-        2: (0.35, 0.35, 25.0),  # micropapillary - HARD (60% F1) - be gentle
-        3: (0.50, 0.50, 30.0),  # mucinous - GOOD (96% F1 with FAL!) - keep working
-        4: (0.60, 0.55, 32.0),  # papillary - EASY (90%+ F1) - can be aggressive
-        5: (0.65, 0.60, 35.0),  # solid - EASY+MAJORITY - most aggressive
+        0: (0.35, 0.35, 25.0),  # micropapillary - HARD (45% F1) - be gentle
+        1: (0.45, 0.45, 28.0),  # cribriform - MEDIUM (74% F1)
+        2: (0.35, 0.35, 25.0),  # papillary - HARD (60% F1) - be gentle
+        3: (0.50, 0.50, 30.0),  # lepidic - GOOD (96% F1 with FAL!) - keep working
+        4: (0.60, 0.55, 32.0),  # solid - EASY (90%+ F1) - can be aggressive
+        5: (0.65, 0.60, 35.0),  # acinar - EASY+MAJORITY - most aggressive
     }
 
 
@@ -314,7 +318,7 @@ def get_ontology_similarity_matrix(num_classes: int = 6) -> torch.Tensor:
     Lower value = more similar (harder to distinguish)
     Used to adjust inter-class margins
     
-    Classes: acinar, lepidic, micropapillary, mucinous, papillary, solid
+    Classes: micropapillary, cribriform, papillary, lepidic, solid, acinar
     """
     # Base: all pairs have similarity 0.5
     sim = torch.ones(num_classes, num_classes) * 0.5
@@ -323,16 +327,16 @@ def get_ontology_similarity_matrix(num_classes: int = 6) -> torch.Tensor:
     sim.fill_diagonal_(0)
     
     # Similar pairs (harder to distinguish) - lower values
-    # papillary (4) and micropapillary (2) are related
+    # solid (4) and papillary (2) are related
     sim[2, 4] = sim[4, 2] = 0.3
     
-    # acinar (0) and solid (5) can be confused
+    # micropapillary (0) and acinar (5) can be confused
     sim[0, 5] = sim[5, 0] = 0.35
     
-    # lepidic (1) and acinar (0) overlap
+    # cribriform (1) and micropapillary (0) overlap
     sim[0, 1] = sim[1, 0] = 0.4
     
-    # mucinous (3) is most distinctive
+    # lepidic (3) is most distinctive
     sim[3, :] = sim[:, 3] = 0.7
     sim[3, 3] = 0
     
@@ -425,7 +429,7 @@ if __name__ == "__main__":
     
     print("\n✅ FuzzyArcLoss v2 working correctly!")
     print("\nClass-specific parameters (tau, margin, scale):")
-    for i, name in enumerate(['acinar', 'lepidic', 'micropapillary', 'mucinous', 'papillary', 'solid']):
+    for i, name in enumerate(['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']):
         tau = model.head.class_tau[i].item()
         m = model.head.class_margin[i].item()
         s = model.head.class_scale[i].item()

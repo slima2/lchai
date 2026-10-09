@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
+# [4-APR-2026] true ANORAK class names in the ORIGINAL index order of the trained models
+# (= alphabetical order of the legacy names). Used to keep label2id stable.
+CLASS_ORDER_4APR2026 = ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
 """
 SLIMA Advanced Benchmark V3: Next-Generation Loss Functions for 90% F1 Target
 ==============================================================================
@@ -84,7 +88,7 @@ class BenchmarkConfig:
     ROOT_DIR: str = "/home/rapids/notebooks/slima/Zenodo_Anorak_original"
     IMAGE_DIR: str = None
     MASK_DIR: str = None
-    XLS_PATH: str = "/home/rapids/notebooks/slima/overlay_index ver 9 nov 2025.xlsx"
+    XLS_PATH: str = "/home/rapids/notebooks/slima/overlay_index_corrected_4_apr_2026.xlsx"
     OUT_DIR: str = "/home/rapids/notebooks/slima/outputs/advanced_benchmark_v3"
     
     CTRANSPATH_CHECKPOINT: str = "/home/rapids/notebooks/slima/models/ctranspath.pth"
@@ -1365,7 +1369,10 @@ def run_advanced_benchmark(hf_token: str = None, gpu_id: int = 0):
     df = df.merge(xls_filtered[['stem', 'pattern']], on='stem', how='inner')
     df = df.dropna(subset=['pattern'])
     
-    labels = sorted(df['pattern'].astype(str).unique())
+    # [4-APR-2026] keep the original class-index order of the trained models;
+    # sorted() over the corrected names would shuffle the indices.
+    labels = sorted(df['pattern'].astype(str).unique(), key=lambda _c: (CLASS_ORDER_4APR2026.index(str(_c).lower())
+                   if str(_c).lower() in CLASS_ORDER_4APR2026 else 99, str(_c)))
     label2id = {l: i for i, l in enumerate(labels)}
     id2label = {i: l for l, i in label2id.items()}
     num_classes = len(labels)

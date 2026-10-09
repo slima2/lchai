@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
+# [4-APR-2026] true ANORAK class names in the ORIGINAL index order of the trained models
+# (= alphabetical order of the legacy names). Used to keep label2id stable.
+CLASS_ORDER_4APR2026 = ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
 """
 SLIMA Ablation Study: Loss Function Comparison for Histopathology Classification
 ================================================================================
@@ -123,7 +127,7 @@ class AblationConfig:
     ROOT_DIR: str = "/home/rapids/notebooks/slima/Zenodo_Anorak_original"
     IMAGE_DIR: str = None
     MASK_DIR: str = None
-    XLS_PATH: str = "/home/rapids/notebooks/slima/overlay_index ver 9 nov 2025.xlsx"
+    XLS_PATH: str = "/home/rapids/notebooks/slima/overlay_index_corrected_4_apr_2026.xlsx"
     OUT_DIR: str = "/home/rapids/notebooks/slima/outputs/ablation_study_v11"
     
     # Model
@@ -720,8 +724,8 @@ class FuzzyArcMarginProductV2ClassParams(nn.Module):
     This allows tailoring regularization to class difficulty.
     
     Best configuration from ablation (65.09% F1):
-    - Hard classes (acinar, micropapillary): gentle τ=0.35, m=0.35
-    - Easy classes (solid, papillary): aggressive τ=0.65, m=0.60
+    - Hard classes (micropapillary, papillary): gentle τ=0.35, m=0.35
+    - Easy classes (acinar, solid): aggressive τ=0.65, m=0.60
     """
     def __init__(self, in_features: int, out_features: int, 
                  s: float = 30.0, m: float = 0.50, tau: float = 0.5,
@@ -742,7 +746,7 @@ class FuzzyArcMarginProductV2ClassParams(nn.Module):
         
         # Class-specific parameters
         # Default: optimized for lung adenocarcinoma (6 classes)
-        # Order: [acinar, lepidic, micropapillary, mucinous, papillary, solid]
+        # Order: [micropapillary, cribriform, papillary, lepidic, solid, acinar]
         if class_tau is None:
             class_tau = [0.35, 0.45, 0.35, 0.50, 0.60, 0.65]
         if class_margin is None:
@@ -990,8 +994,8 @@ class FuzzyArcMarginProductV3SubCenters(nn.Module):
     FuzzyArcMarginProduct V3 with Sub-Centers
     
     Each class has K prototype vectors to capture multi-modal patterns.
-    This is especially useful for histopathology where classes like acinar
-    and lepidic have multiple visual subtypes.
+    This is especially useful for histopathology where classes like micropapillary
+    and cribriform have multiple visual subtypes.
     
     cosine(c) = max_k { f · w_{c,k} / (||f|| ||w_{c,k}||) }
     
@@ -1146,7 +1150,7 @@ class FuzzyArcMarginProductV25ClassParams(nn.Module):
     
     Combines V2.5 sub-centers with class-specific τ, margin, and scale.
     
-    CAUTION: In ablation, miscalibrated class params caused lepidic to collapse
+    CAUTION: In ablation, miscalibrated class params caused cribriform to collapse
     from 51.6% to 13.3%. Use with care and proper validation.
     """
     def __init__(self, in_features: int, out_features: int, 
@@ -1171,8 +1175,8 @@ class FuzzyArcMarginProductV25ClassParams(nn.Module):
         
         # Class-specific parameters (INVERTED: minority classes get GENTLE params)
         if class_tau is None:
-            # [acinar, lepidic, micropapillary, mucinous, papillary, solid]
-            # Minority classes (lepidic=59, mucinous=61) get LOW tau/margin
+            # [micropapillary, cribriform, papillary, lepidic, solid, acinar]
+            # Minority classes (cribriform=59, lepidic=61) get LOW tau/margin
             class_tau = [0.45, 0.30, 0.45, 0.30, 0.40, 0.55]
         if class_margin is None:
             class_margin = [0.40, 0.25, 0.40, 0.25, 0.35, 0.50]
@@ -2336,7 +2340,10 @@ def run_ablation_study():
     df = df.merge(xls_filtered[['stem', label_col]], on='stem', how='inner')
     df = df.dropna(subset=[label_col])
     
-    labels = sorted(df[label_col].astype(str).unique())
+    # [4-APR-2026] keep the original class-index order of the trained models;
+    # sorted() over the corrected names would shuffle the indices.
+    labels = sorted(df[label_col].astype(str).unique(), key=lambda _c: (CLASS_ORDER_4APR2026.index(str(_c).lower())
+                   if str(_c).lower() in CLASS_ORDER_4APR2026 else 99, str(_c)))
     label2id = {l: i for i, l in enumerate(labels)}
     id2label = {i: l for l, i in label2id.items()}
     num_classes = len(labels)
