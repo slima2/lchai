@@ -28,11 +28,9 @@ Thesis/
 │       ├── overlay_index.xlsx                   #   tile -> pattern index used to train Artefact 1
 │       ├── pipeline_6gpu_parallel.py            #   tiling -> FuzzyArcLoss V2 -> CTransPath embeddings -> per-slide .npy (687 slides)
 │       ├── SLIMA_PARALLEL_inferencing_hist_patterns_ver_24_feb_2026_gpu_optimized.py
-│       ├── SLIMA_PARALELL_inferencing_hist_patterns_roi_parallel_ver_14_dec_2025.py  # produced logs/tcga_tile_inference_dec2025
-│       ├── SLIMA Mapping MAF to CSV per tile wsi classification TGCA ver 17 dec 2025.ipynb  # -> *_dec2025.csv summaries
 │       ├── crossref_slides_vs_luad_maf.py       #   defines the 505-slide cohort
 │       ├── prepare_benchmark_inputs (1).py, extract_embeddings (2).py
-│       └── download_*.py, mutation_report.py
+│       └── download_*.py
 │
 ├── models/
 │   ├── best_fuzzyarcloss_v2.pth.xz      # Artefact 1 weights (xz, 96.8 MiB -> 111.8 MB .pth); see models/README.md
@@ -44,10 +42,6 @@ Thesis/
 │       ├── luad_slide_ids_available.txt # 505 LUAD slides actually evaluated (benchmark --slide_list)
 │       ├── luad_slide_ids_full.txt      # all 687 slide ids of the inventory (same set as labels.csv)
 │       └── luad_cases_missing_slides.txt # 51 LUAD cases whose SVS could not be downloaded
-│
-├── inference/
-│   └── SLIMA_histology_mutation_xgboost_rev3_autodelim_threshold ver 1 feb 2026 (2).ipynb
-│                                        # XGBoost B1 development notebook (reads logs/tcga_tile_inference_dec2025/*_dec2025.csv)
 │
 ├── logs/
 │   ├── mutation_5fold_results/          # = results_luad_full_v2 on the DGX
@@ -64,11 +58,7 @@ Thesis/
 │   │   ├── eval_results.json                    # Full-dataset evaluation (N=637 tiles)
 │   │   ├── eval_results_val_set.json            # Held-out evaluation (N=128 tiles, 80/20 split)
 │   │   └── confusion_matrix_val_set.png         # Figure 6.5 as rendered
-│   ├── data_pipeline/                   # SVS download and 6-GPU embedding pipeline logs
-│   └── tcga_tile_inference_dec2025/     # ROI-model tile inference on 322 TCGA slides (14 Dec 2025, B1 development)
-│       ├── tcga_tiles_384_predictions_322_slides.zip   # x,y,pred_class,pattern
-│       ├── tcga_*_patterns*_dec2025.csv                # per-case (305) / per-slide (322) pattern %
-│       └── pred_class_to_pattern.json                  # index -> pattern sidecar
+│   └── data_pipeline/                   # SVS download and 6-GPU embedding pipeline logs
 │
 ├── evaluation/
 │   ├── eval_pattern_confusion.py        # Confusion matrix of FuzzyArcLoss V2 (Figure 6.5)

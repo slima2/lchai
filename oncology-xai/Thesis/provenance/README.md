@@ -117,17 +117,26 @@ differs, the archived value is the one that can be reproduced.
 | §5.3.6 embedding storage | embeddings stored as float16 (~20 GB) | `embeddings.npy` are float32 (38.6 GB); `pattern_probs.npy` float32 as stated |
 | Reproducibility statement | — | Zenodo DOI pending; `docs/zenodo_deposit/MANIFEST_sha256.txt` lists the deposit |
 
-## 5. Material in the archive that the thesis does not use
+## 5. Development material removed from the archive
 
-`logs/tcga_tile_inference_dec2025/` (322 TCGA slides), the notebook
-`inference/SLIMA_histology_mutation_xgboost_rev3_… 1 feb 2026.ipynb`, the
-notebook `SLIMA Mapping MAF to CSV … 17 dec 2025.ipynb` and the script
-`SLIMA_PARALELL_inferencing_hist_patterns_roi_parallel_ver_14_dec_2025.py` are
-the Nov–Dec 2025 development line of the XGBoost baseline: an earlier ROI
-pattern model (`anorak_roi_acc6_v5`, not FuzzyArcLoss V2) was run on the 322
-TCGA slides available at the time, slide-level pattern percentages were joined
-to the MAF, and XGBoost + TreeSHAP were explored per gene. None of its numbers
-appear in the thesis: condition B1 of Chapter 6 is computed inside
-`pattern_informed_abmil_benchmark_v2_patched.py` on the 505-slide cohort, and
-the SHAP attributions of Figure 4.12 / Table 6.10 come from the LCHAI
-inference service, not from these notebooks.
+The Nov–Dec 2025 development line of the XGBoost baseline was removed from
+the repository because none of its numbers appear in the thesis and its
+322-slide cohort is not one of the cohorts the thesis describes:
+
+- `logs/tcga_tile_inference_dec2025/` — tile predictions and per-slide / per-case
+  pattern percentages for the 322 TCGA slides available on 14 Dec 2025, produced
+  by an earlier ROI pattern model (`anorak_roi_acc6_v5`, not FuzzyArcLoss V2)
+  with `SLIMA_PARALELL_inferencing_hist_patterns_roi_parallel_ver_14_dec_2025.py`;
+- `SLIMA Mapping MAF to CSV per tile wsi classification TGCA ver 17 dec 2025.ipynb`
+  (join of those percentages to the GDC MAF) and `mutation_report.py`
+  (local report over the same CSV);
+- `inference/SLIMA_histology_mutation_xgboost_rev3_… ver 1 feb 2026.ipynb`
+  (XGBoost + TreeSHAP exploration per gene on those profiles).
+
+Condition B1 of Chapter 6 is computed inside
+`pattern_informed_abmil_benchmark_v2_patched.py` on the 505-slide cohort from
+`pattern_probs.npy` of the final model, and the SHAP attributions of
+Figure 4.12 / Table 6.10 come from the LCHAI inference service, not from these
+notebooks. The files remain on the DGX under
+`outputs/inference_results_parallel/` and in git history before commit
+`91dea5f`.
