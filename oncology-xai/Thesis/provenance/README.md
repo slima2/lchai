@@ -99,3 +99,35 @@ Known gap: the "71–76 % before the twenty fixes" figure of thesis §3.7 / §6.
 has no archived script + log pair; the only pre-audit log on the DGX
 (`output_ablation_allfuzzy_allothers.txt`) used a 775-tile split and is
 truncated after 3 of 18 losses.
+
+## 4. Known discrepancies between the thesis text (PDF of 3 May 2026) and the archive
+
+The archive is the record of what was actually run. Where the printed text
+differs, the archived value is the one that can be reproduced.
+
+| Thesis | Says | Archive |
+|---|---|---|
+| Figure 6.5 caption | validation set N = 138 tiles | `logs/pattern_classifier_results/eval_results_val_set.json`: N = 128 tiles (80/20 split of 637, seed 42). No 138-tile evaluation exists on the DGX. |
+| §5.8 cohort of the mutation benchmark | 687 slides / 668 patients, ≈549 train / 138 test per fold | `results_luad_full_v2` was run with `--slide_list luad_slide_ids_available.txt`: 505 slides / 505 patients, 404 / 101 per fold. `labels.csv` still lists the full 687-slide inventory. |
+| §5.8.2 model selection | "10 % of the training fold" used for early stopping | `_abmil_loop()` selects the best epoch on the CV **test** fold (patience 15) and reports that value; there is no inner split. Fold AUROCs are therefore best-epoch-on-test values (optimistic). |
+| §5.8.3 per-slide predictions | per-fold prediction files | `_save_fold()` drops `probs`/`labels` before writing the JSON; no per-slide prediction CSV exists. Regenerable from the 150 checkpoints (Zenodo). XGBoost models were not persisted. |
+| Figure 6.10 (AUPRC per gene) | values typed by hand, 2 decimals | 32 of 36 cells differ from `summary_table.csv` (largest: FC-MIL/TP53 printed .63 vs .706; B2/TP53 .64 vs .695; B1/EGFR .31 vs .235). Figures 6.6–6.9 (AUROC) match the CSV exactly. |
+| §6.1 FuzzyArcLoss V2 K-fold result | 92.31 % ± 2.04 | `output_kfold_fuzzyv2_sphereface.txt`: 92.31 % ± 2.05 |
+| §3.7 / §6.1.1 pre-audit baseline | 71–76 % macro-F1 before the twenty fixes | no archived script + log pair (see §3 above) |
+| §5.3.6 embedding storage | embeddings stored as float16 (~20 GB) | `embeddings.npy` are float32 (38.6 GB); `pattern_probs.npy` float32 as stated |
+| Reproducibility statement | — | Zenodo DOI pending; `docs/zenodo_deposit/MANIFEST_sha256.txt` lists the deposit |
+
+## 5. Material in the archive that the thesis does not use
+
+`logs/tcga_tile_inference_dec2025/` (322 TCGA slides), the notebook
+`inference/SLIMA_histology_mutation_xgboost_rev3_… 1 feb 2026.ipynb`, the
+notebook `SLIMA Mapping MAF to CSV … 17 dec 2025.ipynb` and the script
+`SLIMA_PARALELL_inferencing_hist_patterns_roi_parallel_ver_14_dec_2025.py` are
+the Nov–Dec 2025 development line of the XGBoost baseline: an earlier ROI
+pattern model (`anorak_roi_acc6_v5`, not FuzzyArcLoss V2) was run on the 322
+TCGA slides available at the time, slide-level pattern percentages were joined
+to the MAF, and XGBoost + TreeSHAP were explored per gene. None of its numbers
+appear in the thesis: condition B1 of Chapter 6 is computed inside
+`pattern_informed_abmil_benchmark_v2_patched.py` on the 505-slide cohort, and
+the SHAP attributions of Figure 4.12 / Table 6.10 come from the LCHAI
+inference service, not from these notebooks.
