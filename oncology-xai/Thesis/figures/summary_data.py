@@ -2,7 +2,7 @@
 Shared loader for the Chapter 6 figure generators.
 
 Reads ``logs/mutation_5fold_results/summary_table.csv`` (the file written by
-``pattern_informed_abmil_benchmark_v2_patched.py`` at the end of the 5-fold
+``pattern_informed_mil_benchmark.py`` at the end of the 5-fold
 benchmark) so that every figure is regenerated from the archived results
 instead of from numbers typed by hand.
 

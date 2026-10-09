@@ -15,21 +15,21 @@ DGX H100 server where the experiments ran (`notebooks/slima/`). Audit notes are 
 Thesis/
 ├── training/
 │   ├── artefact1_pattern_classifier/    # FuzzyArcLoss V2 on Zenodo-ANORAK (6 patterns, 637 tiles)
-│   │   ├── SLIMA_ablation_study_loss_functions_ver_23_feb_2026_gpu_rev_13 (1).py  # 18-loss ablation -> output_ablation_best_rev13.txt (Table 6.1)
-│   │   ├── SLIMA_optuna_fuzzyarcloss_v2_best model search_ 22 feb_2026 rev 2.py   # Optuna s,m,tau -> output_optuna_fuzzyarcv2_best.txt, best_fuzzyarcloss_v2.pth
-│   │   └── SLIMA_kfold_statistical_validation_23 feb_2026 rev 13.py             # 5-fold x 3 seeds -> output_kfold_fuzzyv2_sphereface.txt (Table 6.3, 92.31%)
+│   │   ├── ablation_loss_functions.py  # 18-loss ablation -> output_ablation_loss_functions.txt (Table 6.1)
+│   │   ├── optuna_fuzzyarcloss_search.py   # Optuna s,m,tau -> output_optuna_fuzzyarcloss_search.txt, best_fuzzyarcloss_v2.pth
+│   │   └── kfold_statistical_validation.py             # 5-fold x 3 seeds -> output_kfold_statistical_validation.txt (Table 6.3, 92.31%)
 │   ├── artefact2_mutation_abmil/        # PI-ABMIL + all six benchmark conditions, 5-fold CV
-│   │   └── pattern_informed_abmil_benchmark_v2_patched.py   # <-- produced logs/mutation_5fold_results (14 Mar 2026)
-│   ├── artefact3_mutation_choquet/      # FC-MIL is implemented inside *_v2_patched.py (classes FuzzyMeasure,
+│   │   └── pattern_informed_mil_benchmark.py   # <-- produced logs/mutation_5fold_results (14 Mar 2026)
+│   ├── artefact3_mutation_choquet/      # FC-MIL is implemented inside pattern_informed_mil_benchmark.py (classes FuzzyMeasure,
 │   │   └── README.md                    #   FuzzyChoquetAggregation, FuzzyChoquetMIL); README points to them
 │   ├── xgboost_baseline/                # stand-alone XGBoost + TreeSHAP on slide-level pattern profiles (B1 development)
 │   └── data_preparation/                # GDC download, MAF -> labels, cohort cross-reference, ANORAK overlay index,
 │       ├── build_anorak_overlay_index.py        #   builds overlay_index.xlsx (637 tiles) from the Zenodo ANORAK release
 │       ├── overlay_index.xlsx                   #   tile -> pattern index used to train Artefact 1
 │       ├── pipeline_6gpu_parallel.py            #   tiling -> FuzzyArcLoss V2 -> CTransPath embeddings -> per-slide .npy (687 slides)
-│       ├── SLIMA_PARALLEL_inferencing_hist_patterns_ver_24_feb_2026_gpu_optimized.py
+│       ├── tile_pattern_inference_multigpu.py
 │       ├── crossref_slides_vs_luad_maf.py       #   defines the 505-slide cohort
-│       ├── prepare_benchmark_inputs (1).py, extract_embeddings (2).py
+│       ├── prepare_benchmark_inputs.py, extract_embeddings.py
 │       └── download_*.py
 │
 ├── models/
@@ -48,13 +48,13 @@ Thesis/
 │   │   ├── summary_table.csv            # 36 (condition, gene) rows: AUROC / AUPRC / F1 mean+std over 5 folds
 │   │   ├── per_fold_json/               # 180 JSON files (6 cond x 6 genes x 5 folds)
 │   │   │   └── metrics_<cond>_<gene>_fold<k>.json
-│   │   ├── orchestrator_output_benchmark_v2_patched.txt
+│   │   ├── orchestrator_output_benchmark.txt
 │   │   └── worker_logs/worker_<gene>.txt    # per-gene training logs (one H100 per gene)
 │   ├── pattern_classifier_results/      # Artefact 1 logs and evaluations
-│   │   ├── output_ablation_best_rev13.txt       # 18-loss ablation benchmark (Table 6.1)
-│   │   ├── output_optuna_fuzzyarcv2_best.txt    # Optuna search for FuzzyArcLoss V2
-│   │   ├── output_kfold_fuzzyv2_sphereface.txt  # K-fold statistical validation (Table 6.3)
-│   │   ├── ablation_results_v16_optuna.json
+│   │   ├── output_ablation_loss_functions.txt       # 18-loss ablation benchmark (Table 6.1)
+│   │   ├── output_optuna_fuzzyarcloss_search.txt    # Optuna search for FuzzyArcLoss V2
+│   │   ├── output_kfold_statistical_validation.txt  # K-fold statistical validation (Table 6.3)
+│   │   ├── ablation_results.json
 │   │   ├── eval_results.json                    # Full-dataset evaluation (N=637 tiles)
 │   │   ├── eval_results_val_set.json            # Held-out evaluation (N=128 tiles, 80/20 split)
 │   │   └── confusion_matrix_val_set.png         # Figure 6.5 as rendered
@@ -192,7 +192,7 @@ Figure 6.10 from the CSV with this script gives the archived values.
 
 ```bash
 # <benchmark_inputs> must contain labels.csv plus the per-slide embeddings / pattern probabilities
-python training/artefact2_mutation_abmil/pattern_informed_abmil_benchmark_v2_patched.py \
+python training/artefact2_mutation_abmil/pattern_informed_mil_benchmark.py \
     --data_dir <benchmark_inputs> \
     --slide_list data/cohort/luad_slide_ids_available.txt \
     --results_dir results_luad_full_v2 --genes TP53 EGFR KRAS STK11 KEAP1 RBM10 \

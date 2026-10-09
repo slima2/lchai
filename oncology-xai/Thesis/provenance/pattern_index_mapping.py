@@ -1,5 +1,5 @@
 """
-PATTERN_REMAP_4_apr_2026.py
+pattern_index_mapping.py
 ===========================
 Reference file documenting the correction of the pattern class mapping.
 

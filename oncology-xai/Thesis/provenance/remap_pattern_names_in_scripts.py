@@ -4,7 +4,7 @@ remap_pattern_names_in_scripts.py
 =================================
 Apply the 4 April 2026 ANORAK pattern-name correction to *source files*
 (.py / .ipynb) that still carry the legacy class names.  Same one-pass
-permutation as remap_pattern_names_4apr2026.py (imported from it):
+permutation as remap_pattern_names_in_results.py (imported from it):
 
     acinar->micropapillary, lepidic->cribriform, micropapillary->papillary,
     mucinous->lepidic, papillary->solid, solid->acinar
@@ -38,7 +38,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from remap_pattern_names_4apr2026 import LEGACY_TO_TRUE, PROVENANCE_KEY, PROVENANCE_VAL, TEXT_MARKER, remap_text  # noqa: E402
+from remap_pattern_names_in_results import LEGACY_TO_TRUE, PROVENANCE_KEY, PROVENANCE_VAL, TEXT_MARKER, remap_text  # noqa: E402
 
 # true names in the index order used by every trained model / result file
 # (index i == position of the legacy name in alphabetical order)

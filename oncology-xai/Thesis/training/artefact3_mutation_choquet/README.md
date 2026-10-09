@@ -3,7 +3,7 @@
 The FC-MIL condition (`proposed_fuzzy_choquet` in `summary_table.csv` and the
 `per_fold_json/`) was trained by the **same script** as the other five conditions:
 
-`../artefact2_mutation_abmil/pattern_informed_abmil_benchmark_v2_patched.py`
+`../artefact2_mutation_abmil/pattern_informed_mil_benchmark.py`
 
 | Component | Location in that script |
 |---|---|

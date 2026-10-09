@@ -19,7 +19,7 @@ Maximizes throughput on multi-GPU (6x H100 80GB):
   - Margin-free cosine logits for prediction (NOT margin-distorted)
 
   CHECKPOINT:
-  The ablation script (rev 11+) saves: best_fuzzyarcloss_v2.pth
+  The ablation script (ablation_loss_functions.py) saves: best_fuzzyarcloss_v2.pth
 
   Expected: ~500 TCGA slides in 1.5-3 hours on 6x H100
 """
@@ -352,7 +352,7 @@ def main():
 
     if not os.path.exists(MODEL_PATH):
         print(f"\n[ERROR] Checkpoint not found: {MODEL_PATH}")
-        print(f"  Run the ablation script (rev 11+) first — it saves best_<loss>.pth")
+        print(f"  Run the ablation script (ablation_loss_functions.py) first — it saves best_<loss>.pth")
         print(f"  Look for: best_fuzzyarcloss_v2.pth in your ablation output dir")
         sys.exit(1)
 

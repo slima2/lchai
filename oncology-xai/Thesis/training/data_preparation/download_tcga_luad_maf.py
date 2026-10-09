@@ -2,7 +2,7 @@
 """
 Download TCGA-LUAD Masked Somatic Mutation MAF files from GDC API.
 Downloads in small batches to avoid GDC server errors.
-Based on download_tcga_lusc_maf_v2_ver_24_feb_2026_rev_2.py
+Based on the TCGA-LUSC MAF download script
 """
 import os, json, sys, gzip, tarfile
 

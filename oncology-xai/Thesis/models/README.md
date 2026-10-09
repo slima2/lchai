@@ -44,7 +44,7 @@ ck["config"]     # EMBED_DIM 512, IMG_SIZE 224, USE_MASK_AS_CHANNEL True, s 46.1
 ## Use
 
 `training/data_preparation/pipeline_6gpu_parallel.py` and
-`SLIMA_PARALLEL_inferencing_hist_patterns_ver_24_feb_2026_gpu_optimized.py`
+`tile_pattern_inference_multigpu.py`
 load it through `MODEL_PATH`; both read `id2label` from the checkpoint, so the
 `prob_*` headers and the `pattern` column come out with the true names. The
 fine-tuned backbone is inside the file; the third-party `ctranspath.pth` is

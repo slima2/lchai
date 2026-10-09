@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-remap_pattern_names_4apr2026.py
+remap_pattern_names_in_results.py
 ===============================
 Apply the 4 April 2026 ANORAK pattern-name correction to result files
 (JSON / TXT / CSV) that were produced BEFORE the correction.
@@ -12,7 +12,7 @@ of class names.  The model, its 6 output indices, and every downstream result
 (ABMIL / Choquet metrics, XGBoost feature importances, per-class F1 of the
 pattern classifier) are unchanged; only the *names* attached to each index
 were wrong.  The correction was verified by a histopathologist on 4 Apr 2026
-(see overlay_index.xlsx and PATTERN_REMAP_4_apr_2026.py).
+(see overlay_index.xlsx and pattern_index_mapping.py).
 
 Legacy name (pre-4-Apr)  ->  True ANORAK class
     acinar               ->  micropapillary
@@ -28,13 +28,13 @@ The mapping is a permutation, so it is applied in ONE simultaneous pass
 Usage
 -----
   # rewrite files in place (make a backup first!)
-  python remap_pattern_names_4apr2026.py --inplace FILE_OR_DIR [...]
+  python remap_pattern_names_in_results.py --inplace FILE_OR_DIR [...]
 
   # write corrected copies under OUT, preserving the relative layout
-  python remap_pattern_names_4apr2026.py --out OUT_DIR FILE_OR_DIR [...]
+  python remap_pattern_names_in_results.py --out OUT_DIR FILE_OR_DIR [...]
 
   # report only
-  python remap_pattern_names_4apr2026.py --dry-run FILE_OR_DIR [...]
+  python remap_pattern_names_in_results.py --dry-run FILE_OR_DIR [...]
 """
 from __future__ import annotations
 

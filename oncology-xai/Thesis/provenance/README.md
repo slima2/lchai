@@ -26,9 +26,9 @@ alphabetical order of the old names, not of the correct ones:
 Consequences visible in the archive:
 
 * Every log, JSON, CSV, script and notebook under `Thesis/` was rewritten with
-  the single simultaneous permutation above (`remap_pattern_names_4apr2026.py`
+  the single simultaneous permutation above (`remap_pattern_names_in_results.py`
   for results, `remap_pattern_names_in_scripts.py` for code; mapping table in
-  `PATTERN_REMAP_4_apr_2026.py`). Numeric values were not touched.
+  `pattern_index_mapping.py`). Numeric values were not touched.
   `remap_manifest_dgx.json` lists every DGX file rewritten, with checksums.
 * The Artefact 1 scripts sort labels with the `CLASS_ORDER` constant instead of
   `sorted()`, so that `label2id` stays identical to the original runs and the
@@ -55,9 +55,9 @@ of Table 6.12; RBM10 rows correspond to fold 4.
 
 ## 2. What produced the Chapter 6 numbers
 
-* Script `training/artefact2_mutation_abmil/pattern_informed_abmil_benchmark_v2_patched.py`
+* Script `training/artefact2_mutation_abmil/pattern_informed_mil_benchmark.py`
   (14 Mar 2026; orchestrator log
-  `logs/mutation_5fold_results/orchestrator_output_benchmark_v2_patched.txt`).
+  `logs/mutation_5fold_results/orchestrator_output_benchmark.txt`).
   Earlier Feb-2026 versions produced different, superseded result sets and were
   removed from the repository (git history up to `d7543a2` still has them).
 * Cohort: `--slide_list data/cohort/luad_slide_ids_available.txt` →
@@ -74,7 +74,7 @@ of Table 6.12; RBM10 rows correspond to fold 4.
 * Per-slide predictions: `_save_fold()` strips `probs`/`labels` before writing
   the JSON, so no per-fold prediction CSV exists; they can be regenerated from
   the 150 checkpoints (Zenodo deposit). The XGBoost models were not persisted.
-* Artefact 1: `output_kfold_fuzzyv2_sphereface.txt` line
+* Artefact 1: `output_kfold_statistical_validation.txt` line
   "FuzzyArcLoss V2 (Optuna) 92.31 % ± 2.05" is the source of the 92.31 % figure
   (thesis prints ± 2.04).
 
@@ -100,22 +100,104 @@ has no archived script + log pair; the only pre-audit log on the DGX
 (`output_ablation_allfuzzy_allothers.txt`) used a 775-tile split and is
 truncated after 3 of 18 losses.
 
-## 4. Known discrepancies between the thesis text (PDF of 3 May 2026) and the archive
+## 4. Discrepancies between the thesis text (PDF of 3 May 2026) and the archive
 
-The archive is the record of what was actually run. Where the printed text
-differs, the archived value is the one that can be reproduced.
+### Why they exist
 
-| Thesis | Says | Archive |
-|---|---|---|
-| Figure 6.5 caption | validation set N = 138 tiles | `logs/pattern_classifier_results/eval_results_val_set.json`: N = 128 tiles (80/20 split of 637, seed 42). No 138-tile evaluation exists on the DGX. |
-| §5.8 cohort of the mutation benchmark | 687 slides / 668 patients, ≈549 train / 138 test per fold | `results_luad_full_v2` was run with `--slide_list luad_slide_ids_available.txt`: 505 slides / 505 patients, 404 / 101 per fold. `labels.csv` still lists the full 687-slide inventory. |
-| §5.8.2 model selection | "10 % of the training fold" used for early stopping | `_abmil_loop()` selects the best epoch on the CV **test** fold (patience 15) and reports that value; there is no inner split. Fold AUROCs are therefore best-epoch-on-test values (optimistic). |
-| §5.8.3 per-slide predictions | per-fold prediction files | `_save_fold()` drops `probs`/`labels` before writing the JSON; no per-slide prediction CSV exists. Regenerable from the 150 checkpoints (Zenodo). XGBoost models were not persisted. |
-| Figure 6.10 (AUPRC per gene) | values typed by hand, 2 decimals | 32 of 36 cells differ from `summary_table.csv` (largest: FC-MIL/TP53 printed .63 vs .706; B2/TP53 .64 vs .695; B1/EGFR .31 vs .235). Figures 6.6–6.9 (AUROC) match the CSV exactly. |
-| §6.1 FuzzyArcLoss V2 K-fold result | 92.31 % ± 2.04 | `output_kfold_fuzzyv2_sphereface.txt`: 92.31 % ± 2.05 |
-| §3.7 / §6.1.1 pre-audit baseline | 71–76 % macro-F1 before the twenty fixes | no archived script + log pair (see §3 above) |
-| §5.3.6 embedding storage | embeddings stored as float16 (~20 GB) | `embeddings.npy` are float32 (38.6 GB); `pattern_probs.npy` float32 as stated |
-| Reproducibility statement | — | Zenodo DOI pending; `docs/zenodo_deposit/MANIFEST_sha256.txt` lists the deposit |
+Chapters 5 and 6 were drafted between February and March 2026 from the
+experimental *design* and from intermediate runs. Two things happened after
+much of that text was written: the final benchmark run of 14 March 2026
+(`results_luad_full_v2`, the one archived here) and the class-name audit of
+4 April 2026 (§1). The AUROC tables and figures (Table 6.5, Figures 6.6–6.9,
+Table 6.9) were regenerated from the final run and match the archive exactly;
+some prose, captions and one hand-typed figure were not re-synchronised.
+
+Policy of this archive: it is the record of what was executed. No archived
+number was edited to agree with the text. Where the two differ, the archived
+value is the reproducible one and the text should be read as described below.
+
+### Itemised
+
+**D1 — Figure 6.5 caption: N = 138 tiles.** The confusion matrix shown is
+`logs/pattern_classifier_results/confusion_matrix_val_set.png`, computed from
+`eval_results_val_set.json` on 128 tiles (20 % of 637 with `seed 42`). No
+138-tile evaluation exists. The number 138 is the test-fold size of the
+687-slide design cohort (687 × 0.2 ≈ 138, see D2), which was most likely
+carried into the caption by mistake. Only the caption is affected; the matrix
+and the per-class figures are those of the 128-tile evaluation.
+
+**D2 — §5.8 cohort: 687 slides / 668 patients, ≈ 549 / 138 per fold; gene
+prevalences in Figure 6.10 (RBM10 5.4 %, STK11 9.9 %).** These describe the
+designed cohort — the complete inventory in `data/cohort/labels.csv` (687
+rows). The benchmark was executed with `--slide_list luad_slide_ids_available.txt`,
+i.e. the 505 LUAD slides (one per patient) that had both a downloadable SVS
+and a patient present in the GDC MAF; 51 LUAD cases had no downloadable slide
+(`luad_cases_missing_slides.txt`) and 170 of the excluded 182 slides carry
+all-zero labels because the patient is absent from the MAF. Fold sizes are
+404 / 101 and the observed prevalences are TP53 50.3 %, KRAS 27.3 %,
+KEAP1 18.2 %, EGFR 14.7 %, STK11 13.3 %, RBM10 6.9 %. The 687-based
+prevalences in the text are therefore *diluted* by slides that could never be
+positive. Impact: every Chapter 6 metric is a 505-slide result; the ranking
+of conditions is unaffected because all six conditions share the same folds.
+Readers should substitute 505 / 404 / 101 and the prevalences above.
+
+**D3 — §5.8.2 early stopping on "10 % of the training fold".** This is the
+intended protocol; the executed code (`_abmil_loop()` in
+`pattern_informed_mil_benchmark.py`) evaluates on the CV test fold after
+every epoch, keeps the best epoch (patience 15) and reports that epoch's
+metrics. There is no inner validation split. The fold AUROCs of the five MIL
+conditions are therefore best-epoch-on-test values and optimistically biased;
+Table 6.9 ("best fold") is additionally a maximum over folds. The bias is the
+same for the five MIL conditions, so comparisons *among* them remain
+internally consistent, but the comparison against B1 (XGBoost, which is fit
+once on the training fold and evaluated once on the test fold) is tilted in
+favour of the MIL conditions. This is the most consequential discrepancy of
+the list and the one a reader should weigh when interpreting the absolute
+AUROC values. Re-running the benchmark with an inner validation split would
+be the first step of any follow-up work.
+
+**D4 — §5.8.3 per-slide prediction files.** `_save_fold()` removes `probs`
+and `labels` before writing each `metrics_*.json`, so the archive has fold-level
+metrics but no per-slide predictions. They can be regenerated from the 150
+checkpoints in the Zenodo deposit; the XGBoost models (B1) were not persisted
+and would need to be retrained (deterministic, `random_state` fixed).
+
+**D5 — Figure 6.10 (AUPRC per gene).** The printed figure was produced by an
+earlier version of `figures/gen_auprc_bar_chart.py` whose values were typed by
+hand, rounded to two decimals, from an intermediate run. 32 of the 36 cells
+differ from `summary_table.csv` (mean |Δ| = 0.031; nine cells differ by more
+than 0.05, the largest being FC-MIL/TP53 0.63 vs 0.706 and B1/EGFR 0.31 vs
+0.235). For TP53, KRAS and STK11 the condition with the highest AUPRC also
+changes (printed: B2, B2, PI-ABMIL; archive: FC-MIL, FC-MIL, one-hot
+ablation). The AUPRC-based remarks in §6 (the "AUROC–AUPRC gap" paragraph and
+Figure 6.11) inherit these values. AUPRC is a secondary metric in the thesis;
+the primary conclusions rest on AUROC (Table 6.5, Figures 6.6–6.9), which
+match the archive. The current `gen_auprc_bar_chart.py` reads the CSV and
+produces the corrected figure.
+
+**D6 — §6.1 K-fold result 92.31 % ± 2.04.** The archived log
+(`output_kfold_statistical_validation.txt`) prints 92.31 % ± 2.05 for
+FuzzyArcLoss V2 (15 runs: 5 folds × 3 seeds). The 0.01 difference is a
+rounding of the same standard deviation; the mean, the 95 % CI [91.2, 93.4]
+and the paired t-test against SphereFace (p = 0.0011) are as printed.
+
+**D7 — §3.7 / §6.1.1 "71–76 % macro-F1 before the twenty fixes".** The
+twenty fixes were applied incrementally between January and February 2026 on
+development versions of the ablation script whose logs were overwritten. The
+only surviving pre-audit log on the DGX (`output_ablation_allfuzzy_allothers.txt`)
+used a 775-tile split and stops after 3 of 18 losses. The figure is from the
+author's working notes and cannot be reproduced from the archive; it should
+be read as historical context, not as a result.
+
+**D8 — §5.3.6 embeddings "stored as float16 (~20 GB)".** The pipeline
+(`pipeline_6gpu_parallel.py`) writes `embeddings.npy` in float32 (38.6 GB
+for 687 slides); `pattern_probs.npy` is float32 as stated. The text reflects
+the planned storage format. No result depends on it; the float32 files are
+the ones hashed in `docs/zenodo_deposit/embeddings_sha256_manifest_REGENERABLE_not_deposited.txt`.
+
+**D9 — Reproducibility statement.** The DOI of the Zenodo deposit was not
+available at printing time. The deposit content is fixed by
+`docs/zenodo_deposit/MANIFEST_sha256.txt`.
 
 ## 5. Development material removed from the archive
 
@@ -134,9 +216,40 @@ the repository because none of its numbers appear in the thesis and its
   (XGBoost + TreeSHAP exploration per gene on those profiles).
 
 Condition B1 of Chapter 6 is computed inside
-`pattern_informed_abmil_benchmark_v2_patched.py` on the 505-slide cohort from
+`pattern_informed_mil_benchmark.py` on the 505-slide cohort from
 `pattern_probs.npy` of the final model, and the SHAP attributions of
 Figure 4.12 / Table 6.10 come from the LCHAI inference service, not from these
 notebooks. The files remain on the DGX under
 `outputs/inference_results_parallel/` and in git history before commit
 `91dea5f`.
+
+## 6. File names
+
+Scripts and logs were renamed on 9 Oct 2026 so that the name states what the
+file does rather than when it was written. The old names still appear inside
+the archived logs (command lines, `Loading ablation code from: …`) and in
+`remap_manifest_dgx.json`; this table maps them.
+
+| Old name (as printed in logs / on the DGX) | Archived as |
+|---|---|
+| `SLIMA_ablation_study_loss_functions_ver_23_feb_2026_gpu_rev_13.py` | `training/artefact1_pattern_classifier/ablation_loss_functions.py` |
+| `SLIMA_optuna_fuzzyarcloss_v2_best model search_ 22 feb_2026 rev 2.py` | `training/artefact1_pattern_classifier/optuna_fuzzyarcloss_search.py` |
+| `SLIMA_kfold_statistical_validation_23 feb_2026 rev 13.py` | `training/artefact1_pattern_classifier/kfold_statistical_validation.py` (now loads `ablation_loss_functions.py` from its own directory instead of the DGX path) |
+| `pattern_informed_abmil_benchmark_v2_patched.py` | `training/artefact2_mutation_abmil/pattern_informed_mil_benchmark.py` |
+| `SLIMA_PARALLEL_inferencing_hist_patterns_ver_24_feb_2026_gpu_optimized.py` | `training/data_preparation/tile_pattern_inference_multigpu.py` |
+| `extract_embeddings (2).py`, `prepare_benchmark_inputs (1).py` | `training/data_preparation/extract_embeddings.py`, `prepare_benchmark_inputs.py` |
+| `SLIMA_aggregation_xgboost_mutation_prediction_v24_feb_2026  rev 4 (1).py` | `training/xgboost_baseline/xgboost_mutation_from_pattern_profiles.py` |
+| `output_ablation_best_rev13.txt` | `logs/pattern_classifier_results/output_ablation_loss_functions.txt` |
+| `output_optuna_fuzzyarcv2_best.txt` | `logs/pattern_classifier_results/output_optuna_fuzzyarcloss_search.txt` |
+| `output_kfold_fuzzyv2_sphereface.txt` | `logs/pattern_classifier_results/output_kfold_statistical_validation.txt` |
+| `ablation_results_v16_optuna.json` | `logs/pattern_classifier_results/ablation_results.json` |
+| `orchestrator_output_benchmark_v2_patched.txt` | `logs/mutation_5fold_results/orchestrator_output_benchmark.txt` |
+| `output_pipeline_6gpu_r2.txt`, `_r3.txt` | `logs/data_pipeline/output_pipeline_6gpu_run2.txt`, `_run3.txt` (resumed runs of the same pipeline) |
+| `output_tcga_luad_download_ver1.txt` | `logs/data_pipeline/output_tcga_luad_maf_download.txt` |
+| `PATTERN_REMAP_4_apr_2026.py`, `remap_pattern_names_4apr2026.py` | `provenance/pattern_index_mapping.py`, `provenance/remap_pattern_names_in_results.py` |
+
+DGX directory names quoted in scripts and logs (`outputs/ablation_study_v16_optuna/`,
+`results_luad_full_v2/`) and the checkpoint key `id2label_legacy_pre_4apr2026`
+are left as they are: they identify real locations and keys on the machine.
+`best_fuzzyarcloss_v2.pth` keeps its name because "FuzzyArcLoss V2" is the
+name of the loss in the thesis, not a file revision.

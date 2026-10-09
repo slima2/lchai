@@ -63,7 +63,9 @@ import pandas as pd
 # Alternatively, copy the classes into a shared module.
 
 # Point this to your ablation script:
-ABLATION_SCRIPT = "/home/rapids/notebooks/slima/SLIMA_ablation_study_loss_functions_ver_23_feb_2026_gpu_rev_13.py"
+# Ablation script (same directory). On the DGX it was loaded from
+# /home/rapids/notebooks/slima/SLIMA_ablation_study_loss_functions_ver_23_feb_2026_gpu_rev_13.py
+ABLATION_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ablation_loss_functions.py")
 
 
 # ============================================================
