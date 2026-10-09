@@ -1,0 +1,827 @@
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
+nohup: ignoring input
+======================================================================
+  SLIMA — 6-GPU Parallel Post-Download Pipeline
+  Stage 1: FuzzyArcLoss pattern inference (per-tile CSV)
+  Stage 2: CSV → pattern_probs.npy + pattern_labels.npy
+  Stage 3: CTransPath embedding extraction → embeddings.npy
+======================================================================
+
+6 GPUs available:
+  GPU 0: NVIDIA H100 80GB HBM3
+  GPU 1: NVIDIA H100 80GB HBM3
+  GPU 2: NVIDIA H100 80GB HBM3
+  GPU 3: NVIDIA H100 80GB HBM3
+  GPU 4: NVIDIA H100 80GB HBM3
+  GPU 5: NVIDIA H100 80GB HBM3
+
+Slides dir     : /home/rapids/notebooks/slima/data/slides
+Inference out  : /home/rapids/notebooks/slima/outputs/inference_pipeline_6gpu
+Log file       : /home/rapids/notebooks/slima/TGCA MAF/pipeline_progress.tsv
+Poll interval  : 60s (scans for new SVS every 60s)
+
+
+[Round 1] Found 79 slides to process
+  • TCGA-05-4244-01A-01-BS1.90f043f6-e8d5-4cfd-b4e7-84207bc499a6
+  • TCGA-05-4249-01A-01-BS1.38c41760-cc43-4904-9575-803d1d92b992
+  • TCGA-05-4382-01A-01-TS1.8db4f123-fdc3-419c-a59d-fca2ca83a597
+  • TCGA-05-4389-01A-01-BS1.20fc0609-bf70-479e-af94-b15f4c46bc69
+  • TCGA-05-4395-01A-01-TS1.5765cb40-0523-4969-ae42-54e3f18b27a6
+  ... and 74 more
+
+  Distribution: [14, 13, 13, 13, 13, 13] slides per GPU
+
+[GPU 0] Loading model on cuda:0...
+
+[GPU 5] Loading model on cuda:5...
+
+[GPU 1] Loading model on cuda:1...
+
+[GPU 2] Loading model on cuda:2...
+
+[GPU 4] Loading model on cuda:4...
+
+[GPU 3] Loading model on cuda:3...
+Process SpawnProcess-3:
+Process SpawnProcess-7:
+Process SpawnProcess-5:
+Process SpawnProcess-2:
+Process SpawnProcess-6:
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 333, in gpu_worker
+    model, head, label2id, id2label, img_sz, in_ch, embed_dim = build_model(device)
+                                                                ^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 133, in build_model
+    backbone = CTransPathBackbone(checkpoint_path=str(CTRANSPATH_CKPT), in_channels=in_ch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 99, in __init__
+    self.model.load_state_dict(
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 2584, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for SwinTransformer:
+	size mismatch for layers.1.downsample.norm.weight: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.norm.bias: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.reduction.weight: copying a param with shape torch.Size([384, 768]) from checkpoint, the shape in current model is torch.Size([192, 384]).
+	size mismatch for layers.2.downsample.norm.weight: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.norm.bias: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.reduction.weight: copying a param with shape torch.Size([768, 1536]) from checkpoint, the shape in current model is torch.Size([384, 768]).
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 333, in gpu_worker
+    model, head, label2id, id2label, img_sz, in_ch, embed_dim = build_model(device)
+                                                                ^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 133, in build_model
+    backbone = CTransPathBackbone(checkpoint_path=str(CTRANSPATH_CKPT), in_channels=in_ch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 99, in __init__
+    self.model.load_state_dict(
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 2584, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for SwinTransformer:
+	size mismatch for layers.1.downsample.norm.weight: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.norm.bias: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.reduction.weight: copying a param with shape torch.Size([384, 768]) from checkpoint, the shape in current model is torch.Size([192, 384]).
+	size mismatch for layers.2.downsample.norm.weight: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.norm.bias: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.reduction.weight: copying a param with shape torch.Size([768, 1536]) from checkpoint, the shape in current model is torch.Size([384, 768]).
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 333, in gpu_worker
+    model, head, label2id, id2label, img_sz, in_ch, embed_dim = build_model(device)
+                                                                ^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 133, in build_model
+    backbone = CTransPathBackbone(checkpoint_path=str(CTRANSPATH_CKPT), in_channels=in_ch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 99, in __init__
+    self.model.load_state_dict(
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 2584, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for SwinTransformer:
+	size mismatch for layers.1.downsample.norm.weight: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.norm.bias: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.reduction.weight: copying a param with shape torch.Size([384, 768]) from checkpoint, the shape in current model is torch.Size([192, 384]).
+	size mismatch for layers.2.downsample.norm.weight: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.norm.bias: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.reduction.weight: copying a param with shape torch.Size([768, 1536]) from checkpoint, the shape in current model is torch.Size([384, 768]).
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 333, in gpu_worker
+    model, head, label2id, id2label, img_sz, in_ch, embed_dim = build_model(device)
+                                                                ^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 133, in build_model
+    backbone = CTransPathBackbone(checkpoint_path=str(CTRANSPATH_CKPT), in_channels=in_ch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 99, in __init__
+    self.model.load_state_dict(
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 2584, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for SwinTransformer:
+	size mismatch for layers.1.downsample.norm.weight: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.norm.bias: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.reduction.weight: copying a param with shape torch.Size([384, 768]) from checkpoint, the shape in current model is torch.Size([192, 384]).
+	size mismatch for layers.2.downsample.norm.weight: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.norm.bias: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.reduction.weight: copying a param with shape torch.Size([768, 1536]) from checkpoint, the shape in current model is torch.Size([384, 768]).
+Process SpawnProcess-4:
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 333, in gpu_worker
+    model, head, label2id, id2label, img_sz, in_ch, embed_dim = build_model(device)
+                                                                ^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 133, in build_model
+    backbone = CTransPathBackbone(checkpoint_path=str(CTRANSPATH_CKPT), in_channels=in_ch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 99, in __init__
+    self.model.load_state_dict(
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 2584, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for SwinTransformer:
+	size mismatch for layers.1.downsample.norm.weight: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.norm.bias: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.reduction.weight: copying a param with shape torch.Size([384, 768]) from checkpoint, the shape in current model is torch.Size([192, 384]).
+	size mismatch for layers.2.downsample.norm.weight: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.norm.bias: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.reduction.weight: copying a param with shape torch.Size([768, 1536]) from checkpoint, the shape in current model is torch.Size([384, 768]).
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 333, in gpu_worker
+    model, head, label2id, id2label, img_sz, in_ch, embed_dim = build_model(device)
+                                                                ^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 133, in build_model
+    backbone = CTransPathBackbone(checkpoint_path=str(CTRANSPATH_CKPT), in_channels=in_ch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 99, in __init__
+    self.model.load_state_dict(
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 2584, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for SwinTransformer:
+	size mismatch for layers.1.downsample.norm.weight: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.norm.bias: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.reduction.weight: copying a param with shape torch.Size([384, 768]) from checkpoint, the shape in current model is torch.Size([192, 384]).
+	size mismatch for layers.2.downsample.norm.weight: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.norm.bias: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.reduction.weight: copying a param with shape torch.Size([768, 1536]) from checkpoint, the shape in current model is torch.Size([384, 768]).
+
+[Round 1] Complete. Total slides with both NPY: 351
+  Waiting 60s before next scan...
+
+
+[Round 2] Found 82 slides to process
+  • TCGA-05-4244-01A-01-BS1.90f043f6-e8d5-4cfd-b4e7-84207bc499a6
+  • TCGA-05-4249-01A-01-BS1.38c41760-cc43-4904-9575-803d1d92b992
+  • TCGA-05-4382-01A-01-TS1.8db4f123-fdc3-419c-a59d-fca2ca83a597
+  • TCGA-05-4389-01A-01-BS1.20fc0609-bf70-479e-af94-b15f4c46bc69
+  • TCGA-05-4395-01A-01-TS1.5765cb40-0523-4969-ae42-54e3f18b27a6
+  ... and 77 more
+
+  Distribution: [14, 14, 14, 14, 13, 13] slides per GPU
+
+[GPU 0] Loading model on cuda:0...
+Process SpawnProcess-8:
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 333, in gpu_worker
+    model, head, label2id, id2label, img_sz, in_ch, embed_dim = build_model(device)
+                                                                ^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 133, in build_model
+    backbone = CTransPathBackbone(checkpoint_path=str(CTRANSPATH_CKPT), in_channels=in_ch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 99, in __init__
+    self.model.load_state_dict(
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 2584, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for SwinTransformer:
+	size mismatch for layers.1.downsample.norm.weight: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.norm.bias: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.reduction.weight: copying a param with shape torch.Size([384, 768]) from checkpoint, the shape in current model is torch.Size([192, 384]).
+	size mismatch for layers.2.downsample.norm.weight: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.norm.bias: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.reduction.weight: copying a param with shape torch.Size([768, 1536]) from checkpoint, the shape in current model is torch.Size([384, 768]).
+
+[GPU 1] Loading model on cuda:1...
+
+[GPU 2] Loading model on cuda:2...
+
+[GPU 3] Loading model on cuda:3...
+
+[GPU 4] Loading model on cuda:4...
+
+[GPU 5] Loading model on cuda:5...
+Process SpawnProcess-9:
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 333, in gpu_worker
+    model, head, label2id, id2label, img_sz, in_ch, embed_dim = build_model(device)
+                                                                ^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 133, in build_model
+    backbone = CTransPathBackbone(checkpoint_path=str(CTRANSPATH_CKPT), in_channels=in_ch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 99, in __init__
+    self.model.load_state_dict(
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 2584, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for SwinTransformer:
+	size mismatch for layers.1.downsample.norm.weight: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.norm.bias: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.reduction.weight: copying a param with shape torch.Size([384, 768]) from checkpoint, the shape in current model is torch.Size([192, 384]).
+	size mismatch for layers.2.downsample.norm.weight: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.norm.bias: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.reduction.weight: copying a param with shape torch.Size([768, 1536]) from checkpoint, the shape in current model is torch.Size([384, 768]).
+Process SpawnProcess-10:
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 333, in gpu_worker
+    model, head, label2id, id2label, img_sz, in_ch, embed_dim = build_model(device)
+                                                                ^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 133, in build_model
+    backbone = CTransPathBackbone(checkpoint_path=str(CTRANSPATH_CKPT), in_channels=in_ch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 99, in __init__
+    self.model.load_state_dict(
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 2584, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for SwinTransformer:
+	size mismatch for layers.1.downsample.norm.weight: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.norm.bias: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.reduction.weight: copying a param with shape torch.Size([384, 768]) from checkpoint, the shape in current model is torch.Size([192, 384]).
+	size mismatch for layers.2.downsample.norm.weight: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.norm.bias: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.reduction.weight: copying a param with shape torch.Size([768, 1536]) from checkpoint, the shape in current model is torch.Size([384, 768]).
+Process SpawnProcess-11:
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 333, in gpu_worker
+    model, head, label2id, id2label, img_sz, in_ch, embed_dim = build_model(device)
+                                                                ^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 133, in build_model
+    backbone = CTransPathBackbone(checkpoint_path=str(CTRANSPATH_CKPT), in_channels=in_ch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 99, in __init__
+    self.model.load_state_dict(
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 2584, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for SwinTransformer:
+	size mismatch for layers.1.downsample.norm.weight: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.norm.bias: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.reduction.weight: copying a param with shape torch.Size([384, 768]) from checkpoint, the shape in current model is torch.Size([192, 384]).
+	size mismatch for layers.2.downsample.norm.weight: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.norm.bias: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.reduction.weight: copying a param with shape torch.Size([768, 1536]) from checkpoint, the shape in current model is torch.Size([384, 768]).
+Process SpawnProcess-13:
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 333, in gpu_worker
+    model, head, label2id, id2label, img_sz, in_ch, embed_dim = build_model(device)
+                                                                ^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 133, in build_model
+    backbone = CTransPathBackbone(checkpoint_path=str(CTRANSPATH_CKPT), in_channels=in_ch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 99, in __init__
+    self.model.load_state_dict(
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 2584, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for SwinTransformer:
+	size mismatch for layers.1.downsample.norm.weight: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.norm.bias: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.reduction.weight: copying a param with shape torch.Size([384, 768]) from checkpoint, the shape in current model is torch.Size([192, 384]).
+	size mismatch for layers.2.downsample.norm.weight: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.norm.bias: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.reduction.weight: copying a param with shape torch.Size([768, 1536]) from checkpoint, the shape in current model is torch.Size([384, 768]).
+Process SpawnProcess-12:
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/opt/conda/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 333, in gpu_worker
+    model, head, label2id, id2label, img_sz, in_ch, embed_dim = build_model(device)
+                                                                ^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 133, in build_model
+    backbone = CTransPathBackbone(checkpoint_path=str(CTRANSPATH_CKPT), in_channels=in_ch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rapids/notebooks/slima/pipeline_6gpu_parallel.py", line 99, in __init__
+    self.model.load_state_dict(
+  File "/opt/conda/lib/python3.11/site-packages/torch/nn/modules/module.py", line 2584, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for SwinTransformer:
+	size mismatch for layers.1.downsample.norm.weight: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.norm.bias: copying a param with shape torch.Size([768]) from checkpoint, the shape in current model is torch.Size([384]).
+	size mismatch for layers.1.downsample.reduction.weight: copying a param with shape torch.Size([384, 768]) from checkpoint, the shape in current model is torch.Size([192, 384]).
+	size mismatch for layers.2.downsample.norm.weight: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.norm.bias: copying a param with shape torch.Size([1536]) from checkpoint, the shape in current model is torch.Size([768]).
+	size mismatch for layers.2.downsample.reduction.weight: copying a param with shape torch.Size([768, 1536]) from checkpoint, the shape in current model is torch.Size([384, 768]).
+
+[Round 2] Complete. Total slides with both NPY: 351
+  Waiting 60s before next scan...
+
+
+[Round 3] Found 87 slides to process
+  • TCGA-05-4244-01A-01-BS1.90f043f6-e8d5-4cfd-b4e7-84207bc499a6
+  • TCGA-05-4249-01A-01-BS1.38c41760-cc43-4904-9575-803d1d92b992
+  • TCGA-05-4382-01A-01-TS1.8db4f123-fdc3-419c-a59d-fca2ca83a597
+  • TCGA-05-4389-01A-01-BS1.20fc0609-bf70-479e-af94-b15f4c46bc69
+  • TCGA-05-4395-01A-01-TS1.5765cb40-0523-4969-ae42-54e3f18b27a6
+  ... and 82 more
+
+  Distribution: [15, 15, 15, 14, 14, 14] slides per GPU
+
+[GPU 0] Loading model on cuda:0...
+
+[GPU 4] Loading model on cuda:4...
+
+[GPU 3] Loading model on cuda:3...
+
+[GPU 5] Loading model on cuda:5...
+
+[GPU 2] Loading model on cuda:2...
+  6 classes: ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
+  embed=512, in_ch=4, img=224, s=46.101434376822986, fp16=True
+[GPU 4] Ready — 14 slides, 6 pattern classes
+
+[GPU 1] Loading model on cuda:1...
+  6 classes: ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
+  embed=512, in_ch=4, img=224, s=46.101434376822986, fp16=True
+[GPU 0] Ready — 15 slides, 6 pattern classes
+  6 classes: ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
+  embed=512, in_ch=4, img=224, s=46.101434376822986, fp16=True
+[GPU 3] Ready — 14 slides, 6 pattern classes
+  6 classes: ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
+  embed=512, in_ch=4, img=224, s=46.101434376822986, fp16=True
+[GPU 2] Ready — 15 slides, 6 pattern classes
+  6 classes: ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
+  embed=512, in_ch=4, img=224, s=46.101434376822986, fp16=True
+[GPU 1] Ready — 15 slides, 6 pattern classes
+  6 classes: ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
+  embed=512, in_ch=4, img=224, s=46.101434376822986, fp16=True
+[GPU 5] Ready — 14 slides, 6 pattern classes
+  [GPU 4] (1/14) TCGA-05-4395-01A-01-TS1.5765cb40-0523-4969-ae42-54e3f18b27a6 | [S1-OK] TCGA-05-4395-01A-01-TS1.5765cb40-0523-4969-ae42-54e3f18b27a6.svs: 1770 tiles in 10s
+  [GPU 4] (1/14) TCGA-05-4395-01A-01-TS1.5765cb40-0523-4969-ae42-54e3f18b27a6 | [S2-OK] TCGA-05-4395-01A-01-TS1.5765cb40-0523-4969-ae42-54e3f18b27a6: 1770 tiles, 6 classes
+  [GPU 2] (1/15) TCGA-05-4382-01A-01-TS1.8db4f123-fdc3-419c-a59d-fca2ca83a597 | [S1-OK] TCGA-05-4382-01A-01-TS1.8db4f123-fdc3-419c-a59d-fca2ca83a597.svs: 3870 tiles in 13s
+  [GPU 5] (1/14) TCGA-05-4396-01A-02-BS2.23cf2a72-6fe5-4fb4-91e8-fd855bfce541 | [S1-OK] TCGA-05-4396-01A-02-BS2.23cf2a72-6fe5-4fb4-91e8-fd855bfce541.svs: 3946 tiles in 14s
+  [GPU 2] (1/15) TCGA-05-4382-01A-01-TS1.8db4f123-fdc3-419c-a59d-fca2ca83a597 | [S2-OK] TCGA-05-4382-01A-01-TS1.8db4f123-fdc3-419c-a59d-fca2ca83a597: 3870 tiles, 6 classes
+  [GPU 5] (1/14) TCGA-05-4396-01A-02-BS2.23cf2a72-6fe5-4fb4-91e8-fd855bfce541 | [S2-OK] TCGA-05-4396-01A-02-BS2.23cf2a72-6fe5-4fb4-91e8-fd855bfce541: 3946 tiles, 6 classes
+  [GPU 4] (1/14) TCGA-05-4395-01A-01-TS1.5765cb40-0523-4969-ae42-54e3f18b27a6 | [S3-OK] TCGA-05-4395-01A-01-TS1.5765cb40-0523-4969-ae42-54e3f18b27a6.svs: (1770, 512) in 11s
+  [GPU 4] (1/14) TCGA-05-4395-01A-01-TS1.5765cb40-0523-4969-ae42-54e3f18b27a6 | STATUS=COMPLETE
+
+  [GPU 0] (1/15) TCGA-05-4244-01A-01-BS1.90f043f6-e8d5-4cfd-b4e7-84207bc499a6 | [S1-OK] TCGA-05-4244-01A-01-BS1.90f043f6-e8d5-4cfd-b4e7-84207bc499a6.svs: 4620 tiles in 26s
+  [GPU 0] (1/15) TCGA-05-4244-01A-01-BS1.90f043f6-e8d5-4cfd-b4e7-84207bc499a6 | [S2-OK] TCGA-05-4244-01A-01-BS1.90f043f6-e8d5-4cfd-b4e7-84207bc499a6: 4620 tiles, 6 classes
+  [GPU 1] (1/15) TCGA-05-4249-01A-01-BS1.38c41760-cc43-4904-9575-803d1d92b992 | [S1-OK] TCGA-05-4249-01A-01-BS1.38c41760-cc43-4904-9575-803d1d92b992.svs: 4262 tiles in 28s
+  [GPU 1] (1/15) TCGA-05-4249-01A-01-BS1.38c41760-cc43-4904-9575-803d1d92b992 | [S2-OK] TCGA-05-4249-01A-01-BS1.38c41760-cc43-4904-9575-803d1d92b992: 4262 tiles, 6 classes
+  [GPU 5] (1/14) TCGA-05-4396-01A-02-BS2.23cf2a72-6fe5-4fb4-91e8-fd855bfce541 | [S3-OK] TCGA-05-4396-01A-02-BS2.23cf2a72-6fe5-4fb4-91e8-fd855bfce541.svs: (3946, 512) in 15s
+  [GPU 5] (1/14) TCGA-05-4396-01A-02-BS2.23cf2a72-6fe5-4fb4-91e8-fd855bfce541 | STATUS=COMPLETE
+
+  [GPU 2] (1/15) TCGA-05-4382-01A-01-TS1.8db4f123-fdc3-419c-a59d-fca2ca83a597 | [S3-OK] TCGA-05-4382-01A-01-TS1.8db4f123-fdc3-419c-a59d-fca2ca83a597.svs: (3870, 512) in 15s
+  [GPU 2] (1/15) TCGA-05-4382-01A-01-TS1.8db4f123-fdc3-419c-a59d-fca2ca83a597 | STATUS=COMPLETE
+
+  [GPU 3] (1/14) TCGA-05-4389-01A-01-BS1.20fc0609-bf70-479e-af94-b15f4c46bc69 | [S1-OK] TCGA-05-4389-01A-01-BS1.20fc0609-bf70-479e-af94-b15f4c46bc69.svs: 5920 tiles in 30s
+  [GPU 3] (1/14) TCGA-05-4389-01A-01-BS1.20fc0609-bf70-479e-af94-b15f4c46bc69 | [S2-OK] TCGA-05-4389-01A-01-BS1.20fc0609-bf70-479e-af94-b15f4c46bc69: 5920 tiles, 6 classes
+  [GPU 4] (2/14) TCGA-05-4418-01A-01-TS1.61b48f7c-970a-4cd9-87f7-b2da39b58842 | [S1-OK] TCGA-05-4418-01A-01-TS1.61b48f7c-970a-4cd9-87f7-b2da39b58842.svs: 2807 tiles in 11s
+  [GPU 4] (2/14) TCGA-05-4418-01A-01-TS1.61b48f7c-970a-4cd9-87f7-b2da39b58842 | [S2-OK] TCGA-05-4418-01A-01-TS1.61b48f7c-970a-4cd9-87f7-b2da39b58842: 2807 tiles, 6 classes
+  [GPU 2] (2/15) TCGA-05-4410-01A-02-BS2.358046d0-94e0-4576-8a3a-17028da63b42 | [S1-OK] TCGA-05-4410-01A-02-BS2.358046d0-94e0-4576-8a3a-17028da63b42.svs: 2924 tiles in 10s
+  [GPU 2] (2/15) TCGA-05-4410-01A-02-BS2.358046d0-94e0-4576-8a3a-17028da63b42 | [S2-OK] TCGA-05-4410-01A-02-BS2.358046d0-94e0-4576-8a3a-17028da63b42: 2924 tiles, 6 classes
+  [GPU 5] (2/14) TCGA-05-4420-01A-01-BS1.d5af72a1-39d5-4060-93ee-aafefce8622d | [S1-OK] TCGA-05-4420-01A-01-BS1.d5af72a1-39d5-4060-93ee-aafefce8622d.svs: 3406 tiles in 13s
+  [GPU 5] (2/14) TCGA-05-4420-01A-01-BS1.d5af72a1-39d5-4060-93ee-aafefce8622d | [S2-OK] TCGA-05-4420-01A-01-BS1.d5af72a1-39d5-4060-93ee-aafefce8622d: 3406 tiles, 6 classes
+  [GPU 4] (2/14) TCGA-05-4418-01A-01-TS1.61b48f7c-970a-4cd9-87f7-b2da39b58842 | [S3-OK] TCGA-05-4418-01A-01-TS1.61b48f7c-970a-4cd9-87f7-b2da39b58842.svs: (2807, 512) in 10s
+  [GPU 4] (2/14) TCGA-05-4418-01A-01-TS1.61b48f7c-970a-4cd9-87f7-b2da39b58842 | STATUS=COMPLETE
+
+  [GPU 2] (2/15) TCGA-05-4410-01A-02-BS2.358046d0-94e0-4576-8a3a-17028da63b42 | [S3-OK] TCGA-05-4410-01A-02-BS2.358046d0-94e0-4576-8a3a-17028da63b42.svs: (2924, 512) in 11s
+  [GPU 2] (2/15) TCGA-05-4410-01A-02-BS2.358046d0-94e0-4576-8a3a-17028da63b42 | STATUS=COMPLETE
+
+  [GPU 0] (1/15) TCGA-05-4244-01A-01-BS1.90f043f6-e8d5-4cfd-b4e7-84207bc499a6 | [S3-OK] TCGA-05-4244-01A-01-BS1.90f043f6-e8d5-4cfd-b4e7-84207bc499a6.svs: (4620, 512) in 25s
+  [GPU 0] (1/15) TCGA-05-4244-01A-01-BS1.90f043f6-e8d5-4cfd-b4e7-84207bc499a6 | STATUS=COMPLETE
+
+  [GPU 1] (1/15) TCGA-05-4249-01A-01-BS1.38c41760-cc43-4904-9575-803d1d92b992 | [S3-OK] TCGA-05-4249-01A-01-BS1.38c41760-cc43-4904-9575-803d1d92b992.svs: (4262, 512) in 26s
+  [GPU 1] (1/15) TCGA-05-4249-01A-01-BS1.38c41760-cc43-4904-9575-803d1d92b992 | STATUS=COMPLETE
+
+  [GPU 5] (2/14) TCGA-05-4420-01A-01-BS1.d5af72a1-39d5-4060-93ee-aafefce8622d | [S3-OK] TCGA-05-4420-01A-01-BS1.d5af72a1-39d5-4060-93ee-aafefce8622d.svs: (3406, 512) in 14s
+  [GPU 5] (2/14) TCGA-05-4420-01A-01-BS1.d5af72a1-39d5-4060-93ee-aafefce8622d | STATUS=COMPLETE
+
+  [GPU 3] (1/14) TCGA-05-4389-01A-01-BS1.20fc0609-bf70-479e-af94-b15f4c46bc69 | [S3-OK] TCGA-05-4389-01A-01-BS1.20fc0609-bf70-479e-af94-b15f4c46bc69.svs: (5920, 512) in 29s
+  [GPU 3] (1/14) TCGA-05-4389-01A-01-BS1.20fc0609-bf70-479e-af94-b15f4c46bc69 | STATUS=COMPLETE
+
+  [GPU 4] (3/14) TCGA-05-5429-01A-01-TS1.c67299ca-41d8-4a13-99f6-9d8e7a6f896d | [S1-OK] TCGA-05-5429-01A-01-TS1.c67299ca-41d8-4a13-99f6-9d8e7a6f896d.svs: 3718 tiles in 16s
+  [GPU 4] (3/14) TCGA-05-5429-01A-01-TS1.c67299ca-41d8-4a13-99f6-9d8e7a6f896d | [S2-OK] TCGA-05-5429-01A-01-TS1.c67299ca-41d8-4a13-99f6-9d8e7a6f896d: 3718 tiles, 6 classes
+  [GPU 0] (2/15) TCGA-05-4397-01A-01-TS1.e4fe3921-3510-4404-90a7-09e4eb93ab3e | [S1-OK] TCGA-05-4397-01A-01-TS1.e4fe3921-3510-4404-90a7-09e4eb93ab3e.svs: 1668 tiles in 9s
+  [GPU 0] (2/15) TCGA-05-4397-01A-01-TS1.e4fe3921-3510-4404-90a7-09e4eb93ab3e | [S2-OK] TCGA-05-4397-01A-01-TS1.e4fe3921-3510-4404-90a7-09e4eb93ab3e: 1668 tiles, 6 classes
+  [GPU 2] (3/15) TCGA-05-4432-01A-01-BS1.81d59eb6-b750-4d71-820d-f207288d4514 | [S1-OK] TCGA-05-4432-01A-01-BS1.81d59eb6-b750-4d71-820d-f207288d4514.svs: 3283 tiles in 13s
+  [GPU 2] (3/15) TCGA-05-4432-01A-01-BS1.81d59eb6-b750-4d71-820d-f207288d4514 | [S2-OK] TCGA-05-4432-01A-01-BS1.81d59eb6-b750-4d71-820d-f207288d4514: 3283 tiles, 6 classes
+  [GPU 1] (2/15) TCGA-05-4398-01A-01-TS1.061af2c7-1143-430d-8286-1996405ab057 | [S1-OK] TCGA-05-4398-01A-01-TS1.061af2c7-1143-430d-8286-1996405ab057.svs: 3041 tiles in 11s
+  [GPU 1] (2/15) TCGA-05-4398-01A-01-TS1.061af2c7-1143-430d-8286-1996405ab057 | [S2-OK] TCGA-05-4398-01A-01-TS1.061af2c7-1143-430d-8286-1996405ab057: 3041 tiles, 6 classes
+  [GPU 0] (2/15) TCGA-05-4397-01A-01-TS1.e4fe3921-3510-4404-90a7-09e4eb93ab3e | [S3-OK] TCGA-05-4397-01A-01-TS1.e4fe3921-3510-4404-90a7-09e4eb93ab3e.svs: (1668, 512) in 8s
+  [GPU 0] (2/15) TCGA-05-4397-01A-01-TS1.e4fe3921-3510-4404-90a7-09e4eb93ab3e | STATUS=COMPLETE
+
+  [GPU 5] (3/14) TCGA-35-4122-01A-01-TS1.b29fc81a-d40b-484e-a19f-f08ac326ae57 | [S1-OK] TCGA-35-4122-01A-01-TS1.b29fc81a-d40b-484e-a19f-f08ac326ae57.svs: 4446 tiles in 15s
+  [GPU 5] (3/14) TCGA-35-4122-01A-01-TS1.b29fc81a-d40b-484e-a19f-f08ac326ae57 | [S2-OK] TCGA-35-4122-01A-01-TS1.b29fc81a-d40b-484e-a19f-f08ac326ae57: 4446 tiles, 6 classes
+  [GPU 4] (3/14) TCGA-05-5429-01A-01-TS1.c67299ca-41d8-4a13-99f6-9d8e7a6f896d | [S3-OK] TCGA-05-5429-01A-01-TS1.c67299ca-41d8-4a13-99f6-9d8e7a6f896d.svs: (3718, 512) in 13s
+  [GPU 4] (3/14) TCGA-05-5429-01A-01-TS1.c67299ca-41d8-4a13-99f6-9d8e7a6f896d | STATUS=COMPLETE
+
+  [GPU 2] (3/15) TCGA-05-4432-01A-01-BS1.81d59eb6-b750-4d71-820d-f207288d4514 | [S3-OK] TCGA-05-4432-01A-01-BS1.81d59eb6-b750-4d71-820d-f207288d4514.svs: (3283, 512) in 11s
+  [GPU 2] (3/15) TCGA-05-4432-01A-01-BS1.81d59eb6-b750-4d71-820d-f207288d4514 | STATUS=COMPLETE
+
+  [GPU 1] (2/15) TCGA-05-4398-01A-01-TS1.061af2c7-1143-430d-8286-1996405ab057 | [S3-OK] TCGA-05-4398-01A-01-TS1.061af2c7-1143-430d-8286-1996405ab057.svs: (3041, 512) in 11s
+  [GPU 1] (2/15) TCGA-05-4398-01A-01-TS1.061af2c7-1143-430d-8286-1996405ab057 | STATUS=COMPLETE
+
+  [GPU 5] (3/14) TCGA-35-4122-01A-01-TS1.b29fc81a-d40b-484e-a19f-f08ac326ae57 | [S3-OK] TCGA-35-4122-01A-01-TS1.b29fc81a-d40b-484e-a19f-f08ac326ae57.svs: (4446, 512) in 13s
+  [GPU 5] (3/14) TCGA-35-4122-01A-01-TS1.b29fc81a-d40b-484e-a19f-f08ac326ae57 | STATUS=COMPLETE
+
+  [GPU 1] (3/15) TCGA-05-4424-01A-01-BS1.d0939da5-baae-4f63-a2e8-4577988cee81 | [S1-OK] TCGA-05-4424-01A-01-BS1.d0939da5-baae-4f63-a2e8-4577988cee81.svs: 1509 tiles in 8s
+  [GPU 1] (3/15) TCGA-05-4424-01A-01-BS1.d0939da5-baae-4f63-a2e8-4577988cee81 | [S2-OK] TCGA-05-4424-01A-01-BS1.d0939da5-baae-4f63-a2e8-4577988cee81: 1509 tiles, 6 classes
+  [GPU 2] (4/15) TCGA-38-4627-01A-01-TS1.221bb9bb-9a72-4f33-89c1-d07eb422112e | [S1-OK] TCGA-38-4627-01A-01-TS1.221bb9bb-9a72-4f33-89c1-d07eb422112e.svs: 2489 tiles in 10s
+  [GPU 2] (4/15) TCGA-38-4627-01A-01-TS1.221bb9bb-9a72-4f33-89c1-d07eb422112e | [S2-OK] TCGA-38-4627-01A-01-TS1.221bb9bb-9a72-4f33-89c1-d07eb422112e: 2489 tiles, 6 classes
+  [GPU 1] (3/15) TCGA-05-4424-01A-01-BS1.d0939da5-baae-4f63-a2e8-4577988cee81 | [S3-OK] TCGA-05-4424-01A-01-BS1.d0939da5-baae-4f63-a2e8-4577988cee81.svs: (1509, 512) in 9s
+  [GPU 1] (3/15) TCGA-05-4424-01A-01-BS1.d0939da5-baae-4f63-a2e8-4577988cee81 | STATUS=COMPLETE
+
+  [GPU 5] (4/14) TCGA-38-4631-11A-01-TS1.9336ec85-fb23-4df2-8a36-086537d8f1ea | [S1-OK] TCGA-38-4631-11A-01-TS1.9336ec85-fb23-4df2-8a36-086537d8f1ea.svs: 2496 tiles in 11s
+  [GPU 5] (4/14) TCGA-38-4631-11A-01-TS1.9336ec85-fb23-4df2-8a36-086537d8f1ea | [S2-OK] TCGA-38-4631-11A-01-TS1.9336ec85-fb23-4df2-8a36-086537d8f1ea: 2496 tiles, 6 classes
+  [GPU 0] (3/15) TCGA-05-4422-01A-01-TS1.5d361e7b-9988-4e61-80c3-268933a3f4be | [S1-OK] TCGA-05-4422-01A-01-TS1.5d361e7b-9988-4e61-80c3-268933a3f4be.svs: 2631 tiles in 28s
+  [GPU 0] (3/15) TCGA-05-4422-01A-01-TS1.5d361e7b-9988-4e61-80c3-268933a3f4be | [S2-OK] TCGA-05-4422-01A-01-TS1.5d361e7b-9988-4e61-80c3-268933a3f4be: 2631 tiles, 6 classes
+  [GPU 3] (2/14) TCGA-05-4415-01A-02-BS2.a7e9ec2e-fda7-4d40-a58c-7d8f49868eca | [S1-OK] TCGA-05-4415-01A-02-BS2.a7e9ec2e-fda7-4d40-a58c-7d8f49868eca.svs: 3869 tiles in 41s
+  [GPU 3] (2/14) TCGA-05-4415-01A-02-BS2.a7e9ec2e-fda7-4d40-a58c-7d8f49868eca | [S2-OK] TCGA-05-4415-01A-02-BS2.a7e9ec2e-fda7-4d40-a58c-7d8f49868eca: 3869 tiles, 6 classes
+  [GPU 2] (4/15) TCGA-38-4627-01A-01-TS1.221bb9bb-9a72-4f33-89c1-d07eb422112e | [S3-OK] TCGA-38-4627-01A-01-TS1.221bb9bb-9a72-4f33-89c1-d07eb422112e.svs: (2489, 512) in 12s
+  [GPU 2] (4/15) TCGA-38-4627-01A-01-TS1.221bb9bb-9a72-4f33-89c1-d07eb422112e | STATUS=COMPLETE
+
+  [GPU 4] (4/14) TCGA-38-4629-01A-02-BS2.c51001e1-bed7-4861-b6df-78640d5ae45a | [S1-OK] TCGA-38-4629-01A-02-BS2.c51001e1-bed7-4861-b6df-78640d5ae45a.svs: 4272 tiles in 28s
+  [GPU 4] (4/14) TCGA-38-4629-01A-02-BS2.c51001e1-bed7-4861-b6df-78640d5ae45a | [S2-OK] TCGA-38-4629-01A-02-BS2.c51001e1-bed7-4861-b6df-78640d5ae45a: 4272 tiles, 6 classes
+  [GPU 1] (4/15) TCGA-38-4625-11A-01-TS1.8dfd2a41-54ff-44b2-9bb7-881cc4228d7f | [S1-OK] TCGA-38-4625-11A-01-TS1.8dfd2a41-54ff-44b2-9bb7-881cc4228d7f.svs: 1514 tiles in 9s
+  [GPU 1] (4/15) TCGA-38-4625-11A-01-TS1.8dfd2a41-54ff-44b2-9bb7-881cc4228d7f | [S2-OK] TCGA-38-4625-11A-01-TS1.8dfd2a41-54ff-44b2-9bb7-881cc4228d7f: 1514 tiles, 6 classes
+  [GPU 5] (4/14) TCGA-38-4631-11A-01-TS1.9336ec85-fb23-4df2-8a36-086537d8f1ea | [S3-OK] TCGA-38-4631-11A-01-TS1.9336ec85-fb23-4df2-8a36-086537d8f1ea.svs: (2496, 512) in 9s
+  [GPU 5] (4/14) TCGA-38-4631-11A-01-TS1.9336ec85-fb23-4df2-8a36-086537d8f1ea | STATUS=COMPLETE
+
+  [GPU 1] (4/15) TCGA-38-4625-11A-01-TS1.8dfd2a41-54ff-44b2-9bb7-881cc4228d7f | [S3-OK] TCGA-38-4625-11A-01-TS1.8dfd2a41-54ff-44b2-9bb7-881cc4228d7f.svs: (1514, 512) in 9s
+  [GPU 1] (4/15) TCGA-38-4625-11A-01-TS1.8dfd2a41-54ff-44b2-9bb7-881cc4228d7f | STATUS=COMPLETE
+
+  [GPU 5] (5/14) TCGA-44-2666-11A-02-TS2.AF813A5E-5F00-40B8-B4B6-F72AF055B876 | [S1-OK] TCGA-44-2666-11A-02-TS2.AF813A5E-5F00-40B8-B4B6-F72AF055B876.svs: 1432 tiles in 12s
+  [GPU 5] (5/14) TCGA-44-2666-11A-02-TS2.AF813A5E-5F00-40B8-B4B6-F72AF055B876 | [S2-OK] TCGA-44-2666-11A-02-TS2.AF813A5E-5F00-40B8-B4B6-F72AF055B876: 1432 tiles, 6 classes
+  [GPU 0] (3/15) TCGA-05-4422-01A-01-TS1.5d361e7b-9988-4e61-80c3-268933a3f4be | [S3-OK] TCGA-05-4422-01A-01-TS1.5d361e7b-9988-4e61-80c3-268933a3f4be.svs: (2631, 512) in 25s
+  [GPU 0] (3/15) TCGA-05-4422-01A-01-TS1.5d361e7b-9988-4e61-80c3-268933a3f4be | STATUS=COMPLETE
+
+  [GPU 4] (4/14) TCGA-38-4629-01A-02-BS2.c51001e1-bed7-4861-b6df-78640d5ae45a | [S3-OK] TCGA-38-4629-01A-02-BS2.c51001e1-bed7-4861-b6df-78640d5ae45a.svs: (4272, 512) in 25s
+  [GPU 4] (4/14) TCGA-38-4629-01A-02-BS2.c51001e1-bed7-4861-b6df-78640d5ae45a | STATUS=COMPLETE
+
+  [GPU 5] (5/14) TCGA-44-2666-11A-02-TS2.AF813A5E-5F00-40B8-B4B6-F72AF055B876 | [S3-OK] TCGA-44-2666-11A-02-TS2.AF813A5E-5F00-40B8-B4B6-F72AF055B876.svs: (1432, 512) in 11s
+  [GPU 5] (5/14) TCGA-44-2666-11A-02-TS2.AF813A5E-5F00-40B8-B4B6-F72AF055B876 | STATUS=COMPLETE
+
+  [GPU 3] (2/14) TCGA-05-4415-01A-02-BS2.a7e9ec2e-fda7-4d40-a58c-7d8f49868eca | [S3-OK] TCGA-05-4415-01A-02-BS2.a7e9ec2e-fda7-4d40-a58c-7d8f49868eca.svs: (3869, 512) in 36s
+  [GPU 3] (2/14) TCGA-05-4415-01A-02-BS2.a7e9ec2e-fda7-4d40-a58c-7d8f49868eca | STATUS=COMPLETE
+
+  [GPU 2] (5/15) TCGA-44-2657-11A-01-TS1.03d328d6-5c0e-42ec-90b8-8f4b721cfe87 | [S1-OK] TCGA-44-2657-11A-01-TS1.03d328d6-5c0e-42ec-90b8-8f4b721cfe87.svs: 3997 tiles in 41s
+  [GPU 2] (5/15) TCGA-44-2657-11A-01-TS1.03d328d6-5c0e-42ec-90b8-8f4b721cfe87 | [S2-OK] TCGA-44-2657-11A-01-TS1.03d328d6-5c0e-42ec-90b8-8f4b721cfe87: 3997 tiles, 6 classes
+  [GPU 4] (5/14) TCGA-44-2662-01A-01-BS1.f7ba5b6b-8a26-4cf2-8b0c-db76298ca502 | [S1-OK] TCGA-44-2662-01A-01-BS1.f7ba5b6b-8a26-4cf2-8b0c-db76298ca502.svs: 3330 tiles in 13s
+  [GPU 4] (5/14) TCGA-44-2662-01A-01-BS1.f7ba5b6b-8a26-4cf2-8b0c-db76298ca502 | [S2-OK] TCGA-44-2662-01A-01-BS1.f7ba5b6b-8a26-4cf2-8b0c-db76298ca502: 3330 tiles, 6 classes
+  [GPU 5] (6/14) TCGA-44-5645-01A-01-BS1.e8526125-616b-4bc2-afac-f96417840633 | [S1-OK] TCGA-44-5645-01A-01-BS1.e8526125-616b-4bc2-afac-f96417840633.svs: 4371 tiles in 12s
+  [GPU 5] (6/14) TCGA-44-5645-01A-01-BS1.e8526125-616b-4bc2-afac-f96417840633 | [S2-OK] TCGA-44-5645-01A-01-BS1.e8526125-616b-4bc2-afac-f96417840633: 4371 tiles, 6 classes
+  [GPU 3] (3/14) TCGA-05-5425-01A-01-BS1.259004dc-6769-4f66-afa3-57a4d8e0edb5 | [S1-OK] TCGA-05-5425-01A-01-BS1.259004dc-6769-4f66-afa3-57a4d8e0edb5.svs: 3442 tiles in 11s
+  [GPU 3] (3/14) TCGA-05-5425-01A-01-BS1.259004dc-6769-4f66-afa3-57a4d8e0edb5 | [S2-OK] TCGA-05-5425-01A-01-BS1.259004dc-6769-4f66-afa3-57a4d8e0edb5: 3442 tiles, 6 classes
+  [GPU 0] (4/15) TCGA-35-5375-01A-01-BS1.76d789f1-f97f-4e9f-b278-49fee3058041 | [S1-OK] TCGA-35-5375-01A-01-BS1.76d789f1-f97f-4e9f-b278-49fee3058041.svs: 6417 tiles in 28s
+  [GPU 0] (4/15) TCGA-35-5375-01A-01-BS1.76d789f1-f97f-4e9f-b278-49fee3058041 | [S2-OK] TCGA-35-5375-01A-01-BS1.76d789f1-f97f-4e9f-b278-49fee3058041: 6417 tiles, 6 classes
+  [GPU 4] (5/14) TCGA-44-2662-01A-01-BS1.f7ba5b6b-8a26-4cf2-8b0c-db76298ca502 | [S3-OK] TCGA-44-2662-01A-01-BS1.f7ba5b6b-8a26-4cf2-8b0c-db76298ca502.svs: (3330, 512) in 13s
+  [GPU 4] (5/14) TCGA-44-2662-01A-01-BS1.f7ba5b6b-8a26-4cf2-8b0c-db76298ca502 | STATUS=COMPLETE
+
+  [GPU 5] (6/14) TCGA-44-5645-01A-01-BS1.e8526125-616b-4bc2-afac-f96417840633 | [S3-OK] TCGA-44-5645-01A-01-BS1.e8526125-616b-4bc2-afac-f96417840633.svs: (4371, 512) in 12s
+  [GPU 5] (6/14) TCGA-44-5645-01A-01-BS1.e8526125-616b-4bc2-afac-f96417840633 | STATUS=COMPLETE
+
+  [GPU 3] (3/14) TCGA-05-5425-01A-01-BS1.259004dc-6769-4f66-afa3-57a4d8e0edb5 | [S3-OK] TCGA-05-5425-01A-01-BS1.259004dc-6769-4f66-afa3-57a4d8e0edb5.svs: (3442, 512) in 9s
+  [GPU 3] (3/14) TCGA-05-5425-01A-01-BS1.259004dc-6769-4f66-afa3-57a4d8e0edb5 | STATUS=COMPLETE
+
+  [GPU 1] (5/15) TCGA-38-A44F-01A-01-TSA.48E36C45-F2C3-4BE6-84F5-F65FF6AA4962 | [S1-OK] TCGA-38-A44F-01A-01-TSA.48E36C45-F2C3-4BE6-84F5-F65FF6AA4962.svs: 6542 tiles in 50s
+  [GPU 1] (5/15) TCGA-38-A44F-01A-01-TSA.48E36C45-F2C3-4BE6-84F5-F65FF6AA4962 | [S2-OK] TCGA-38-A44F-01A-01-TSA.48E36C45-F2C3-4BE6-84F5-F65FF6AA4962: 6542 tiles, 6 classes
+  [GPU 3] (4/14) TCGA-38-4628-11A-01-TS1.7f3c0ede-3530-4579-bc11-cef8496cdd48 | [S1-OK] TCGA-38-4628-11A-01-TS1.7f3c0ede-3530-4579-bc11-cef8496cdd48.svs: 1207 tiles in 7s
+  [GPU 3] (4/14) TCGA-38-4628-11A-01-TS1.7f3c0ede-3530-4579-bc11-cef8496cdd48 | [S2-OK] TCGA-38-4628-11A-01-TS1.7f3c0ede-3530-4579-bc11-cef8496cdd48: 1207 tiles, 6 classes
+  [GPU 4] (6/14) TCGA-44-5643-01A-01-TS1.d7358c4a-6ea9-44f1-b97a-1cb050dd2435 | [S1-OK] TCGA-44-5643-01A-01-TS1.d7358c4a-6ea9-44f1-b97a-1cb050dd2435.svs: 4241 tiles in 12s
+  [GPU 4] (6/14) TCGA-44-5643-01A-01-TS1.d7358c4a-6ea9-44f1-b97a-1cb050dd2435 | [S2-OK] TCGA-44-5643-01A-01-TS1.d7358c4a-6ea9-44f1-b97a-1cb050dd2435: 4241 tiles, 6 classes
+  [GPU 3] (4/14) TCGA-38-4628-11A-01-TS1.7f3c0ede-3530-4579-bc11-cef8496cdd48 | [S3-OK] TCGA-38-4628-11A-01-TS1.7f3c0ede-3530-4579-bc11-cef8496cdd48.svs: (1207, 512) in 8s
+  [GPU 3] (4/14) TCGA-38-4628-11A-01-TS1.7f3c0ede-3530-4579-bc11-cef8496cdd48 | STATUS=COMPLETE
+
+  [GPU 0] (4/15) TCGA-35-5375-01A-01-BS1.76d789f1-f97f-4e9f-b278-49fee3058041 | [S3-OK] TCGA-35-5375-01A-01-BS1.76d789f1-f97f-4e9f-b278-49fee3058041.svs: (6417, 512) in 26s
+  [GPU 0] (4/15) TCGA-35-5375-01A-01-BS1.76d789f1-f97f-4e9f-b278-49fee3058041 | STATUS=COMPLETE
+
+  [GPU 4] (6/14) TCGA-44-5643-01A-01-TS1.d7358c4a-6ea9-44f1-b97a-1cb050dd2435 | [S3-OK] TCGA-44-5643-01A-01-TS1.d7358c4a-6ea9-44f1-b97a-1cb050dd2435.svs: (4241, 512) in 12s
+  [GPU 4] (6/14) TCGA-44-5643-01A-01-TS1.d7358c4a-6ea9-44f1-b97a-1cb050dd2435 | STATUS=COMPLETE
+
+  [GPU 2] (5/15) TCGA-44-2657-11A-01-TS1.03d328d6-5c0e-42ec-90b8-8f4b721cfe87 | [S3-OK] TCGA-44-2657-11A-01-TS1.03d328d6-5c0e-42ec-90b8-8f4b721cfe87.svs: (3997, 512) in 41s
+  [GPU 2] (5/15) TCGA-44-2657-11A-01-TS1.03d328d6-5c0e-42ec-90b8-8f4b721cfe87 | STATUS=COMPLETE
+
+  [GPU 3] (5/14) TCGA-44-2661-01A-01-BS1.454ae128-140c-4bc3-98d6-529a9e0808f4 | [S1-OK] TCGA-44-2661-01A-01-BS1.454ae128-140c-4bc3-98d6-529a9e0808f4.svs: 6664 tiles in 32s
+  [GPU 3] (5/14) TCGA-44-2661-01A-01-BS1.454ae128-140c-4bc3-98d6-529a9e0808f4 | [S2-OK] TCGA-44-2661-01A-01-BS1.454ae128-140c-4bc3-98d6-529a9e0808f4: 6664 tiles, 6 classes
+  [GPU 1] (5/15) TCGA-38-A44F-01A-01-TSA.48E36C45-F2C3-4BE6-84F5-F65FF6AA4962 | [S3-OK] TCGA-38-A44F-01A-01-TSA.48E36C45-F2C3-4BE6-84F5-F65FF6AA4962.svs: (6542, 512) in 49s
+  [GPU 1] (5/15) TCGA-38-A44F-01A-01-TSA.48E36C45-F2C3-4BE6-84F5-F65FF6AA4962 | STATUS=COMPLETE
+
+  [GPU 3] (5/14) TCGA-44-2661-01A-01-BS1.454ae128-140c-4bc3-98d6-529a9e0808f4 | [S3-OK] TCGA-44-2661-01A-01-BS1.454ae128-140c-4bc3-98d6-529a9e0808f4.svs: (6664, 512) in 35s
+  [GPU 3] (5/14) TCGA-44-2661-01A-01-BS1.454ae128-140c-4bc3-98d6-529a9e0808f4 | STATUS=COMPLETE
+
+  [GPU 1] (6/15) TCGA-44-3398-01A-01-TS1.80f016ac-f5c5-49c4-972e-2ffd226d226d | [S1-OK] TCGA-44-3398-01A-01-TS1.80f016ac-f5c5-49c4-972e-2ffd226d226d.svs: 4541 tiles in 33s
+  [GPU 1] (6/15) TCGA-44-3398-01A-01-TS1.80f016ac-f5c5-49c4-972e-2ffd226d226d | [S2-OK] TCGA-44-3398-01A-01-TS1.80f016ac-f5c5-49c4-972e-2ffd226d226d: 4541 tiles, 6 classes
+  [GPU 4] (7/14) TCGA-44-6779-01A-01-BS1.e55cc68b-4f36-4d22-a4b7-9af0417a4171 | [S1-OK] TCGA-44-6779-01A-01-BS1.e55cc68b-4f36-4d22-a4b7-9af0417a4171.svs: 18036 tiles in 71s
+  [GPU 4] (7/14) TCGA-44-6779-01A-01-BS1.e55cc68b-4f36-4d22-a4b7-9af0417a4171 | [S2-OK] TCGA-44-6779-01A-01-BS1.e55cc68b-4f36-4d22-a4b7-9af0417a4171: 18036 tiles, 6 classes
+  [GPU 3] (6/14) TCGA-44-3919-01A-02-BS2.89f5632a-fd56-43a7-9aa3-82596731f6da | [S1-OK] TCGA-44-3919-01A-02-BS2.89f5632a-fd56-43a7-9aa3-82596731f6da.svs: 2067 tiles in 10s
+  [GPU 3] (6/14) TCGA-44-3919-01A-02-BS2.89f5632a-fd56-43a7-9aa3-82596731f6da | [S2-OK] TCGA-44-3919-01A-02-BS2.89f5632a-fd56-43a7-9aa3-82596731f6da: 2067 tiles, 6 classes
+  [GPU 0] (5/15) TCGA-38-6178-01A-01-BS1.45e6381d-637a-4b27-aae9-1bbee2c14944 | [S1-OK] TCGA-38-6178-01A-01-BS1.45e6381d-637a-4b27-aae9-1bbee2c14944.svs: 19567 tiles in 83s
+  [GPU 0] (5/15) TCGA-38-6178-01A-01-BS1.45e6381d-637a-4b27-aae9-1bbee2c14944 | [S2-OK] TCGA-38-6178-01A-01-BS1.45e6381d-637a-4b27-aae9-1bbee2c14944: 19567 tiles, 6 classes
+  [GPU 3] (6/14) TCGA-44-3919-01A-02-BS2.89f5632a-fd56-43a7-9aa3-82596731f6da | [S3-OK] TCGA-44-3919-01A-02-BS2.89f5632a-fd56-43a7-9aa3-82596731f6da.svs: (2067, 512) in 8s
+  [GPU 3] (6/14) TCGA-44-3919-01A-02-BS2.89f5632a-fd56-43a7-9aa3-82596731f6da | STATUS=COMPLETE
+
+  [GPU 5] (7/14) TCGA-44-7659-11A-01-TS1.fc17a07c-16aa-415b-903d-914d8183c2db | [S1-OK] TCGA-44-7659-11A-01-TS1.fc17a07c-16aa-415b-903d-914d8183c2db.svs: 43844 tiles in 110s
+  [GPU 5] (7/14) TCGA-44-7659-11A-01-TS1.fc17a07c-16aa-415b-903d-914d8183c2db | [S2-OK] TCGA-44-7659-11A-01-TS1.fc17a07c-16aa-415b-903d-914d8183c2db: 43844 tiles, 6 classes
+  [GPU 1] (6/15) TCGA-44-3398-01A-01-TS1.80f016ac-f5c5-49c4-972e-2ffd226d226d | [S3-OK] TCGA-44-3398-01A-01-TS1.80f016ac-f5c5-49c4-972e-2ffd226d226d.svs: (4541, 512) in 27s
+  [GPU 1] (6/15) TCGA-44-3398-01A-01-TS1.80f016ac-f5c5-49c4-972e-2ffd226d226d | STATUS=COMPLETE
+
+  [GPU 2] (6/15) TCGA-44-3918-01B-01-BS1.B0A5703D-4C07-4F25-A6D3-D240BD970D5E | [S1-OK] TCGA-44-3918-01B-01-BS1.B0A5703D-4C07-4F25-A6D3-D240BD970D5E.svs: 27585 tiles in 105s
+  [GPU 2] (6/15) TCGA-44-3918-01B-01-BS1.B0A5703D-4C07-4F25-A6D3-D240BD970D5E | [S2-OK] TCGA-44-3918-01B-01-BS1.B0A5703D-4C07-4F25-A6D3-D240BD970D5E: 27585 tiles, 6 classes
+  [GPU 1] (7/15) TCGA-44-6775-11A-03-TS3.1BE1238F-E7DC-425D-A28D-D0EA175F0DFF | [S1-OK] TCGA-44-6775-11A-03-TS3.1BE1238F-E7DC-425D-A28D-D0EA175F0DFF.svs: 1509 tiles in 29s
+  [GPU 1] (7/15) TCGA-44-6775-11A-03-TS3.1BE1238F-E7DC-425D-A28D-D0EA175F0DFF | [S2-OK] TCGA-44-6775-11A-03-TS3.1BE1238F-E7DC-425D-A28D-D0EA175F0DFF: 1509 tiles, 6 classes
+  [GPU 4] (7/14) TCGA-44-6779-01A-01-BS1.e55cc68b-4f36-4d22-a4b7-9af0417a4171 | [S3-OK] TCGA-44-6779-01A-01-BS1.e55cc68b-4f36-4d22-a4b7-9af0417a4171.svs: (18036, 512) in 68s
+  [GPU 4] (7/14) TCGA-44-6779-01A-01-BS1.e55cc68b-4f36-4d22-a4b7-9af0417a4171 | STATUS=COMPLETE
+
+  [GPU 4] (8/14) TCGA-44-8120-01A-01-TS1.ee68ef00-ac9e-4833-a84e-c03fb2df1d0c | [S1-OK] TCGA-44-8120-01A-01-TS1.ee68ef00-ac9e-4833-a84e-c03fb2df1d0c.svs: 1742 tiles in 9s
+  [GPU 4] (8/14) TCGA-44-8120-01A-01-TS1.ee68ef00-ac9e-4833-a84e-c03fb2df1d0c | [S2-OK] TCGA-44-8120-01A-01-TS1.ee68ef00-ac9e-4833-a84e-c03fb2df1d0c: 1742 tiles, 6 classes
+  [GPU 3] (7/14) TCGA-44-6777-11A-01-TS1.17abcbd4-6733-4d6e-998b-a944cafcb549 | [S1-OK] TCGA-44-6777-11A-01-TS1.17abcbd4-6733-4d6e-998b-a944cafcb549.svs: 14857 tiles in 68s
+  [GPU 3] (7/14) TCGA-44-6777-11A-01-TS1.17abcbd4-6733-4d6e-998b-a944cafcb549 | [S2-OK] TCGA-44-6777-11A-01-TS1.17abcbd4-6733-4d6e-998b-a944cafcb549: 14857 tiles, 6 classes
+  [GPU 1] (7/15) TCGA-44-6775-11A-03-TS3.1BE1238F-E7DC-425D-A28D-D0EA175F0DFF | [S3-OK] TCGA-44-6775-11A-03-TS3.1BE1238F-E7DC-425D-A28D-D0EA175F0DFF.svs: (1509, 512) in 31s
+  [GPU 1] (7/15) TCGA-44-6775-11A-03-TS3.1BE1238F-E7DC-425D-A28D-D0EA175F0DFF | STATUS=COMPLETE
+
+  [GPU 4] (8/14) TCGA-44-8120-01A-01-TS1.ee68ef00-ac9e-4833-a84e-c03fb2df1d0c | [S3-OK] TCGA-44-8120-01A-01-TS1.ee68ef00-ac9e-4833-a84e-c03fb2df1d0c.svs: (1742, 512) in 8s
+  [GPU 4] (8/14) TCGA-44-8120-01A-01-TS1.ee68ef00-ac9e-4833-a84e-c03fb2df1d0c | STATUS=COMPLETE
+
+  [GPU 1] (8/15) TCGA-44-7670-01A-01-TS1.3e1ec27f-722d-4b74-960b-d33537771d25 | [S1-OK] TCGA-44-7670-01A-01-TS1.3e1ec27f-722d-4b74-960b-d33537771d25.svs: 1957 tiles in 8s
+  [GPU 1] (8/15) TCGA-44-7670-01A-01-TS1.3e1ec27f-722d-4b74-960b-d33537771d25 | [S2-OK] TCGA-44-7670-01A-01-TS1.3e1ec27f-722d-4b74-960b-d33537771d25: 1957 tiles, 6 classes
+  [GPU 0] (5/15) TCGA-38-6178-01A-01-BS1.45e6381d-637a-4b27-aae9-1bbee2c14944 | [S3-OK] TCGA-38-6178-01A-01-BS1.45e6381d-637a-4b27-aae9-1bbee2c14944.svs: (19567, 512) in 85s
+  [GPU 0] (5/15) TCGA-38-6178-01A-01-BS1.45e6381d-637a-4b27-aae9-1bbee2c14944 | STATUS=COMPLETE
+
+  [GPU 1] (8/15) TCGA-44-7670-01A-01-TS1.3e1ec27f-722d-4b74-960b-d33537771d25 | [S3-OK] TCGA-44-7670-01A-01-TS1.3e1ec27f-722d-4b74-960b-d33537771d25.svs: (1957, 512) in 8s
+  [GPU 1] (8/15) TCGA-44-7670-01A-01-TS1.3e1ec27f-722d-4b74-960b-d33537771d25 | STATUS=COMPLETE
+
+  [GPU 1] (9/15) TCGA-49-4486-01A-01-BS1.b5d67c18-0fa2-479f-a762-549071208ac0 | [S1-OK] TCGA-49-4486-01A-01-BS1.b5d67c18-0fa2-479f-a762-549071208ac0.svs: 1655 tiles in 10s
+  [GPU 1] (9/15) TCGA-49-4486-01A-01-BS1.b5d67c18-0fa2-479f-a762-549071208ac0 | [S2-OK] TCGA-49-4486-01A-01-BS1.b5d67c18-0fa2-479f-a762-549071208ac0: 1655 tiles, 6 classes
+  [GPU 0] (6/15) TCGA-44-2668-01B-02-BS2.7C0C441E-E968-471D-9E4A-77673F67250D | [S1-OK] TCGA-44-2668-01B-02-BS2.7C0C441E-E968-471D-9E4A-77673F67250D.svs: 3081 tiles in 26s
+  [GPU 0] (6/15) TCGA-44-2668-01B-02-BS2.7C0C441E-E968-471D-9E4A-77673F67250D | [S2-OK] TCGA-44-2668-01B-02-BS2.7C0C441E-E968-471D-9E4A-77673F67250D: 3081 tiles, 6 classes
+  [GPU 5] (7/14) TCGA-44-7659-11A-01-TS1.fc17a07c-16aa-415b-903d-914d8183c2db | [S3-OK] TCGA-44-7659-11A-01-TS1.fc17a07c-16aa-415b-903d-914d8183c2db.svs: (43844, 512) in 109s
+  [GPU 5] (7/14) TCGA-44-7659-11A-01-TS1.fc17a07c-16aa-415b-903d-914d8183c2db | STATUS=COMPLETE
+
+  [GPU 1] (9/15) TCGA-49-4486-01A-01-BS1.b5d67c18-0fa2-479f-a762-549071208ac0 | [S3-OK] TCGA-49-4486-01A-01-BS1.b5d67c18-0fa2-479f-a762-549071208ac0.svs: (1655, 512) in 10s
+  [GPU 1] (9/15) TCGA-49-4486-01A-01-BS1.b5d67c18-0fa2-479f-a762-549071208ac0 | STATUS=COMPLETE
+
+  [GPU 4] (9/14) TCGA-49-6743-01A-01-BS1.a59ea9e1-f418-4882-b628-0039a2dd4bbd | [S1-OK] TCGA-49-6743-01A-01-BS1.a59ea9e1-f418-4882-b628-0039a2dd4bbd.svs: 7388 tiles in 47s
+  [GPU 4] (9/14) TCGA-49-6743-01A-01-BS1.a59ea9e1-f418-4882-b628-0039a2dd4bbd | [S2-OK] TCGA-49-6743-01A-01-BS1.a59ea9e1-f418-4882-b628-0039a2dd4bbd: 7388 tiles, 6 classes
+  [GPU 2] (6/15) TCGA-44-3918-01B-01-BS1.B0A5703D-4C07-4F25-A6D3-D240BD970D5E | [S3-OK] TCGA-44-3918-01B-01-BS1.B0A5703D-4C07-4F25-A6D3-D240BD970D5E.svs: (27585, 512) in 102s
+  [GPU 2] (6/15) TCGA-44-3918-01B-01-BS1.B0A5703D-4C07-4F25-A6D3-D240BD970D5E | STATUS=COMPLETE
+
+  [GPU 0] (6/15) TCGA-44-2668-01B-02-BS2.7C0C441E-E968-471D-9E4A-77673F67250D | [S3-OK] TCGA-44-2668-01B-02-BS2.7C0C441E-E968-471D-9E4A-77673F67250D.svs: (3081, 512) in 21s
+  [GPU 0] (6/15) TCGA-44-2668-01B-02-BS2.7C0C441E-E968-471D-9E4A-77673F67250D | STATUS=COMPLETE
+
+  [GPU 3] (7/14) TCGA-44-6777-11A-01-TS1.17abcbd4-6733-4d6e-998b-a944cafcb549 | [S3-OK] TCGA-44-6777-11A-01-TS1.17abcbd4-6733-4d6e-998b-a944cafcb549.svs: (14857, 512) in 65s
+  [GPU 3] (7/14) TCGA-44-6777-11A-01-TS1.17abcbd4-6733-4d6e-998b-a944cafcb549 | STATUS=COMPLETE
+
+  [GPU 1] (10/15) TCGA-49-6767-11A-01-TS1.fee72e34-c2fc-44f1-bd94-5bf8c0a23423 | [S1-OK] TCGA-49-6767-11A-01-TS1.fee72e34-c2fc-44f1-bd94-5bf8c0a23423.svs: 8192 tiles in 37s
+  [GPU 1] (10/15) TCGA-49-6767-11A-01-TS1.fee72e34-c2fc-44f1-bd94-5bf8c0a23423 | [S2-OK] TCGA-49-6767-11A-01-TS1.fee72e34-c2fc-44f1-bd94-5bf8c0a23423: 8192 tiles, 6 classes
+  [GPU 4] (9/14) TCGA-49-6743-01A-01-BS1.a59ea9e1-f418-4882-b628-0039a2dd4bbd | [S3-OK] TCGA-49-6743-01A-01-BS1.a59ea9e1-f418-4882-b628-0039a2dd4bbd.svs: (7388, 512) in 44s
+  [GPU 4] (9/14) TCGA-49-6743-01A-01-BS1.a59ea9e1-f418-4882-b628-0039a2dd4bbd | STATUS=COMPLETE
+
+  [GPU 5] (8/14) TCGA-44-A47B-01A-01-TS1.2AC93301-1252-4255-9EA9-B49CBEB72975 | [S1-OK] TCGA-44-A47B-01A-01-TS1.2AC93301-1252-4255-9EA9-B49CBEB72975.svs: 10827 tiles in 67s
+  [GPU 5] (8/14) TCGA-44-A47B-01A-01-TS1.2AC93301-1252-4255-9EA9-B49CBEB72975 | [S2-OK] TCGA-44-A47B-01A-01-TS1.2AC93301-1252-4255-9EA9-B49CBEB72975: 10827 tiles, 6 classes
+  [GPU 3] (8/14) TCGA-44-8117-11A-01-TS1.0f3050ad-ca0a-411a-8224-cb1609f99622 | [S1-OK] TCGA-44-8117-11A-01-TS1.0f3050ad-ca0a-411a-8224-cb1609f99622.svs: 6828 tiles in 48s
+  [GPU 3] (8/14) TCGA-44-8117-11A-01-TS1.0f3050ad-ca0a-411a-8224-cb1609f99622 | [S2-OK] TCGA-44-8117-11A-01-TS1.0f3050ad-ca0a-411a-8224-cb1609f99622: 6828 tiles, 6 classes
+  [GPU 1] (10/15) TCGA-49-6767-11A-01-TS1.fee72e34-c2fc-44f1-bd94-5bf8c0a23423 | [S3-OK] TCGA-49-6767-11A-01-TS1.fee72e34-c2fc-44f1-bd94-5bf8c0a23423.svs: (8192, 512) in 44s
+  [GPU 1] (10/15) TCGA-49-6767-11A-01-TS1.fee72e34-c2fc-44f1-bd94-5bf8c0a23423 | STATUS=COMPLETE
+
+  [GPU 2] (7/15) TCGA-44-6776-01A-01-BS1.7b26c23b-edbf-4de8-8add-37544a4e74ed | [S1-OK] TCGA-44-6776-01A-01-BS1.7b26c23b-edbf-4de8-8add-37544a4e74ed.svs: 13870 tiles in 69s
+  [GPU 2] (7/15) TCGA-44-6776-01A-01-BS1.7b26c23b-edbf-4de8-8add-37544a4e74ed | [S2-OK] TCGA-44-6776-01A-01-BS1.7b26c23b-edbf-4de8-8add-37544a4e74ed: 13870 tiles, 6 classes
+  [GPU 4] (10/14) TCGA-49-AARE-11A-01-TS1.DC9E89C9-86E8-452D-AD64-225A978B84E2 | [S1-OK] TCGA-49-AARE-11A-01-TS1.DC9E89C9-86E8-452D-AD64-225A978B84E2.svs: 2044 tiles in 28s
+  [GPU 4] (10/14) TCGA-49-AARE-11A-01-TS1.DC9E89C9-86E8-452D-AD64-225A978B84E2 | [S2-OK] TCGA-49-AARE-11A-01-TS1.DC9E89C9-86E8-452D-AD64-225A978B84E2: 2044 tiles, 6 classes
+  [GPU 0] (7/15) TCGA-44-6774-11A-01-TS1.448f11c5-ba05-4730-baa0-7ef69b19aa29 | [S1-OK] TCGA-44-6774-11A-01-TS1.448f11c5-ba05-4730-baa0-7ef69b19aa29.svs: 16161 tiles in 72s
+  [GPU 0] (7/15) TCGA-44-6774-11A-01-TS1.448f11c5-ba05-4730-baa0-7ef69b19aa29 | [S2-OK] TCGA-44-6774-11A-01-TS1.448f11c5-ba05-4730-baa0-7ef69b19aa29: 16161 tiles, 6 classes
+  [GPU 4] (10/14) TCGA-49-AARE-11A-01-TS1.DC9E89C9-86E8-452D-AD64-225A978B84E2 | [S3-OK] TCGA-49-AARE-11A-01-TS1.DC9E89C9-86E8-452D-AD64-225A978B84E2.svs: (2044, 512) in 25s
+  [GPU 4] (10/14) TCGA-49-AARE-11A-01-TS1.DC9E89C9-86E8-452D-AD64-225A978B84E2 | STATUS=COMPLETE
+
+  [GPU 3] (8/14) TCGA-44-8117-11A-01-TS1.0f3050ad-ca0a-411a-8224-cb1609f99622 | [S3-OK] TCGA-44-8117-11A-01-TS1.0f3050ad-ca0a-411a-8224-cb1609f99622.svs: (6828, 512) in 47s
+  [GPU 3] (8/14) TCGA-44-8117-11A-01-TS1.0f3050ad-ca0a-411a-8224-cb1609f99622 | STATUS=COMPLETE
+
+  [GPU 5] (8/14) TCGA-44-A47B-01A-01-TS1.2AC93301-1252-4255-9EA9-B49CBEB72975 | [S3-OK] TCGA-44-A47B-01A-01-TS1.2AC93301-1252-4255-9EA9-B49CBEB72975.svs: (10827, 512) in 59s
+  [GPU 5] (8/14) TCGA-44-A47B-01A-01-TS1.2AC93301-1252-4255-9EA9-B49CBEB72975 | STATUS=COMPLETE
+
+  [GPU 1] (11/15) TCGA-50-5049-01A-01-TS1.22431092-04c2-4343-884f-029ff951589a | [S1-OK] TCGA-50-5049-01A-01-TS1.22431092-04c2-4343-884f-029ff951589a.svs: 17561 tiles in 50s
+  [GPU 1] (11/15) TCGA-50-5049-01A-01-TS1.22431092-04c2-4343-884f-029ff951589a | [S2-OK] TCGA-50-5049-01A-01-TS1.22431092-04c2-4343-884f-029ff951589a: 17561 tiles, 6 classes
+  [GPU 4] (11/14) TCGA-50-5068-01A-01-BS1.e2cffa98-abc4-41b3-8861-cb2d0d28ac67 | [S1-OK] TCGA-50-5068-01A-01-BS1.e2cffa98-abc4-41b3-8861-cb2d0d28ac67.svs: 9344 tiles in 37s
+  [GPU 4] (11/14) TCGA-50-5068-01A-01-BS1.e2cffa98-abc4-41b3-8861-cb2d0d28ac67 | [S2-OK] TCGA-50-5068-01A-01-BS1.e2cffa98-abc4-41b3-8861-cb2d0d28ac67: 9344 tiles, 6 classes
+  [GPU 2] (7/15) TCGA-44-6776-01A-01-BS1.7b26c23b-edbf-4de8-8add-37544a4e74ed | [S3-OK] TCGA-44-6776-01A-01-BS1.7b26c23b-edbf-4de8-8add-37544a4e74ed.svs: (13870, 512) in 68s
+  [GPU 2] (7/15) TCGA-44-6776-01A-01-BS1.7b26c23b-edbf-4de8-8add-37544a4e74ed | STATUS=COMPLETE
+
+  [GPU 0] (7/15) TCGA-44-6774-11A-01-TS1.448f11c5-ba05-4730-baa0-7ef69b19aa29 | [S3-OK] TCGA-44-6774-11A-01-TS1.448f11c5-ba05-4730-baa0-7ef69b19aa29.svs: (16161, 512) in 74s
+  [GPU 0] (7/15) TCGA-44-6774-11A-01-TS1.448f11c5-ba05-4730-baa0-7ef69b19aa29 | STATUS=COMPLETE
+
+  [GPU 3] (9/14) TCGA-49-6742-11A-01-TS1.529a44b9-e94c-4a2f-9977-b154bc9035de | [S1-OK] TCGA-49-6742-11A-01-TS1.529a44b9-e94c-4a2f-9977-b154bc9035de.svs: 10515 tiles in 54s
+  [GPU 3] (9/14) TCGA-49-6742-11A-01-TS1.529a44b9-e94c-4a2f-9977-b154bc9035de | [S2-OK] TCGA-49-6742-11A-01-TS1.529a44b9-e94c-4a2f-9977-b154bc9035de: 10515 tiles, 6 classes
+  [GPU 4] (11/14) TCGA-50-5068-01A-01-BS1.e2cffa98-abc4-41b3-8861-cb2d0d28ac67 | [S3-OK] TCGA-50-5068-01A-01-BS1.e2cffa98-abc4-41b3-8861-cb2d0d28ac67.svs: (9344, 512) in 35s
+  [GPU 4] (11/14) TCGA-50-5068-01A-01-BS1.e2cffa98-abc4-41b3-8861-cb2d0d28ac67 | STATUS=COMPLETE
+
+  [GPU 1] (11/15) TCGA-50-5049-01A-01-TS1.22431092-04c2-4343-884f-029ff951589a | [S3-OK] TCGA-50-5049-01A-01-TS1.22431092-04c2-4343-884f-029ff951589a.svs: (17561, 512) in 50s
+  [GPU 1] (11/15) TCGA-50-5049-01A-01-TS1.22431092-04c2-4343-884f-029ff951589a | STATUS=COMPLETE
+
+  [GPU 5] (9/14) TCGA-49-6744-01A-01-TS1.cb8c4bda-8e2b-45e1-a7ec-7db89e297f5d | [S1-OK] TCGA-49-6744-01A-01-TS1.cb8c4bda-8e2b-45e1-a7ec-7db89e297f5d.svs: 10729 tiles in 61s
+  [GPU 5] (9/14) TCGA-49-6744-01A-01-TS1.cb8c4bda-8e2b-45e1-a7ec-7db89e297f5d | [S2-OK] TCGA-49-6744-01A-01-TS1.cb8c4bda-8e2b-45e1-a7ec-7db89e297f5d: 10729 tiles, 6 classes
+  [GPU 2] (8/15) TCGA-44-7672-11A-01-TS1.56f18fbf-350e-49a7-8bba-6246617bc001 | [S1-OK] TCGA-44-7672-11A-01-TS1.56f18fbf-350e-49a7-8bba-6246617bc001.svs: 18428 tiles in 66s
+  [GPU 2] (8/15) TCGA-44-7672-11A-01-TS1.56f18fbf-350e-49a7-8bba-6246617bc001 | [S2-OK] TCGA-44-7672-11A-01-TS1.56f18fbf-350e-49a7-8bba-6246617bc001: 18428 tiles, 6 classes
+  [GPU 0] (8/15) TCGA-44-7669-11A-01-TS1.999186c6-6775-41c9-9c7c-73d46ba6d2ef | [S1-OK] TCGA-44-7669-11A-01-TS1.999186c6-6775-41c9-9c7c-73d46ba6d2ef.svs: 20866 tiles in 63s
+  [GPU 0] (8/15) TCGA-44-7669-11A-01-TS1.999186c6-6775-41c9-9c7c-73d46ba6d2ef | [S2-OK] TCGA-44-7669-11A-01-TS1.999186c6-6775-41c9-9c7c-73d46ba6d2ef: 20866 tiles, 6 classes
+  [GPU 3] (9/14) TCGA-49-6742-11A-01-TS1.529a44b9-e94c-4a2f-9977-b154bc9035de | [S3-OK] TCGA-49-6742-11A-01-TS1.529a44b9-e94c-4a2f-9977-b154bc9035de.svs: (10515, 512) in 57s
+  [GPU 3] (9/14) TCGA-49-6742-11A-01-TS1.529a44b9-e94c-4a2f-9977-b154bc9035de | STATUS=COMPLETE
+
+  [GPU 5] (9/14) TCGA-49-6744-01A-01-TS1.cb8c4bda-8e2b-45e1-a7ec-7db89e297f5d | [S3-OK] TCGA-49-6744-01A-01-TS1.cb8c4bda-8e2b-45e1-a7ec-7db89e297f5d.svs: (10729, 512) in 67s
+  [GPU 5] (9/14) TCGA-49-6744-01A-01-TS1.cb8c4bda-8e2b-45e1-a7ec-7db89e297f5d | STATUS=COMPLETE
+
+  [GPU 3] (10/14) TCGA-49-AAR3-11A-01-TSA.A2FB7679-FB9F-4E80-855F-77877C694D26 | [S1-OK] TCGA-49-AAR3-11A-01-TSA.A2FB7679-FB9F-4E80-855F-77877C694D26.svs: 1276 tiles in 25s
+  [GPU 3] (10/14) TCGA-49-AAR3-11A-01-TSA.A2FB7679-FB9F-4E80-855F-77877C694D26 | [S2-OK] TCGA-49-AAR3-11A-01-TSA.A2FB7679-FB9F-4E80-855F-77877C694D26: 1276 tiles, 6 classes
+  [GPU 4] (12/14) TCGA-50-5939-01A-01-TS1.a75a4c4e-3fd0-454e-96a7-9657c5139a81 | [S1-OK] TCGA-50-5939-01A-01-TS1.a75a4c4e-3fd0-454e-96a7-9657c5139a81.svs: 27626 tiles in 92s
+  [GPU 4] (12/14) TCGA-50-5939-01A-01-TS1.a75a4c4e-3fd0-454e-96a7-9657c5139a81 | [S2-OK] TCGA-50-5939-01A-01-TS1.a75a4c4e-3fd0-454e-96a7-9657c5139a81: 27626 tiles, 6 classes
+  [GPU 2] (8/15) TCGA-44-7672-11A-01-TS1.56f18fbf-350e-49a7-8bba-6246617bc001 | [S3-OK] TCGA-44-7672-11A-01-TS1.56f18fbf-350e-49a7-8bba-6246617bc001.svs: (18428, 512) in 64s
+  [GPU 2] (8/15) TCGA-44-7672-11A-01-TS1.56f18fbf-350e-49a7-8bba-6246617bc001 | STATUS=COMPLETE
+
+  [GPU 3] (10/14) TCGA-49-AAR3-11A-01-TSA.A2FB7679-FB9F-4E80-855F-77877C694D26 | [S3-OK] TCGA-49-AAR3-11A-01-TSA.A2FB7679-FB9F-4E80-855F-77877C694D26.svs: (1276, 512) in 25s
+  [GPU 3] (10/14) TCGA-49-AAR3-11A-01-TSA.A2FB7679-FB9F-4E80-855F-77877C694D26 | STATUS=COMPLETE
+
+  [GPU 0] (8/15) TCGA-44-7669-11A-01-TS1.999186c6-6775-41c9-9c7c-73d46ba6d2ef | [S3-OK] TCGA-44-7669-11A-01-TS1.999186c6-6775-41c9-9c7c-73d46ba6d2ef.svs: (20866, 512) in 58s
+  [GPU 0] (8/15) TCGA-44-7669-11A-01-TS1.999186c6-6775-41c9-9c7c-73d46ba6d2ef | STATUS=COMPLETE
+
+  [GPU 2] (9/15) TCGA-49-4487-01A-02-BS2.a86aa3c6-1dec-459d-90aa-69347884ed80 | [S1-OK] TCGA-49-4487-01A-02-BS2.a86aa3c6-1dec-459d-90aa-69347884ed80.svs: 2310 tiles in 10s
+  [GPU 2] (9/15) TCGA-49-4487-01A-02-BS2.a86aa3c6-1dec-459d-90aa-69347884ed80 | [S2-OK] TCGA-49-4487-01A-02-BS2.a86aa3c6-1dec-459d-90aa-69347884ed80: 2310 tiles, 6 classes
+  [GPU 1] (12/15) TCGA-50-5932-01A-01-BS1.b0ec68b8-ed0c-468e-8ea6-95fc90e4c6a0 | [S1-OK] TCGA-50-5932-01A-01-BS1.b0ec68b8-ed0c-468e-8ea6-95fc90e4c6a0.svs: 32090 tiles in 113s
+  [GPU 1] (12/15) TCGA-50-5932-01A-01-BS1.b0ec68b8-ed0c-468e-8ea6-95fc90e4c6a0 | [S2-OK] TCGA-50-5932-01A-01-BS1.b0ec68b8-ed0c-468e-8ea6-95fc90e4c6a0: 32090 tiles, 6 classes
+  [GPU 5] (10/14) TCGA-49-AARN-11A-01-TS1.B81BDA09-A6E3-4E1F-930F-71A6EC13B7C3 | [S1-OK] TCGA-49-AARN-11A-01-TS1.B81BDA09-A6E3-4E1F-930F-71A6EC13B7C3.svs: 6679 tiles in 48s
+  [GPU 5] (10/14) TCGA-49-AARN-11A-01-TS1.B81BDA09-A6E3-4E1F-930F-71A6EC13B7C3 | [S2-OK] TCGA-49-AARN-11A-01-TS1.B81BDA09-A6E3-4E1F-930F-71A6EC13B7C3: 6679 tiles, 6 classes
+  [GPU 2] (9/15) TCGA-49-4487-01A-02-BS2.a86aa3c6-1dec-459d-90aa-69347884ed80 | [S3-OK] TCGA-49-4487-01A-02-BS2.a86aa3c6-1dec-459d-90aa-69347884ed80.svs: (2310, 512) in 16s
+  [GPU 2] (9/15) TCGA-49-4487-01A-02-BS2.a86aa3c6-1dec-459d-90aa-69347884ed80 | STATUS=COMPLETE
+
+  [GPU 3] (11/14) TCGA-50-5055-01A-01-BS1.23899b53-43e5-40b3-801f-928d6dc3dd1b | [S1-OK] TCGA-50-5055-01A-01-BS1.23899b53-43e5-40b3-801f-928d6dc3dd1b.svs: 6786 tiles in 40s
+  [GPU 3] (11/14) TCGA-50-5055-01A-01-BS1.23899b53-43e5-40b3-801f-928d6dc3dd1b | [S2-OK] TCGA-50-5055-01A-01-BS1.23899b53-43e5-40b3-801f-928d6dc3dd1b: 6786 tiles, 6 classes
+  [GPU 2] (10/15) TCGA-49-AAQV-11A-01-TSA.DD8E00B5-89C3-45A0-98F3-7CCD2C99E430 | [S1-OK] TCGA-49-AAQV-11A-01-TSA.DD8E00B5-89C3-45A0-98F3-7CCD2C99E430.svs: 3917 tiles in 32s
+  [GPU 2] (10/15) TCGA-49-AAQV-11A-01-TSA.DD8E00B5-89C3-45A0-98F3-7CCD2C99E430 | [S2-OK] TCGA-49-AAQV-11A-01-TSA.DD8E00B5-89C3-45A0-98F3-7CCD2C99E430: 3917 tiles, 6 classes
+  [GPU 5] (10/14) TCGA-49-AARN-11A-01-TS1.B81BDA09-A6E3-4E1F-930F-71A6EC13B7C3 | [S3-OK] TCGA-49-AARN-11A-01-TS1.B81BDA09-A6E3-4E1F-930F-71A6EC13B7C3.svs: (6679, 512) in 50s
+  [GPU 5] (10/14) TCGA-49-AARN-11A-01-TS1.B81BDA09-A6E3-4E1F-930F-71A6EC13B7C3 | STATUS=COMPLETE
+
+  [GPU 0] (9/15) TCGA-44-A47G-01A-02-TSB.791AD505-A642-4189-A480-7F760B52F3B6 | [S1-OK] TCGA-44-A47G-01A-02-TSB.791AD505-A642-4189-A480-7F760B52F3B6.svs: 14062 tiles in 72s
+  [GPU 0] (9/15) TCGA-44-A47G-01A-02-TSB.791AD505-A642-4189-A480-7F760B52F3B6 | [S2-OK] TCGA-44-A47G-01A-02-TSB.791AD505-A642-4189-A480-7F760B52F3B6: 14062 tiles, 6 classes
+  [GPU 4] (12/14) TCGA-50-5939-01A-01-TS1.a75a4c4e-3fd0-454e-96a7-9657c5139a81 | [S3-OK] TCGA-50-5939-01A-01-TS1.a75a4c4e-3fd0-454e-96a7-9657c5139a81.svs: (27626, 512) in 87s
+  [GPU 4] (12/14) TCGA-50-5939-01A-01-TS1.a75a4c4e-3fd0-454e-96a7-9657c5139a81 | STATUS=COMPLETE
+
+  [GPU 3] (11/14) TCGA-50-5055-01A-01-BS1.23899b53-43e5-40b3-801f-928d6dc3dd1b | [S3-OK] TCGA-50-5055-01A-01-BS1.23899b53-43e5-40b3-801f-928d6dc3dd1b.svs: (6786, 512) in 45s
+  [GPU 3] (11/14) TCGA-50-5055-01A-01-BS1.23899b53-43e5-40b3-801f-928d6dc3dd1b | STATUS=COMPLETE
+
+  [GPU 2] (10/15) TCGA-49-AAQV-11A-01-TSA.DD8E00B5-89C3-45A0-98F3-7CCD2C99E430 | [S3-OK] TCGA-49-AAQV-11A-01-TSA.DD8E00B5-89C3-45A0-98F3-7CCD2C99E430.svs: (3917, 512) in 31s
+  [GPU 2] (10/15) TCGA-49-AAQV-11A-01-TSA.DD8E00B5-89C3-45A0-98F3-7CCD2C99E430 | STATUS=COMPLETE
+
+  [GPU 5] (11/14) TCGA-50-5072-01A-01-BS1.8e68de46-2a6e-40b5-a6af-9f34d9a5e7fa | [S1-OK] TCGA-50-5072-01A-01-BS1.8e68de46-2a6e-40b5-a6af-9f34d9a5e7fa.svs: 8229 tiles in 30s
+  [GPU 5] (11/14) TCGA-50-5072-01A-01-BS1.8e68de46-2a6e-40b5-a6af-9f34d9a5e7fa | [S2-OK] TCGA-50-5072-01A-01-BS1.8e68de46-2a6e-40b5-a6af-9f34d9a5e7fa: 8229 tiles, 6 classes
+  [GPU 2] (11/15) TCGA-50-5051-01A-02-BS2.1bdbee1f-f24b-4a65-afb2-3e80e81ff462 | [S1-OK] TCGA-50-5051-01A-02-BS2.1bdbee1f-f24b-4a65-afb2-3e80e81ff462.svs: 1622 tiles in 20s
+  [GPU 2] (11/15) TCGA-50-5051-01A-02-BS2.1bdbee1f-f24b-4a65-afb2-3e80e81ff462 | [S2-OK] TCGA-50-5051-01A-02-BS2.1bdbee1f-f24b-4a65-afb2-3e80e81ff462: 1622 tiles, 6 classes
+  [GPU 1] (12/15) TCGA-50-5932-01A-01-BS1.b0ec68b8-ed0c-468e-8ea6-95fc90e4c6a0 | [S3-OK] TCGA-50-5932-01A-01-BS1.b0ec68b8-ed0c-468e-8ea6-95fc90e4c6a0.svs: (32090, 512) in 105s
+  [GPU 1] (12/15) TCGA-50-5932-01A-01-BS1.b0ec68b8-ed0c-468e-8ea6-95fc90e4c6a0 | STATUS=COMPLETE
+
+  [GPU 2] (11/15) TCGA-50-5051-01A-02-BS2.1bdbee1f-f24b-4a65-afb2-3e80e81ff462 | [S3-OK] TCGA-50-5051-01A-02-BS2.1bdbee1f-f24b-4a65-afb2-3e80e81ff462.svs: (1622, 512) in 19s
+  [GPU 2] (11/15) TCGA-50-5051-01A-02-BS2.1bdbee1f-f24b-4a65-afb2-3e80e81ff462 | STATUS=COMPLETE
+
+  [GPU 5] (11/14) TCGA-50-5072-01A-01-BS1.8e68de46-2a6e-40b5-a6af-9f34d9a5e7fa | [S3-OK] TCGA-50-5072-01A-01-BS1.8e68de46-2a6e-40b5-a6af-9f34d9a5e7fa.svs: (8229, 512) in 31s
+  [GPU 5] (11/14) TCGA-50-5072-01A-01-BS1.8e68de46-2a6e-40b5-a6af-9f34d9a5e7fa | STATUS=COMPLETE
+
+  [GPU 0] (9/15) TCGA-44-A47G-01A-02-TSB.791AD505-A642-4189-A480-7F760B52F3B6 | [S3-OK] TCGA-44-A47G-01A-02-TSB.791AD505-A642-4189-A480-7F760B52F3B6.svs: (14062, 512) in 67s
+  [GPU 0] (9/15) TCGA-44-A47G-01A-02-TSB.791AD505-A642-4189-A480-7F760B52F3B6 | STATUS=COMPLETE
+
+  [GPU 3] (12/14) TCGA-50-5935-01A-01-BS1.b3e47bcb-70a9-4177-86a9-f0dac5aa0a07 | [S1-OK] TCGA-50-5935-01A-01-BS1.b3e47bcb-70a9-4177-86a9-f0dac5aa0a07.svs: 16342 tiles in 71s
+  [GPU 3] (12/14) TCGA-50-5935-01A-01-BS1.b3e47bcb-70a9-4177-86a9-f0dac5aa0a07 | [S2-OK] TCGA-50-5935-01A-01-BS1.b3e47bcb-70a9-4177-86a9-f0dac5aa0a07: 16342 tiles, 6 classes
+  [GPU 1] (13/15) TCGA-50-6591-01A-01-BS1.b3497e1b-f055-450b-860e-9f7e95acb162 | [S1-OK] TCGA-50-6591-01A-01-BS1.b3497e1b-f055-450b-860e-9f7e95acb162.svs: 11019 tiles in 53s
+  [GPU 1] (13/15) TCGA-50-6591-01A-01-BS1.b3497e1b-f055-450b-860e-9f7e95acb162 | [S2-OK] TCGA-50-6591-01A-01-BS1.b3497e1b-f055-450b-860e-9f7e95acb162: 11019 tiles, 6 classes
+  [GPU 0] (10/15) TCGA-49-6761-01A-02-BS2.4750f290-f2fa-4bcf-aae1-33743b35c92f | [S1-OK] TCGA-49-6761-01A-02-BS2.4750f290-f2fa-4bcf-aae1-33743b35c92f.svs: 4501 tiles in 30s
+  [GPU 0] (10/15) TCGA-49-6761-01A-02-BS2.4750f290-f2fa-4bcf-aae1-33743b35c92f | [S2-OK] TCGA-49-6761-01A-02-BS2.4750f290-f2fa-4bcf-aae1-33743b35c92f: 4501 tiles, 6 classes
+  [GPU 0] (10/15) TCGA-49-6761-01A-02-BS2.4750f290-f2fa-4bcf-aae1-33743b35c92f | [S3-OK] TCGA-49-6761-01A-02-BS2.4750f290-f2fa-4bcf-aae1-33743b35c92f.svs: (4501, 512) in 30s
+  [GPU 0] (10/15) TCGA-49-6761-01A-02-BS2.4750f290-f2fa-4bcf-aae1-33743b35c92f | STATUS=COMPLETE
+
+  [GPU 1] (13/15) TCGA-50-6591-01A-01-BS1.b3497e1b-f055-450b-860e-9f7e95acb162 | [S3-OK] TCGA-50-6591-01A-01-BS1.b3497e1b-f055-450b-860e-9f7e95acb162.svs: (11019, 512) in 59s
+  [GPU 1] (13/15) TCGA-50-6591-01A-01-BS1.b3497e1b-f055-450b-860e-9f7e95acb162 | STATUS=COMPLETE
+
+  [GPU 3] (12/14) TCGA-50-5935-01A-01-BS1.b3e47bcb-70a9-4177-86a9-f0dac5aa0a07 | [S3-OK] TCGA-50-5935-01A-01-BS1.b3e47bcb-70a9-4177-86a9-f0dac5aa0a07.svs: (16342, 512) in 84s
+  [GPU 3] (12/14) TCGA-50-5935-01A-01-BS1.b3e47bcb-70a9-4177-86a9-f0dac5aa0a07 | STATUS=COMPLETE
+
+  [GPU 5] (12/14) TCGA-50-5946-01A-01-BS1.3dad41fd-bd32-43ad-a8e5-6eaa0411b638 | [S1-OK] TCGA-50-5946-01A-01-BS1.3dad41fd-bd32-43ad-a8e5-6eaa0411b638.svs: 42806 tiles in 120s
+  [GPU 5] (12/14) TCGA-50-5946-01A-01-BS1.3dad41fd-bd32-43ad-a8e5-6eaa0411b638 | [S2-OK] TCGA-50-5946-01A-01-BS1.3dad41fd-bd32-43ad-a8e5-6eaa0411b638: 42806 tiles, 6 classes
+  [GPU 0] (11/15) TCGA-49-AARQ-11A-02-TS2.7047AE2E-2B53-4E40-8CBA-7B9C28AFDB4C | [S1-OK] TCGA-49-AARQ-11A-02-TS2.7047AE2E-2B53-4E40-8CBA-7B9C28AFDB4C.svs: 8397 tiles in 55s
+  [GPU 0] (11/15) TCGA-49-AARQ-11A-02-TS2.7047AE2E-2B53-4E40-8CBA-7B9C28AFDB4C | [S2-OK] TCGA-49-AARQ-11A-02-TS2.7047AE2E-2B53-4E40-8CBA-7B9C28AFDB4C: 8397 tiles, 6 classes
+  [GPU 4] (13/14) TCGA-50-6595-11A-01-TS1.9aa7c8df-9306-4f4c-8f85-a70d4cbdbcbf | [S1-OK] TCGA-50-6595-11A-01-TS1.9aa7c8df-9306-4f4c-8f85-a70d4cbdbcbf.svs: 29885 tiles in 182s
+  [GPU 4] (13/14) TCGA-50-6595-11A-01-TS1.9aa7c8df-9306-4f4c-8f85-a70d4cbdbcbf | [S2-OK] TCGA-50-6595-11A-01-TS1.9aa7c8df-9306-4f4c-8f85-a70d4cbdbcbf: 29885 tiles, 6 classes
+  [GPU 2] (12/15) TCGA-50-5933-01A-01-BS1.5e86d54b-426d-404b-98c3-b705203d4f76 | [S1-OK] TCGA-50-5933-01A-01-BS1.5e86d54b-426d-404b-98c3-b705203d4f76.svs: 38256 tiles in 138s
+  [GPU 2] (12/15) TCGA-50-5933-01A-01-BS1.5e86d54b-426d-404b-98c3-b705203d4f76 | [S2-OK] TCGA-50-5933-01A-01-BS1.5e86d54b-426d-404b-98c3-b705203d4f76: 38256 tiles, 6 classes
+  [GPU 3] (13/14) TCGA-50-6594-01A-01-TS1.242fa6fa-59a4-49df-8fc5-5d9c91ab6030 | [S1-OK] TCGA-50-6594-01A-01-TS1.242fa6fa-59a4-49df-8fc5-5d9c91ab6030.svs: 13441 tiles in 69s
+  [GPU 3] (13/14) TCGA-50-6594-01A-01-TS1.242fa6fa-59a4-49df-8fc5-5d9c91ab6030 | [S2-OK] TCGA-50-6594-01A-01-TS1.242fa6fa-59a4-49df-8fc5-5d9c91ab6030: 13441 tiles, 6 classes
+  [GPU 0] (11/15) TCGA-49-AARQ-11A-02-TS2.7047AE2E-2B53-4E40-8CBA-7B9C28AFDB4C | [S3-OK] TCGA-49-AARQ-11A-02-TS2.7047AE2E-2B53-4E40-8CBA-7B9C28AFDB4C.svs: (8397, 512) in 50s
+  [GPU 0] (11/15) TCGA-49-AARQ-11A-02-TS2.7047AE2E-2B53-4E40-8CBA-7B9C28AFDB4C | STATUS=COMPLETE
+
+  [GPU 1] (14/15) TCGA-50-8459-11A-01-TS1.d81e0dda-c399-4170-b801-7f54b801817b | [S1-OK] TCGA-50-8459-11A-01-TS1.d81e0dda-c399-4170-b801-7f54b801817b.svs: 16307 tiles in 90s
+  [GPU 1] (14/15) TCGA-50-8459-11A-01-TS1.d81e0dda-c399-4170-b801-7f54b801817b | [S2-OK] TCGA-50-8459-11A-01-TS1.d81e0dda-c399-4170-b801-7f54b801817b: 16307 tiles, 6 classes
+  [GPU 5] (12/14) TCGA-50-5946-01A-01-BS1.3dad41fd-bd32-43ad-a8e5-6eaa0411b638 | [S3-OK] TCGA-50-5946-01A-01-BS1.3dad41fd-bd32-43ad-a8e5-6eaa0411b638.svs: (42806, 512) in 128s
+  [GPU 5] (12/14) TCGA-50-5946-01A-01-BS1.3dad41fd-bd32-43ad-a8e5-6eaa0411b638 | STATUS=COMPLETE
+
+  [GPU 3] (13/14) TCGA-50-6594-01A-01-TS1.242fa6fa-59a4-49df-8fc5-5d9c91ab6030 | [S3-OK] TCGA-50-6594-01A-01-TS1.242fa6fa-59a4-49df-8fc5-5d9c91ab6030.svs: (13441, 512) in 74s
+  [GPU 3] (13/14) TCGA-50-6594-01A-01-TS1.242fa6fa-59a4-49df-8fc5-5d9c91ab6030 | STATUS=COMPLETE
+
+  [GPU 2] (12/15) TCGA-50-5933-01A-01-BS1.5e86d54b-426d-404b-98c3-b705203d4f76 | [S3-OK] TCGA-50-5933-01A-01-BS1.5e86d54b-426d-404b-98c3-b705203d4f76.svs: (38256, 512) in 149s
+  [GPU 2] (12/15) TCGA-50-5933-01A-01-BS1.5e86d54b-426d-404b-98c3-b705203d4f76 | STATUS=COMPLETE
+
+  [GPU 1] (14/15) TCGA-50-8459-11A-01-TS1.d81e0dda-c399-4170-b801-7f54b801817b | [S3-OK] TCGA-50-8459-11A-01-TS1.d81e0dda-c399-4170-b801-7f54b801817b.svs: (16307, 512) in 101s
+  [GPU 1] (14/15) TCGA-50-8459-11A-01-TS1.d81e0dda-c399-4170-b801-7f54b801817b | STATUS=COMPLETE
+
+  [GPU 0] (12/15) TCGA-50-5931-01A-01-TS1.ae13ba18-bb6a-4e32-9148-471932f055cf | [S1-OK] TCGA-50-5931-01A-01-TS1.ae13ba18-bb6a-4e32-9148-471932f055cf.svs: 20032 tiles in 116s
+  [GPU 0] (12/15) TCGA-50-5931-01A-01-TS1.ae13ba18-bb6a-4e32-9148-471932f055cf | [S2-OK] TCGA-50-5931-01A-01-TS1.ae13ba18-bb6a-4e32-9148-471932f055cf: 20032 tiles, 6 classes
+  [GPU 3] (14/14) TCGA-53-7626-01A-01-BS1.efc70393-acd2-4942-8168-677a8dcac0b8 | [S1-OK] TCGA-53-7626-01A-01-BS1.efc70393-acd2-4942-8168-677a8dcac0b8.svs: 8668 tiles in 50s
+  [GPU 3] (14/14) TCGA-53-7626-01A-01-BS1.efc70393-acd2-4942-8168-677a8dcac0b8 | [S2-OK] TCGA-53-7626-01A-01-BS1.efc70393-acd2-4942-8168-677a8dcac0b8: 8668 tiles, 6 classes
+  [GPU 1] (15/15) TCGA-55-1595-01A-01-BS1.4028e7d4-5bf4-4dea-8c2f-690358c5493a | [S1-OK] TCGA-55-1595-01A-01-BS1.4028e7d4-5bf4-4dea-8c2f-690358c5493a.svs: 701 tiles in 16s
+  [GPU 1] (15/15) TCGA-55-1595-01A-01-BS1.4028e7d4-5bf4-4dea-8c2f-690358c5493a | [S2-OK] TCGA-55-1595-01A-01-BS1.4028e7d4-5bf4-4dea-8c2f-690358c5493a: 701 tiles, 6 classes
+  [GPU 4] (13/14) TCGA-50-6595-11A-01-TS1.9aa7c8df-9306-4f4c-8f85-a70d4cbdbcbf | [S3-OK] TCGA-50-6595-11A-01-TS1.9aa7c8df-9306-4f4c-8f85-a70d4cbdbcbf.svs: (29885, 512) in 190s
+  [GPU 4] (13/14) TCGA-50-6595-11A-01-TS1.9aa7c8df-9306-4f4c-8f85-a70d4cbdbcbf | STATUS=COMPLETE
+
+  [GPU 1] (15/15) TCGA-55-1595-01A-01-BS1.4028e7d4-5bf4-4dea-8c2f-690358c5493a | [S3-OK] TCGA-55-1595-01A-01-BS1.4028e7d4-5bf4-4dea-8c2f-690358c5493a.svs: (701, 512) in 18s
+  [GPU 1] (15/15) TCGA-55-1595-01A-01-BS1.4028e7d4-5bf4-4dea-8c2f-690358c5493a | STATUS=COMPLETE
+
+  [GPU 3] (14/14) TCGA-53-7626-01A-01-BS1.efc70393-acd2-4942-8168-677a8dcac0b8 | [S3-OK] TCGA-53-7626-01A-01-BS1.efc70393-acd2-4942-8168-677a8dcac0b8.svs: (8668, 512) in 46s
+  [GPU 3] (14/14) TCGA-53-7626-01A-01-BS1.efc70393-acd2-4942-8168-677a8dcac0b8 | STATUS=COMPLETE
+
+  [GPU 4] (14/14) TCGA-53-7813-01A-01-TS1.113849d5-005f-448a-8bce-2517efc15400 | [S1-OK] TCGA-53-7813-01A-01-TS1.113849d5-005f-448a-8bce-2517efc15400.svs: 7552 tiles in 45s
+  [GPU 4] (14/14) TCGA-53-7813-01A-01-TS1.113849d5-005f-448a-8bce-2517efc15400 | [S2-OK] TCGA-53-7813-01A-01-TS1.113849d5-005f-448a-8bce-2517efc15400: 7552 tiles, 6 classes
+  [GPU 5] (13/14) TCGA-50-6673-11A-01-TS1.b3357107-74e8-4ddc-9e41-48620b71fded | [S1-OK] TCGA-50-6673-11A-01-TS1.b3357107-74e8-4ddc-9e41-48620b71fded.svs: 30288 tiles in 116s
+  [GPU 5] (13/14) TCGA-50-6673-11A-01-TS1.b3357107-74e8-4ddc-9e41-48620b71fded | [S2-OK] TCGA-50-6673-11A-01-TS1.b3357107-74e8-4ddc-9e41-48620b71fded: 30288 tiles, 6 classes
+  [GPU 0] (12/15) TCGA-50-5931-01A-01-TS1.ae13ba18-bb6a-4e32-9148-471932f055cf | [S3-OK] TCGA-50-5931-01A-01-TS1.ae13ba18-bb6a-4e32-9148-471932f055cf.svs: (20032, 512) in 95s
+  [GPU 0] (12/15) TCGA-50-5931-01A-01-TS1.ae13ba18-bb6a-4e32-9148-471932f055cf | STATUS=COMPLETE
+
+  [GPU 2] (13/15) TCGA-50-6592-11A-01-TS1.237db598-b997-4834-8729-98e834c29257 | [S1-OK] TCGA-50-6592-11A-01-TS1.237db598-b997-4834-8729-98e834c29257.svs: 26460 tiles in 108s
+  [GPU 2] (13/15) TCGA-50-6592-11A-01-TS1.237db598-b997-4834-8729-98e834c29257 | [S2-OK] TCGA-50-6592-11A-01-TS1.237db598-b997-4834-8729-98e834c29257: 26460 tiles, 6 classes
+  [GPU 4] (14/14) TCGA-53-7813-01A-01-TS1.113849d5-005f-448a-8bce-2517efc15400 | [S3-OK] TCGA-53-7813-01A-01-TS1.113849d5-005f-448a-8bce-2517efc15400.svs: (7552, 512) in 40s
+  [GPU 4] (14/14) TCGA-53-7813-01A-01-TS1.113849d5-005f-448a-8bce-2517efc15400 | STATUS=COMPLETE
+
+  [GPU 0] (13/15) TCGA-50-6590-01A-01-BS1.1310da67-1b19-4977-b0e4-aab8cc0d445b | [S1-OK] TCGA-50-6590-01A-01-BS1.1310da67-1b19-4977-b0e4-aab8cc0d445b.svs: 14132 tiles in 72s
+  [GPU 0] (13/15) TCGA-50-6590-01A-01-BS1.1310da67-1b19-4977-b0e4-aab8cc0d445b | [S2-OK] TCGA-50-6590-01A-01-BS1.1310da67-1b19-4977-b0e4-aab8cc0d445b: 14132 tiles, 6 classes
+  [GPU 5] (13/14) TCGA-50-6673-11A-01-TS1.b3357107-74e8-4ddc-9e41-48620b71fded | [S3-OK] TCGA-50-6673-11A-01-TS1.b3357107-74e8-4ddc-9e41-48620b71fded.svs: (30288, 512) in 104s
+  [GPU 5] (13/14) TCGA-50-6673-11A-01-TS1.b3357107-74e8-4ddc-9e41-48620b71fded | STATUS=COMPLETE
+
+  [GPU 5] (14/14) TCGA-55-1592-11A-01-TS1.f29ef97f-ad95-4e8f-8032-42ccda493948 | [S1-OK] TCGA-55-1592-11A-01-TS1.f29ef97f-ad95-4e8f-8032-42ccda493948.svs: 1033 tiles in 6s
+  [GPU 5] (14/14) TCGA-55-1592-11A-01-TS1.f29ef97f-ad95-4e8f-8032-42ccda493948 | [S2-OK] TCGA-55-1592-11A-01-TS1.f29ef97f-ad95-4e8f-8032-42ccda493948: 1033 tiles, 6 classes
+  [GPU 5] (14/14) TCGA-55-1592-11A-01-TS1.f29ef97f-ad95-4e8f-8032-42ccda493948 | [S3-OK] TCGA-55-1592-11A-01-TS1.f29ef97f-ad95-4e8f-8032-42ccda493948.svs: (1033, 512) in 6s
+  [GPU 5] (14/14) TCGA-55-1592-11A-01-TS1.f29ef97f-ad95-4e8f-8032-42ccda493948 | STATUS=COMPLETE
+
+  [GPU 2] (13/15) TCGA-50-6592-11A-01-TS1.237db598-b997-4834-8729-98e834c29257 | [S3-OK] TCGA-50-6592-11A-01-TS1.237db598-b997-4834-8729-98e834c29257.svs: (26460, 512) in 101s
+  [GPU 2] (13/15) TCGA-50-6592-11A-01-TS1.237db598-b997-4834-8729-98e834c29257 | STATUS=COMPLETE
+
+  [GPU 0] (13/15) TCGA-50-6590-01A-01-BS1.1310da67-1b19-4977-b0e4-aab8cc0d445b | [S3-OK] TCGA-50-6590-01A-01-BS1.1310da67-1b19-4977-b0e4-aab8cc0d445b.svs: (14132, 512) in 73s
+  [GPU 0] (13/15) TCGA-50-6590-01A-01-BS1.1310da67-1b19-4977-b0e4-aab8cc0d445b | STATUS=COMPLETE
+
+  [GPU 2] (14/15) TCGA-50-8460-01A-01-TS1.46331c7c-4c82-4914-8dd5-94bbb2f2604c | [S1-OK] TCGA-50-8460-01A-01-TS1.46331c7c-4c82-4914-8dd5-94bbb2f2604c.svs: 28348 tiles in 61s
+  [GPU 2] (14/15) TCGA-50-8460-01A-01-TS1.46331c7c-4c82-4914-8dd5-94bbb2f2604c | [S2-OK] TCGA-50-8460-01A-01-TS1.46331c7c-4c82-4914-8dd5-94bbb2f2604c: 28348 tiles, 6 classes
+  [GPU 0] (14/15) TCGA-50-7109-01A-01-TS1.320c877a-f0ad-4d94-94c5-272bd52798f8 | [S1-OK] TCGA-50-7109-01A-01-TS1.320c877a-f0ad-4d94-94c5-272bd52798f8.svs: 16429 tiles in 62s
+  [GPU 0] (14/15) TCGA-50-7109-01A-01-TS1.320c877a-f0ad-4d94-94c5-272bd52798f8 | [S2-OK] TCGA-50-7109-01A-01-TS1.320c877a-f0ad-4d94-94c5-272bd52798f8: 16429 tiles, 6 classes
+  [GPU 2] (14/15) TCGA-50-8460-01A-01-TS1.46331c7c-4c82-4914-8dd5-94bbb2f2604c | [S3-OK] TCGA-50-8460-01A-01-TS1.46331c7c-4c82-4914-8dd5-94bbb2f2604c.svs: (28348, 512) in 59s
+  [GPU 2] (14/15) TCGA-50-8460-01A-01-TS1.46331c7c-4c82-4914-8dd5-94bbb2f2604c | STATUS=COMPLETE
+
+  [GPU 2] (15/15) TCGA-55-1596-01A-01-BS1.3bc1baf3-00ab-4b9c-bf3c-c49acab55d09 | [S1-OK] TCGA-55-1596-01A-01-BS1.3bc1baf3-00ab-4b9c-bf3c-c49acab55d09.svs: 3389 tiles in 9s
+  [GPU 2] (15/15) TCGA-55-1596-01A-01-BS1.3bc1baf3-00ab-4b9c-bf3c-c49acab55d09 | [S2-OK] TCGA-55-1596-01A-01-BS1.3bc1baf3-00ab-4b9c-bf3c-c49acab55d09: 3389 tiles, 6 classes
+  [GPU 2] (15/15) TCGA-55-1596-01A-01-BS1.3bc1baf3-00ab-4b9c-bf3c-c49acab55d09 | [S3-OK] TCGA-55-1596-01A-01-BS1.3bc1baf3-00ab-4b9c-bf3c-c49acab55d09.svs: (3389, 512) in 9s
+  [GPU 2] (15/15) TCGA-55-1596-01A-01-BS1.3bc1baf3-00ab-4b9c-bf3c-c49acab55d09 | STATUS=COMPLETE
+
+  [GPU 0] (14/15) TCGA-50-7109-01A-01-TS1.320c877a-f0ad-4d94-94c5-272bd52798f8 | [S3-OK] TCGA-50-7109-01A-01-TS1.320c877a-f0ad-4d94-94c5-272bd52798f8.svs: (16429, 512) in 62s
+  [GPU 0] (14/15) TCGA-50-7109-01A-01-TS1.320c877a-f0ad-4d94-94c5-272bd52798f8 | STATUS=COMPLETE
+
+  [GPU 0] (15/15) TCGA-55-1594-01A-01-BS1.c28630c1-e648-465f-ab4d-8676fe5f8ac6 | [S1-OK] TCGA-55-1594-01A-01-BS1.c28630c1-e648-465f-ab4d-8676fe5f8ac6.svs: 8795 tiles in 31s
+  [GPU 0] (15/15) TCGA-55-1594-01A-01-BS1.c28630c1-e648-465f-ab4d-8676fe5f8ac6 | [S2-OK] TCGA-55-1594-01A-01-BS1.c28630c1-e648-465f-ab4d-8676fe5f8ac6: 8795 tiles, 6 classes
+  [GPU 0] (15/15) TCGA-55-1594-01A-01-BS1.c28630c1-e648-465f-ab4d-8676fe5f8ac6 | [S3-OK] TCGA-55-1594-01A-01-BS1.c28630c1-e648-465f-ab4d-8676fe5f8ac6.svs: (8795, 512) in 30s
+  [GPU 0] (15/15) TCGA-55-1594-01A-01-BS1.c28630c1-e648-465f-ab4d-8676fe5f8ac6 | STATUS=COMPLETE
+
+/opt/conda/lib/python3.11/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 3 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

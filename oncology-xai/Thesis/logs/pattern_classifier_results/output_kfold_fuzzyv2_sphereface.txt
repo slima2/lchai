@@ -1,0 +1,344 @@
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
+nohup: ignoring input
+======================================================================
+  SLIMA K-Fold Statistical Validation
+  5-Fold CV × 3 Seeds × 5 Methods
+  = 75 total training runs
+======================================================================
+  GPUs: 6 × NVIDIA H100 80GB HBM3
+
+  Loading ablation code from: /home/rapids/notebooks/slima/SLIMA_ablation_study_loss_functions_ver_23_feb_2026_gpu_rev_13.py
+
+[1/4] Loading data...
+  [PAIRING] matched=731  unmatched=0
+  Dataset: 637 samples, 6 classes: ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
+
+[2/4] Running 5-fold CV × 3 seeds...
+    Pre-caching 509 images+masks to memory... done!
+    Pre-caching 128 images+masks to memory... done!
+
+  Seed=42, Fold=1/5 (train=509, val=128)
+    [1/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=93.2% Acc=93.8% (529s)
+    [2/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.3% Acc=93.0% (509s)
+    [3/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=93.0% Acc=93.8% (506s)
+    [4/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.4% Acc=93.0% (513s)
+    [5/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=94.8% Acc=94.5% (516s)
+    Pre-caching 509 images+masks to memory... done!
+    Pre-caching 128 images+masks to memory... done!
+
+  Seed=42, Fold=2/5 (train=509, val=128)
+    [6/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=88.4% Acc=90.6% (550s)
+    [7/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=87.2% Acc=89.8% (535s)
+    [8/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=88.6% Acc=91.4% (504s)
+    [9/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=88.6% Acc=89.8% (496s)
+    [10/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=89.5% Acc=91.4% (509s)
+    Pre-caching 510 images+masks to memory... done!
+    Pre-caching 127 images+masks to memory... done!
+
+  Seed=42, Fold=3/5 (train=510, val=127)
+    [11/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=94.8% Acc=95.3% (516s)
+    [12/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.5% Acc=94.5% (515s)
+    [13/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.0% Acc=93.7% (517s)
+    [14/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=94.4% Acc=95.3% (534s)
+    [15/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.1% Acc=93.7% (517s)
+    Pre-caching 510 images+masks to memory... done!
+    Pre-caching 127 images+masks to memory... done!
+
+  Seed=42, Fold=4/5 (train=510, val=127)
+    [16/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=91.9% Acc=93.7% (517s)
+    [17/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=91.1% Acc=92.9% (510s)
+    [18/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=91.0% Acc=92.9% (513s)
+    [19/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.8% Acc=94.5% (503s)
+    [20/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=93.3% Acc=94.5% (510s)
+    Pre-caching 510 images+masks to memory... done!
+    Pre-caching 127 images+masks to memory... done!
+
+  Seed=42, Fold=5/5 (train=510, val=127)
+    [21/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=95.6% Acc=95.3% (504s)
+    [22/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=90.7% Acc=92.9% (510s)
+    [23/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=94.1% Acc=94.5% (522s)
+    [24/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=94.6% Acc=94.5% (517s)
+    [25/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=90.4% Acc=92.9% (522s)
+    Pre-caching 509 images+masks to memory... done!
+    Pre-caching 128 images+masks to memory... done!
+
+  Seed=123, Fold=1/5 (train=509, val=128)
+    [26/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=90.2% Acc=92.2% (540s)
+    [27/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=88.7% Acc=92.2% (544s)
+    [28/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=90.1% Acc=92.2% (537s)
+    [29/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=88.0% Acc=92.2% (525s)
+    [30/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=89.7% Acc=92.2% (529s)
+    Pre-caching 509 images+masks to memory... done!
+    Pre-caching 128 images+masks to memory... done!
+
+  Seed=123, Fold=2/5 (train=509, val=128)
+    [31/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.2% Acc=93.0% (537s)
+    [32/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=88.6% Acc=90.6% (530s)
+    [33/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.1% Acc=93.0% (519s)
+    [34/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=90.8% Acc=92.2% (515s)
+    [35/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=93.0% Acc=93.0% (512s)
+    Pre-caching 510 images+masks to memory... done!
+    Pre-caching 127 images+masks to memory... done!
+
+  Seed=123, Fold=3/5 (train=510, val=127)
+    [36/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=91.7% Acc=92.9% (520s)
+    [37/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.4% Acc=92.9% (522s)
+    [38/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=91.0% Acc=92.1% (523s)
+    [39/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=91.9% Acc=92.9% (523s)
+    [40/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.1% Acc=92.9% (548s)
+    Pre-caching 510 images+masks to memory... done!
+    Pre-caching 127 images+masks to memory... done!
+
+  Seed=123, Fold=4/5 (train=510, val=127)
+    [41/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=94.5% Acc=94.5% (580s)
+    [42/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.4% Acc=92.1% (538s)
+    [43/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=94.4% Acc=94.5% (529s)
+    [44/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=94.4% Acc=94.5% (544s)
+    [45/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=93.6% Acc=92.9% (545s)
+    Pre-caching 510 images+masks to memory... done!
+    Pre-caching 127 images+masks to memory... done!
+
+  Seed=123, Fold=5/5 (train=510, val=127)
+    [46/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=90.4% Acc=92.1% (524s)
+    [47/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=88.2% Acc=89.8% (551s)
+    [48/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=90.7% Acc=92.9% (545s)
+    [49/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=93.3% Acc=93.7% (526s)
+    [50/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=89.5% Acc=90.6% (520s)
+    Pre-caching 509 images+masks to memory... done!
+    Pre-caching 128 images+masks to memory... done!
+
+  Seed=2026, Fold=1/5 (train=509, val=128)
+    [51/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=93.7% Acc=94.5% (555s)
+    [52/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=86.4% Acc=89.8% (574s)
+    [53/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=91.5% Acc=93.8% (572s)
+    [54/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=94.2% Acc=96.1% (574s)
+    [55/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=90.0% Acc=92.2% (572s)
+    Pre-caching 509 images+masks to memory... done!
+    Pre-caching 128 images+masks to memory... done!
+
+  Seed=2026, Fold=2/5 (train=509, val=128)
+    [56/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=90.3% Acc=91.4% (551s)
+    [57/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=88.6% Acc=89.8% (545s)
+    [58/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=87.8% Acc=91.4% (558s)
+    [59/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=89.8% Acc=92.2% (570s)
+    [60/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=89.4% Acc=91.4% (540s)
+    Pre-caching 510 images+masks to memory... done!
+    Pre-caching 127 images+masks to memory... done!
+
+  Seed=2026, Fold=3/5 (train=510, val=127)
+    [61/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=91.1% Acc=93.7% (548s)
+    [62/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=85.8% Acc=89.8% (547s)
+    [63/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=91.2% Acc=92.1% (553s)
+    [64/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=91.7% Acc=92.9% (546s)
+    [65/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=89.7% Acc=90.6% (578s)
+    Pre-caching 510 images+masks to memory... done!
+    Pre-caching 127 images+masks to memory... done!
+
+  Seed=2026, Fold=4/5 (train=510, val=127)
+    [66/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.2% Acc=93.7% (535s)
+    [67/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.0% Acc=93.7% (507s)
+    [68/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=94.3% Acc=96.1% (511s)
+    [69/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=91.3% Acc=94.5% (517s)
+    [70/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=92.2% Acc=93.7% (533s)
+    Pre-caching 510 images+masks to memory... done!
+    Pre-caching 127 images+masks to memory... done!
+
+  Seed=2026, Fold=5/5 (train=510, val=127)
+    [71/75] FuzzyArcLoss V2 (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=94.4% Acc=95.3% (518s)
+    [72/75] SphereFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=93.5% Acc=94.5% (524s)
+    [73/75] FuzzyArcLoss V3 SubCenters (Optuna)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=95.1% Acc=95.3% (515s)
+    [74/75] ArcFace...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=94.3% Acc=94.5% (518s)
+    [75/75] Softmax (CE)...   ✓ Loaded CTransPath checkpoint
+  ✓ Modified ConvStem for 4-ch input
+F1=93.7% Acc=94.5% (535s)
+
+======================================================================
+[3/4] STATISTICAL ANALYSIS
+======================================================================
+
+Method                                  Mean F1   ± Std       95% CI  Mean Acc  N
+-------------------------------------------------------------------------------------
+  FuzzyArcLoss V2 (Optuna)               92.31%   2.05 [ 91.2, 93.4]    93.46%  15
+  ArcFace                                92.17%   2.16 [ 91.0, 93.4]    93.51%  15
+  FuzzyArcLoss V3 SubCenters (Optuna)    91.79%   2.11 [ 90.6, 93.0]    93.30%  15
+  Softmax (CE)                           91.54%   1.86 [ 90.5, 92.6]    92.73%  15
+  SphereFace                             90.03%   2.51 [ 88.6, 91.4]    91.89%  15
+
+Per-Class F1 (mean ± std across 15 runs):
+Method                                     micropapillary    cribriform   papillary   lepidic   solid      acinar
+--------------------------------------------------------------------------------------------------
+  FuzzyArcLoss V2 (Optuna)              93.8±3.6  83.6±9.2  91.8±2.5  94.8±3.7  94.6±3.1  95.3±1.9
+  ArcFace                               94.9±3.4  81.4±10.0  92.6±3.8  93.9±4.4  95.0±2.9  95.2±2.2
+  FuzzyArcLoss V3 SubCenters (Optuna)   94.4±3.6  79.1±10.5  92.4±3.3  95.4±3.7  94.3±2.4  95.2±1.6
+  Softmax (CE)                          94.3±6.0  81.5±10.4  90.6±3.8  93.8±4.6  94.7±2.3  94.3±2.0
+  SphereFace                            91.2±8.2  76.1±12.8  91.0±4.1  94.3±4.8  94.2±2.5  93.5±2.4
+
+======================================================================
+PAIRED T-TEST: V2 vs SphereFace
+======================================================================
+  V2 mean:        92.31% ± 2.05
+  SphereFace mean: 90.03% ± 2.51
+  Difference:     +2.28 pp
+  t-statistic:    4.1120
+  p-value:        0.0011
+  → STATISTICALLY SIGNIFICANT (p<0.05): V2 wins
+
+[4/4] Saving results...
+  ✓ /home/rapids/notebooks/slima/outputs/kfold_validation/kfold_validation_results.json
+
+======================================================================
+  For thesis: report mean ± std from this K-fold validation
+  If p ≥ 0.05: 'V2 performs comparably to SphereFace (p=0.001)'
+  If p < 0.05 and V2 wins: 'V2 significantly outperforms (p=0.001)'
+  Either way: V2 is a NOVEL CONTRIBUTION with competitive performance
+======================================================================
+
+Total time: 11.3 hours

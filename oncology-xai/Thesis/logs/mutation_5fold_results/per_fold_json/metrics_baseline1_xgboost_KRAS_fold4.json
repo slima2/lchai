@@ -3,12 +3,13 @@
   "auprc": 0.2621621877470035,
   "f1": 0.2545454545454545,
   "feature_importances": {
-    "acinar": 0.12999264895915985,
-    "lepidic": 0.11578010767698288,
-    "micropapillary": 0.15740536153316498,
-    "mucinous": 0.1488097459077835,
-    "papillary": 0.1750311255455017,
-    "solid": 0.13009269535541534,
+    "micropapillary": 0.12999264895915985,
+    "cribriform": 0.11578010767698288,
+    "papillary": 0.15740536153316498,
+    "lepidic": 0.1488097459077835,
+    "solid": 0.1750311255455017,
+    "acinar": 0.13009269535541534,
     "entropy": 0.14288821816444397
-  }
+  },
+  "_pattern_names_corrected_4_apr_2026": "Pattern names remapped from the legacy (pre-4-Apr-2026) labels to the verified ANORAK classes; numeric values untouched. Mapping: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar"
 }

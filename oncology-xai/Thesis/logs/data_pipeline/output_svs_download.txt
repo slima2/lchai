@@ -1,0 +1,1113 @@
+nohup: ignoring input
+Missing LUAD cases to download: 388
+
+Querying GDC for SVS file IDs...
+  Batch 1/8: found 34 SVS files
+  Batch 2/8: found 115 SVS files
+  Batch 3/8: found 127 SVS files
+  Batch 4/8: found 86 SVS files
+  Batch 5/8: found 100 SVS files
+  Batch 6/8: found 98 SVS files
+  Batch 7/8: found 72 SVS files
+  Batch 8/8: found 38 SVS files
+
+Total SVS files found: 670
+Cases with SVS found : 336
+Estimated total size : 67.0 GB
+Cases with NO SVS in GDC: 52 (will be skipped)
+
+Already downloaded    : 0
+Remaining to download : 336
+
+=================================================================
+  STARTING SVS DOWNLOADS
+=================================================================
+
+  [1/336] TCGA-05-5429-01A-01-TS1.c67299ca-41d8-4a13-99f6-9d8e7a6f896d.svs  (125 MB)  [0.0% done overall]
+    ✓ ok
+
+  [2/336] TCGA-05-4424-01A-01-BS1.d0939da5-baae-4f63-a2e8-4577988cee81.svs  (54 MB)  [0.3% done overall]
+    ✓ ok
+
+  [3/336] TCGA-05-4396-01A-02-BS2.23cf2a72-6fe5-4fb4-91e8-fd855bfce541.svs  (143 MB)  [0.6% done overall]
+    ✓ ok
+
+  [4/336] TCGA-05-4410-01A-02-BS2.358046d0-94e0-4576-8a3a-17028da63b42.svs  (98 MB)  [0.9% done overall]
+    ✓ ok
+
+  [5/336] TCGA-05-4244-01A-01-BS1.90f043f6-e8d5-4cfd-b4e7-84207bc499a6.svs  (157 MB)  [1.2% done overall]
+    ✓ ok
+
+  [6/336] TCGA-05-4420-01A-01-BS1.d5af72a1-39d5-4060-93ee-aafefce8622d.svs  (111 MB)  [1.5% done overall]
+    ✓ ok
+
+  [7/336] TCGA-05-4395-01A-01-TS1.5765cb40-0523-4969-ae42-54e3f18b27a6.svs  (59 MB)  [1.8% done overall]
+    ✓ ok
+
+  [8/336] TCGA-05-5425-01A-01-BS1.259004dc-6769-4f66-afa3-57a4d8e0edb5.svs  (115 MB)  [2.1% done overall]
+    ✓ ok
+
+  [9/336] TCGA-05-4249-01A-01-BS1.38c41760-cc43-4904-9575-803d1d92b992.svs  (139 MB)  [2.4% done overall]
+    ✓ ok
+
+  [10/336] TCGA-05-4389-01A-01-BS1.20fc0609-bf70-479e-af94-b15f4c46bc69.svs  (219 MB)  [2.7% done overall]
+    ✓ ok
+
+  ── Progress: 10 OK, 0 failed of 336 total ──
+
+  [11/336] TCGA-05-4382-01A-01-TS1.8db4f123-fdc3-419c-a59d-fca2ca83a597.svs  (132 MB)  [3.0% done overall]
+    ✓ ok
+
+  [12/336] TCGA-05-4418-01A-01-TS1.61b48f7c-970a-4cd9-87f7-b2da39b58842.svs  (95 MB)  [3.3% done overall]
+    ✓ ok
+
+  [13/336] TCGA-05-4422-01A-01-TS1.5d361e7b-9988-4e61-80c3-268933a3f4be.svs  (96 MB)  [3.6% done overall]
+    ✓ ok
+
+  [14/336] TCGA-05-4397-01A-01-TS1.e4fe3921-3510-4404-90a7-09e4eb93ab3e.svs  (59 MB)  [3.9% done overall]
+    ✓ ok
+
+  [15/336] TCGA-05-4398-01A-01-TS1.061af2c7-1143-430d-8286-1996405ab057.svs  (113 MB)  [4.2% done overall]
+    ✓ ok
+
+  [16/336] TCGA-05-4432-01A-01-BS1.81d59eb6-b750-4d71-820d-f207288d4514.svs  (111 MB)  [4.5% done overall]
+    ✓ ok
+
+  [17/336] TCGA-05-4415-01A-02-BS2.a7e9ec2e-fda7-4d40-a58c-7d8f49868eca.svs  (149 MB)  [4.8% done overall]
+    ✓ ok
+
+  [18/336] TCGA-35-5375-01A-01-BS1.76d789f1-f97f-4e9f-b278-49fee3058041.svs  (213 MB)  [5.1% done overall]
+    ✓ ok
+
+  [19/336] TCGA-44-3918-01B-01-BS1.B0A5703D-4C07-4F25-A6D3-D240BD970D5E.svs  (481 MB)  [5.4% done overall]
+    ✓ ok
+
+  [20/336] TCGA-44-3919-01A-02-BS2.89f5632a-fd56-43a7-9aa3-82596731f6da.svs  (75 MB)  [5.7% done overall]
+    ✓ ok
+
+  ── Progress: 20 OK, 0 failed of 336 total ──
+
+  [21/336] TCGA-44-8117-11A-01-TS1.0f3050ad-ca0a-411a-8224-cb1609f99622.svs  (55 MB)  [6.0% done overall]
+    ✓ ok
+
+  [22/336] TCGA-35-4122-01A-01-TS1.b29fc81a-d40b-484e-a19f-f08ac326ae57.svs  (145 MB)  [6.2% done overall]
+    ✓ ok
+
+  [23/336] TCGA-44-2668-01B-02-BS2.7C0C441E-E968-471D-9E4A-77673F67250D.svs  (66 MB)  [6.5% done overall]
+    ✓ ok
+
+  [24/336] TCGA-38-4628-11A-01-TS1.7f3c0ede-3530-4579-bc11-cef8496cdd48.svs  (37 MB)  [6.8% done overall]
+    ✓ ok
+
+  [25/336] TCGA-38-4627-01A-01-TS1.221bb9bb-9a72-4f33-89c1-d07eb422112e.svs  (70 MB)  [7.1% done overall]
+    ✓ ok
+
+  [26/336] TCGA-44-6776-01A-01-BS1.7b26c23b-edbf-4de8-8add-37544a4e74ed.svs  (151 MB)  [7.4% done overall]
+    ✓ ok
+
+  [27/336] TCGA-38-4629-01A-02-BS2.c51001e1-bed7-4861-b6df-78640d5ae45a.svs  (135 MB)  [7.7% done overall]
+    ✓ ok
+
+  [28/336] TCGA-44-7670-01A-01-TS1.3e1ec27f-722d-4b74-960b-d33537771d25.svs  (72 MB)  [8.0% done overall]
+    ✓ ok
+
+  [29/336] TCGA-44-2661-01A-01-BS1.454ae128-140c-4bc3-98d6-529a9e0808f4.svs  (219 MB)  [8.3% done overall]
+    ✓ ok
+
+  [30/336] TCGA-38-4631-11A-01-TS1.9336ec85-fb23-4df2-8a36-086537d8f1ea.svs  (66 MB)  [8.6% done overall]
+    ✓ ok
+
+  ── Progress: 30 OK, 0 failed of 336 total ──
+
+  [31/336] TCGA-38-4625-11A-01-TS1.8dfd2a41-54ff-44b2-9bb7-881cc4228d7f.svs  (50 MB)  [8.9% done overall]
+    ✓ ok
+
+  [32/336] TCGA-44-6774-11A-01-TS1.448f11c5-ba05-4730-baa0-7ef69b19aa29.svs  (145 MB)  [9.2% done overall]
+    ✓ ok
+
+  [33/336] TCGA-44-6775-11A-03-TS3.1BE1238F-E7DC-425D-A28D-D0EA175F0DFF.svs  (37 MB)  [9.5% done overall]
+    ✓ ok
+
+  [34/336] TCGA-49-4486-01A-01-BS1.b5d67c18-0fa2-479f-a762-549071208ac0.svs  (46 MB)  [9.8% done overall]
+    ✓ ok
+
+  [35/336] TCGA-44-8120-01A-01-TS1.ee68ef00-ac9e-4833-a84e-c03fb2df1d0c.svs  (56 MB)  [10.1% done overall]
+    ✓ ok
+
+  [36/336] TCGA-44-2662-01A-01-BS1.f7ba5b6b-8a26-4cf2-8b0c-db76298ca502.svs  (109 MB)  [10.4% done overall]
+    ✓ ok
+
+  [37/336] TCGA-44-5645-01A-01-BS1.e8526125-616b-4bc2-afac-f96417840633.svs  (152 MB)  [10.7% done overall]
+    ✓ ok
+
+  [38/336] TCGA-44-7669-11A-01-TS1.999186c6-6775-41c9-9c7c-73d46ba6d2ef.svs  (590 MB)  [11.0% done overall]
+    ✓ ok
+
+  [39/336] TCGA-44-7659-11A-01-TS1.fc17a07c-16aa-415b-903d-914d8183c2db.svs  (1136 MB)  [11.3% done overall]
+    ✓ ok
+
+  [40/336] TCGA-38-6178-01A-01-BS1.45e6381d-637a-4b27-aae9-1bbee2c14944.svs  (180 MB)  [11.6% done overall]
+    ✓ ok
+
+  ── Progress: 40 OK, 0 failed of 336 total ──
+
+  [41/336] TCGA-44-5643-01A-01-TS1.d7358c4a-6ea9-44f1-b97a-1cb050dd2435.svs  (129 MB)  [11.9% done overall]
+    ✓ ok
+
+  [42/336] TCGA-44-7672-11A-01-TS1.56f18fbf-350e-49a7-8bba-6246617bc001.svs  (480 MB)  [12.2% done overall]
+    ✓ ok
+
+  [43/336] TCGA-44-A47B-01A-01-TS1.2AC93301-1252-4255-9EA9-B49CBEB72975.svs  (214 MB)  [12.5% done overall]
+    ✓ ok
+
+  [44/336] TCGA-44-6779-01A-01-BS1.e55cc68b-4f36-4d22-a4b7-9af0417a4171.svs  (183 MB)  [12.8% done overall]
+    ✓ ok
+
+  [45/336] TCGA-44-6777-11A-01-TS1.17abcbd4-6733-4d6e-998b-a944cafcb549.svs  (141 MB)  [13.1% done overall]
+    ✓ ok
+
+  [46/336] TCGA-44-2657-11A-01-TS1.03d328d6-5c0e-42ec-90b8-8f4b721cfe87.svs  (136 MB)  [13.4% done overall]
+    ✓ ok
+
+  [47/336] TCGA-44-2666-11A-02-TS2.AF813A5E-5F00-40B8-B4B6-F72AF055B876.svs  (30 MB)  [13.7% done overall]
+    ✓ ok
+
+  [48/336] TCGA-44-3398-01A-01-TS1.80f016ac-f5c5-49c4-972e-2ffd226d226d.svs  (159 MB)  [14.0% done overall]
+    ✓ ok
+
+  [49/336] TCGA-44-A47G-01A-02-TSB.791AD505-A642-4189-A480-7F760B52F3B6.svs  (259 MB)  [14.3% done overall]
+    ✓ ok
+
+  [50/336] TCGA-38-A44F-01A-01-TSA.48E36C45-F2C3-4BE6-84F5-F65FF6AA4962.svs  (137 MB)  [14.6% done overall]
+    ✓ ok
+
+  ── Progress: 50 OK, 0 failed of 336 total ──
+
+  [51/336] TCGA-49-AAR3-11A-01-TSA.A2FB7679-FB9F-4E80-855F-77877C694D26.svs  (35 MB)  [14.9% done overall]
+    ✓ ok
+
+  [52/336] TCGA-50-8460-01A-01-TS1.46331c7c-4c82-4914-8dd5-94bbb2f2604c.svs  (106 MB)  [15.2% done overall]
+    ✓ ok
+
+  [53/336] TCGA-50-6595-11A-01-TS1.9aa7c8df-9306-4f4c-8f85-a70d4cbdbcbf.svs  (297 MB)  [15.5% done overall]
+    ✓ ok
+
+  [54/336] TCGA-50-5049-01A-01-TS1.22431092-04c2-4343-884f-029ff951589a.svs  (547 MB)  [15.8% done overall]
+    ✓ ok
+
+  [55/336] TCGA-49-AAQV-11A-01-TSA.DD8E00B5-89C3-45A0-98F3-7CCD2C99E430.svs  (77 MB)  [16.1% done overall]
+    ✓ ok
+
+  [56/336] TCGA-49-6743-01A-01-BS1.a59ea9e1-f418-4882-b628-0039a2dd4bbd.svs  (75 MB)  [16.4% done overall]
+    ✓ ok
+
+  [57/336] TCGA-49-AARQ-11A-02-TS2.7047AE2E-2B53-4E40-8CBA-7B9C28AFDB4C.svs  (157 MB)  [16.7% done overall]
+    ✓ ok
+
+  [58/336] TCGA-50-8459-11A-01-TS1.d81e0dda-c399-4170-b801-7f54b801817b.svs  (144 MB)  [17.0% done overall]
+    ✓ ok
+
+  [59/336] TCGA-50-6591-01A-01-BS1.b3497e1b-f055-450b-860e-9f7e95acb162.svs  (93 MB)  [17.3% done overall]
+    ✓ ok
+
+  [60/336] TCGA-50-5055-01A-01-BS1.23899b53-43e5-40b3-801f-928d6dc3dd1b.svs  (204 MB)  [17.6% done overall]
+    ✓ ok
+
+  ── Progress: 60 OK, 0 failed of 336 total ──
+
+  [61/336] TCGA-49-AARE-11A-01-TS1.DC9E89C9-86E8-452D-AD64-225A978B84E2.svs  (43 MB)  [17.9% done overall]
+    ✓ ok
+
+  [62/336] TCGA-50-5932-01A-01-BS1.b0ec68b8-ed0c-468e-8ea6-95fc90e4c6a0.svs  (229 MB)  [18.2% done overall]
+    ✓ ok
+
+  [63/336] TCGA-55-1596-01A-01-BS1.3bc1baf3-00ab-4b9c-bf3c-c49acab55d09.svs  (114 MB)  [18.5% done overall]
+    ✓ ok
+
+  [64/336] TCGA-50-5072-01A-01-BS1.8e68de46-2a6e-40b5-a6af-9f34d9a5e7fa.svs  (234 MB)  [18.8% done overall]
+    ✓ ok
+
+  [65/336] TCGA-55-1595-01A-01-BS1.4028e7d4-5bf4-4dea-8c2f-690358c5493a.svs  (25 MB)  [19.0% done overall]
+    ✓ ok
+
+  [66/336] TCGA-55-1594-01A-01-BS1.c28630c1-e648-465f-ab4d-8676fe5f8ac6.svs  (283 MB)  [19.3% done overall]
+    ✓ ok
+
+  [67/336] TCGA-50-5939-01A-01-TS1.a75a4c4e-3fd0-454e-96a7-9657c5139a81.svs  (232 MB)  [19.6% done overall]
+    ✓ ok
+
+  [68/336] TCGA-50-5935-01A-01-BS1.b3e47bcb-70a9-4177-86a9-f0dac5aa0a07.svs  (139 MB)  [19.9% done overall]
+    ✓ ok
+
+  [69/336] TCGA-50-5051-01A-02-BS2.1bdbee1f-f24b-4a65-afb2-3e80e81ff462.svs  (51 MB)  [20.2% done overall]
+    ✓ ok
+
+  [70/336] TCGA-49-6742-11A-01-TS1.529a44b9-e94c-4a2f-9977-b154bc9035de.svs  (95 MB)  [20.5% done overall]
+    ✓ ok
+
+  ── Progress: 70 OK, 0 failed of 336 total ──
+
+  [71/336] TCGA-50-5931-01A-01-TS1.ae13ba18-bb6a-4e32-9148-471932f055cf.svs  (201 MB)  [20.8% done overall]
+    ✓ ok
+
+  [72/336] TCGA-50-6590-01A-01-BS1.1310da67-1b19-4977-b0e4-aab8cc0d445b.svs  (125 MB)  [21.1% done overall]
+    ✓ ok
+
+  [73/336] TCGA-49-6744-01A-01-TS1.cb8c4bda-8e2b-45e1-a7ec-7db89e297f5d.svs  (110 MB)  [21.4% done overall]
+    ✓ ok
+
+  [74/336] TCGA-53-7813-01A-01-TS1.113849d5-005f-448a-8bce-2517efc15400.svs  (55 MB)  [21.7% done overall]
+    ✓ ok
+
+  [75/336] TCGA-50-5068-01A-01-BS1.e2cffa98-abc4-41b3-8861-cb2d0d28ac67.svs  (284 MB)  [22.0% done overall]
+    ✓ ok
+
+  [76/336] TCGA-49-6767-11A-01-TS1.fee72e34-c2fc-44f1-bd94-5bf8c0a23423.svs  (54 MB)  [22.3% done overall]
+    ✓ ok
+
+  [77/336] TCGA-49-4487-01A-02-BS2.a86aa3c6-1dec-459d-90aa-69347884ed80.svs  (64 MB)  [22.6% done overall]
+    ✓ ok
+
+  [78/336] TCGA-50-5946-01A-01-BS1.3dad41fd-bd32-43ad-a8e5-6eaa0411b638.svs  (379 MB)  [22.9% done overall]
+    ✓ ok
+
+  [79/336] TCGA-49-6761-01A-02-BS2.4750f290-f2fa-4bcf-aae1-33743b35c92f.svs  (134 MB)  [23.2% done overall]
+    ✓ ok
+
+  [80/336] TCGA-50-5933-01A-01-BS1.5e86d54b-426d-404b-98c3-b705203d4f76.svs  (326 MB)  [23.5% done overall]
+    ✓ ok
+
+  ── Progress: 80 OK, 0 failed of 336 total ──
+
+  [81/336] TCGA-50-6594-01A-01-TS1.242fa6fa-59a4-49df-8fc5-5d9c91ab6030.svs  (126 MB)  [23.8% done overall]
+    ✓ ok
+
+  [82/336] TCGA-50-7109-01A-01-TS1.320c877a-f0ad-4d94-94c5-272bd52798f8.svs  (144 MB)  [24.1% done overall]
+    ✓ ok
+
+  [83/336] TCGA-49-AARN-11A-01-TS1.B81BDA09-A6E3-4E1F-930F-71A6EC13B7C3.svs  (160 MB)  [24.4% done overall]
+    ✓ ok
+
+  [84/336] TCGA-50-6673-11A-01-TS1.b3357107-74e8-4ddc-9e41-48620b71fded.svs  (244 MB)  [24.7% done overall]
+    ✓ ok
+
+  [85/336] TCGA-53-7626-01A-01-BS1.efc70393-acd2-4942-8168-677a8dcac0b8.svs  (64 MB)  [25.0% done overall]
+    ✓ ok
+
+  [86/336] TCGA-55-1592-11A-01-TS1.f29ef97f-ad95-4e8f-8032-42ccda493948.svs  (28 MB)  [25.3% done overall]
+    ✓ ok
+
+  [87/336] TCGA-50-6592-11A-01-TS1.237db598-b997-4834-8729-98e834c29257.svs  (238 MB)  [25.6% done overall]
+    ✓ ok
+
+  [88/336] TCGA-50-5944-01A-01-TS1.f05f3c1f-13eb-48fe-b6fa-55c426792f17.svs  (110 MB)  [25.9% done overall]
+    ✓ ok
+
+  [89/336] TCGA-50-5066-01A-01-BS1.c6f25661-a8e9-4d89-9d16-0cfd1f4defe2.svs  (120 MB)  [26.2% done overall]
+    ✓ ok
+
+  [90/336] TCGA-50-5942-01A-01-BS1.95ef5e11-391b-4c96-9a72-78f6c0637a4e.svs  (51 MB)  [26.5% done overall]
+    ✓ ok
+
+  ── Progress: 90 OK, 0 failed of 336 total ──
+
+  [91/336] TCGA-53-A4EZ-01A-01-TSA.8947DF62-4243-4F5A-8DE0-23A725AC9124.svs  (233 MB)  [26.8% done overall]
+    ✓ ok
+
+  [92/336] TCGA-50-8457-01A-01-TS1.62cfbeba-f202-452b-bc0c-6b2c2749f72f.svs  (147 MB)  [27.1% done overall]
+    ✓ ok
+
+  [93/336] TCGA-50-5930-11A-01-TS1.7fde4433-12f3-4594-b61b-9efa33ad0013.svs  (320 MB)  [27.4% done overall]
+    ✓ ok
+
+  [94/336] TCGA-49-AAR0-11A-01-TSA.0B0F6078-45B9-4BAC-91E3-560F55D5EBF0.svs  (52 MB)  [27.7% done overall]
+    ✓ ok
+
+  [95/336] TCGA-50-5936-01A-01-BS1.9b086045-23e1-43d1-a327-7770ed1261e9.svs  (99 MB)  [28.0% done overall]
+    ✓ ok
+
+  [96/336] TCGA-49-AAR2-11A-01-TSA.36CCFDB7-FB56-4E56-9CDB-16A64499C52A.svs  (104 MB)  [28.3% done overall]
+    ✓ ok
+
+  [97/336] TCGA-50-5044-01A-01-BS1.f9008630-fcf4-45e8-82e9-71f138350114.svs  (286 MB)  [28.6% done overall]
+    ✓ ok
+
+  [98/336] TCGA-55-6543-01A-01-BS1.9056c6b4-b8bc-4f5e-8e5d-fb8aedafc0d7.svs  (82 MB)  [28.9% done overall]
+    ✓ ok
+
+  [99/336] TCGA-4B-A93V-01A-01-TSA.236A392B-4563-4891-BEE6-E93143865AA4.svs  (343 MB)  [29.2% done overall]
+    ✓ ok
+
+  [100/336] TCGA-50-5941-01A-01-BS1.a93270f8-673e-421f-9dd2-3fe961065435.svs  (144 MB)  [29.5% done overall]
+    ✓ ok
+
+  ── Progress: 100 OK, 0 failed of 336 total ──
+
+  [101/336] TCGA-62-A46Y-01A-01-TS1.769D7702-02B6-4F1F-A061-056F2E51BF9C.svs  (303 MB)  [29.8% done overall]
+    ✓ ok
+
+  [102/336] TCGA-55-6970-11A-01-TS1.f65f4bbc-0acd-4289-8a72-290630650be7.svs  (20 MB)  [30.1% done overall]
+    ✓ ok
+
+  [103/336] TCGA-62-8402-11A-01-TS1.32caf315-7a45-400d-97be-6543bbc79a59.svs  (144 MB)  [30.4% done overall]
+    ✓ ok
+
+  [104/336] TCGA-55-8205-01A-01-TS1.2be8a54c-5344-43cc-819f-636498bb2e2b.svs  (81 MB)  [30.7% done overall]
+    ✓ ok
+
+  [105/336] TCGA-55-8206-01A-01-TS1.4188b107-092e-405f-b035-50b55ebd53c5.svs  (93 MB)  [31.0% done overall]
+    ✓ ok
+
+  [106/336] TCGA-55-8097-01A-01-TS1.dbee3b58-4a20-4515-8f1f-b93d4b6aee45.svs  (65 MB)  [31.2% done overall]
+    ✓ ok
+
+  [107/336] TCGA-55-8507-11A-01-TS1.54d196f2-66a7-489f-a227-22864a94bfba.svs  (94 MB)  [31.5% done overall]
+    ✓ ok
+
+  [108/336] TCGA-55-8511-11A-01-TS1.c28c0917-114a-48bb-ae2b-3bb5c057660a.svs  (31 MB)  [31.8% done overall]
+    ✓ ok
+
+  [109/336] TCGA-55-8090-01A-01-TS1.2deec958-f417-4485-a278-9cd2fc9779de.svs  (50 MB)  [32.1% done overall]
+    ✓ ok
+
+  [110/336] TCGA-55-7725-11A-01-TS1.d8292bd1-9e43-46cd-9279-528a1ebc42f2.svs  (169 MB)  [32.4% done overall]
+    ✓ ok
+
+  ── Progress: 110 OK, 0 failed of 336 total ──
+
+  [111/336] TCGA-55-7573-01A-01-BS1.67eb9c3b-996a-4c70-9ee4-0283413fbc2f.svs  (50 MB)  [32.7% done overall]
+    ✓ ok
+
+  [112/336] TCGA-55-8512-11A-01-TS1.2b5d1fd4-154b-41f9-ae81-fc54b7fb567c.svs  (94 MB)  [33.0% done overall]
+    ✓ ok
+
+  [113/336] TCGA-62-8398-11A-01-TS1.56a52873-0fb2-4a93-bf2b-8aebf9f68d8e.svs  (170 MB)  [33.3% done overall]
+    ✓ ok
+
+  [114/336] TCGA-55-6642-01A-01-BS1.0bb8918b-b267-4a16-994c-91274398ae61.svs  (96 MB)  [33.6% done overall]
+    ✓ ok
+
+  [115/336] TCGA-62-8395-01A-01-BS1.0f1436e6-0065-4dd7-a132-b6a21a097e48.svs  (288 MB)  [33.9% done overall]
+    ✓ ok
+
+  [116/336] TCGA-62-8399-11A-01-TS1.9e71a59e-12fe-4b4e-b8bd-3bb03266e73f.svs  (191 MB)  [34.2% done overall]
+    ✓ ok
+
+  [117/336] TCGA-55-7994-11A-01-TS1.5b13e9f4-3188-462a-b794-78b80c24e5ce.svs  (53 MB)  [34.5% done overall]
+    ✓ ok
+
+  [118/336] TCGA-55-7281-01A-01-TS1.5ac0ea11-2c38-4021-a0b0-703b01ba23ba.svs  (78 MB)  [34.8% done overall]
+    ✓ ok
+
+  [119/336] TCGA-55-8204-01A-01-TS1.17e246ce-0151-4eef-a1e7-2dad233928d8.svs  (71 MB)  [35.1% done overall]
+    ✓ ok
+
+  [120/336] TCGA-62-8397-11A-01-TS1.739729af-88ff-417f-9171-a1b2de012758.svs  (99 MB)  [35.4% done overall]
+    ✓ ok
+
+  ── Progress: 120 OK, 0 failed of 336 total ──
+
+  [121/336] TCGA-55-7574-01A-01-BS1.6dcbb8ec-0b23-4ef6-8072-f364f31cd7a4.svs  (117 MB)  [35.7% done overall]
+    ✓ ok
+
+  [122/336] TCGA-62-8394-11A-01-TS1.58ff7213-0883-4d88-bf5a-1c63df03c305.svs  (122 MB)  [36.0% done overall]
+    ✓ ok
+
+  [123/336] TCGA-62-A46U-01A-01-TS1.2A8C9636-86E7-4D76-9192-707AF25DF229.svs  (275 MB)  [36.3% done overall]
+    ✓ ok
+
+  [124/336] TCGA-55-8302-01A-01-TS1.c884cdee-3a6d-4ce3-8b7a-d200a41d5ff1.svs  (141 MB)  [36.6% done overall]
+    ✓ ok
+
+  [125/336] TCGA-55-6968-11A-01-TS1.64e5c4f1-759c-4819-b061-59bd248a5128.svs  (50 MB)  [36.9% done overall]
+    ✓ ok
+
+  [126/336] TCGA-55-6971-01A-01-BS1.4d3b20a9-58db-45f9-b6a3-ffb94331ddcd.svs  (122 MB)  [37.2% done overall]
+    ✓ ok
+
+  [127/336] TCGA-55-8510-01A-01-TS1.ba526cce-8cf7-40bb-bbbb-25af917eaa3e.svs  (181 MB)  [37.5% done overall]
+    ✓ ok
+
+  [128/336] TCGA-55-7910-11A-01-TS1.bcf0ef2a-e2ab-4451-9245-30b0207484c7.svs  (68 MB)  [37.8% done overall]
+    ✓ ok
+
+  [129/336] TCGA-55-7727-11A-01-TS1.31a2fda2-ab4e-4df3-9e42-ffb4b4f54da0.svs  (125 MB)  [38.1% done overall]
+    ✓ ok
+
+  [130/336] TCGA-55-6969-01A-01-TS1.311117e1-1cd1-49df-92a1-6fed775fd7a2.svs  (205 MB)  [38.4% done overall]
+    ✓ ok
+
+  ── Progress: 130 OK, 0 failed of 336 total ──
+
+  [131/336] TCGA-55-7724-11A-01-TS1.86e82089-33ea-43ab-8b9c-be619924fbe4.svs  (34 MB)  [38.7% done overall]
+    ✓ ok
+
+  [132/336] TCGA-55-8203-01A-01-TS1.b9b9a3cd-378d-41d1-b8c0-b2ac3db507a7.svs  (145 MB)  [39.0% done overall]
+    ✓ ok
+
+  [133/336] TCGA-55-8621-11A-01-TS1.fb1248f1-5d34-4620-9d8b-4d075da62b08.svs  (71 MB)  [39.3% done overall]
+    ✓ ok
+
+  [134/336] TCGA-55-7576-01A-01-TS1.70c5cd1c-90bf-4c2e-9abf-ca8d87f86098.svs  (127 MB)  [39.6% done overall]
+    ✓ ok
+
+  [135/336] TCGA-55-A48Z-01A-01-TS1.DCD3DE34-3719-4755-B920-E6E84E415736.svs  (352 MB)  [39.9% done overall]
+    ✓ ok
+
+  [136/336] TCGA-55-6987-01A-01-TS1.af7f2077-daf4-47c8-b1b5-2c32f0eae9a7.svs  (60 MB)  [40.2% done overall]
+    ✓ ok
+
+  [137/336] TCGA-55-A491-01A-01-TS1.8EFE82A0-8DD2-430F-88D9-298C9959B6EE.svs  (92 MB)  [40.5% done overall]
+    ✓ ok
+
+  [138/336] TCGA-55-8619-01A-01-TS1.0dc030d8-c16e-4d3b-8bae-9f8ec5ab8962.svs  (82 MB)  [40.8% done overall]
+    ✓ ok
+
+  [139/336] TCGA-62-A46P-01A-01-TS1.B5E86BA2-E157-44FA-B066-321DDF5092D5.svs  (285 MB)  [41.1% done overall]
+    ✓ ok
+
+  [140/336] TCGA-55-6985-11A-01-TS1.a7338f79-bd29-4dea-b513-8907eac3d604.svs  (54 MB)  [41.4% done overall]
+    ✓ ok
+
+  ── Progress: 140 OK, 0 failed of 336 total ──
+
+  [141/336] TCGA-55-7570-11A-01-TS1.859acd19-8c97-47e7-a235-1452a920b877.svs  (107 MB)  [41.7% done overall]
+    ✓ ok
+
+  [142/336] TCGA-62-A46S-01A-01-TS1.86557AB5-8FB3-411D-8CA9-EB015D4B8C48.svs  (226 MB)  [42.0% done overall]
+    ✓ ok
+
+  [143/336] TCGA-62-A46O-01A-01-TSA.59B75044-364C-4C82-A389-1E3DEA0A1E89.svs  (46 MB)  [42.3% done overall]
+    ✓ ok
+
+  [144/336] TCGA-62-A470-01A-01-TS1.A42883B8-6F8A-4026-8264-656ACFA15905.svs  (252 MB)  [42.6% done overall]
+    ✓ ok
+
+  [145/336] TCGA-55-7815-01A-01-TS1.845d117f-8f2a-469a-8792-a435f65fa63b.svs  (97 MB)  [42.9% done overall]
+    ✓ ok
+
+  [146/336] TCGA-62-A46V-01A-01-TSA.D5EF7ED6-0460-47F4-B4F0-550843903CC6.svs  (333 MB)  [43.2% done overall]
+    ✓ ok
+
+  [147/336] TCGA-55-8299-11A-01-TS1.ee910b9a-5cbe-46b3-8731-c6a72654e28b.svs  (175 MB)  [43.5% done overall]
+    ✓ ok
+
+  [148/336] TCGA-55-A492-01A-01-TS1.B933A7B4-C49A-497E-826D-DEEE2739B9A2.svs  (395 MB)  [43.8% done overall]
+    ✓ ok
+
+  [149/336] TCGA-55-7913-11A-01-TS1.48f0d183-f6c5-4e69-a590-cd5bdbc892f9.svs  (107 MB)  [44.0% done overall]
+    ✓ ok
+
+  [150/336] TCGA-73-4666-11A-01-BS1.aef47920-7611-4f71-8942-3fbc0c7aeb03.svs  (88 MB)  [44.3% done overall]
+    ✓ ok
+
+  ── Progress: 150 OK, 0 failed of 336 total ──
+
+  [151/336] TCGA-75-7031-01A-01-TS1.ff890643-cd25-4528-ab56-1d866053de60.svs  (37 MB)  [44.6% done overall]
+    ✓ ok
+
+  [152/336] TCGA-73-4662-01A-01-BS1.8080e628-4e9a-4055-9d79-d00c4bb7136d.svs  (57 MB)  [44.9% done overall]
+    ✓ ok
+
+  [153/336] TCGA-69-7761-01A-01-TS1.5fbed09f-c790-4e78-a3c7-e026c878d906.svs  (50 MB)  [45.2% done overall]
+    ✓ ok
+
+  [154/336] TCGA-73-7499-01A-01-TS1.dc614e4c-1f03-4619-9462-ad5efee257fd.svs  (1617 MB)  [45.5% done overall]
+    ✓ ok
+
+  [155/336] TCGA-78-7152-01A-01-BS1.17987afb-41a5-44ff-94e2-a282163a10be.svs  (29 MB)  [45.8% done overall]
+    ✓ ok
+
+  [156/336] TCGA-73-7498-01A-01-BS1.eb69d62c-ed3e-4800-b432-4e6cca7b0e92.svs  (94 MB)  [46.1% done overall]
+    ✓ ok
+
+  [157/336] TCGA-67-3770-01A-01-TS1.46f8b42c-77e0-4a2f-bec8-1efd30294c28.svs  (113 MB)  [46.4% done overall]
+    ✓ ok
+
+  [158/336] TCGA-73-4676-11A-01-BS1.4bd6e004-baea-4ed9-8eb2-2a1ad0cedcac.svs  (77 MB)  [46.7% done overall]
+    ✓ ok
+
+  [159/336] TCGA-73-4658-01A-01-BS1.2859e392-66d8-407e-85db-25bf4e4c5ff3.svs  (184 MB)  [47.0% done overall]
+    ✓ ok
+
+  [160/336] TCGA-62-A471-01A-01-TSA.040833CB-A6BE-49DF-93D0-17DC2E905C11.svs  (381 MB)  [47.3% done overall]
+    ✓ ok
+
+  ── Progress: 160 OK, 0 failed of 336 total ──
+
+  [161/336] TCGA-67-3773-01A-01-TS1.dc8ffdb9-6b85-41f4-817e-36bfc559e3b0.svs  (119 MB)  [47.6% done overall]
+    ✓ ok
+
+  [162/336] TCGA-73-4677-01A-01-BS1.7439af21-9d40-4c30-a478-1f9e7e33e3a3.svs  (96 MB)  [47.9% done overall]
+    ✓ ok
+
+  [163/336] TCGA-73-4670-11A-01-TS1.0866a46d-4d80-4b4c-9d53-885fa73e13db.svs  (67 MB)  [48.2% done overall]
+    ✓ ok
+
+  [164/336] TCGA-64-5779-01A-01-TS1.0e877730-bdba-44c4-945a-b8b2dbd85d27.svs  (109 MB)  [48.5% done overall]
+    ✓ ok
+
+  [165/336] TCGA-75-5146-01A-01-TS1.8da9013b-65b3-4378-b6f8-b8dfe123ce28.svs  (34 MB)  [48.8% done overall]
+    ✓ ok
+
+  [166/336] TCGA-69-7764-01A-01-TS1.7c039ba2-0932-4008-8ddf-b7916cc4cd9a.svs  (69 MB)  [49.1% done overall]
+    ✓ ok
+
+  [167/336] TCGA-75-6211-01A-01-BS1.492679da-f116-4d36-8e0b-3c78fd192768.svs  (94 MB)  [49.4% done overall]
+    ✓ ok
+
+  [168/336] TCGA-75-7027-01A-01-BS1.c25a28f7-788d-4215-a35e-2621d3a54c45.svs  (104 MB)  [49.7% done overall]
+    ✓ ok
+
+  [169/336] TCGA-78-7150-01A-01-BS1.c8f783f0-a7e0-42a7-9abd-9e34383a9d7f.svs  (84 MB)  [50.0% done overall]
+    ✓ ok
+
+  [170/336] TCGA-75-6203-01A-01-BS1.16ef47e4-eb98-40c3-98c6-2c0ca500db68.svs  (54 MB)  [50.3% done overall]
+    ✓ ok
+
+  ── Progress: 170 OK, 0 failed of 336 total ──
+
+  [171/336] TCGA-75-5147-01A-01-TS1.a9012624-dfdd-4067-9a7e-20ca9314b28f.svs  (42 MB)  [50.6% done overall]
+    ✓ ok
+
+  [172/336] TCGA-71-6725-01A-01-BS1.af567bff-0660-457c-b077-b254f177d5fe.svs  (457 MB)  [50.9% done overall]
+    ✓ ok
+
+  [173/336] TCGA-78-7145-01A-01-TS1.8930eca1-bc4e-4ed6-a6fd-335eb553e057.svs  (69 MB)  [51.2% done overall]
+    ✓ ok
+
+  [174/336] TCGA-69-A59K-01A-01-TSA.040BED20-3BB8-4027-9FBE-ECE7F02C4202.svs  (379 MB)  [51.5% done overall]
+    ✓ ok
+
+  [175/336] TCGA-75-5122-01A-01-BS1.3d8974bb-ca4f-4125-8ac5-5a0a7031ba11.svs  (65 MB)  [51.8% done overall]
+    ✓ ok
+
+  [176/336] TCGA-69-7979-01A-01-TS1.b8e1a78d-e339-4280-94a7-5b94106890c0.svs  (74 MB)  [52.1% done overall]
+    ✓ ok
+
+  [177/336] TCGA-69-7765-01A-01-TS1.9ba2967f-d8c5-4ade-8f10-85851a7881fc.svs  (58 MB)  [52.4% done overall]
+    ✓ ok
+
+  [178/336] TCGA-78-7153-01A-01-TS1.4ab29934-b649-4b5c-8530-38268ff40c28.svs  (43 MB)  [52.7% done overall]
+    ✓ ok
+
+  [179/336] TCGA-64-1677-01A-01-TS1.64b2b82e-e4be-4399-bcc6-c32bf9089531.svs  (107 MB)  [53.0% done overall]
+    ✓ ok
+
+  [180/336] TCGA-67-3771-01A-01-TS1.4cc1ce1f-f0db-4f89-819a-43ba2ca921c0.svs  (279 MB)  [53.3% done overall]
+    ✓ ok
+
+  ── Progress: 180 OK, 0 failed of 336 total ──
+
+  [181/336] TCGA-73-A9RS-01A-01-TS1.95E6E9D2-8F67-4077-AE8B-5F29699FF434.svs  (138 MB)  [53.6% done overall]
+    ✓ ok
+
+  [182/336] TCGA-69-7974-01A-01-TS1.dc8774ee-63fa-4b6b-91a8-dda4487e886b.svs  (48 MB)  [53.9% done overall]
+    ✓ ok
+
+  [183/336] TCGA-71-8520-01A-01-BS1.e0e8d54f-bd3e-43bb-b6b0-b4f687c75f11.svs  (195 MB)  [54.2% done overall]
+    ✓ ok
+
+  [184/336] TCGA-67-6217-01A-01-BS1.49c857c1-9817-48ed-8b34-5b168c2496c7.svs  (109 MB)  [54.5% done overall]
+    ✓ ok
+
+  [185/336] TCGA-75-5126-01A-01-BS1.2f8a1e41-168c-4f5d-9d64-cf540f6b57fd.svs  (92 MB)  [54.8% done overall]
+    ✓ ok
+
+  [186/336] TCGA-64-1680-01A-01-BS1.05c0cf5d-5e06-41bc-9d70-6b27639fc2fb.svs  (122 MB)  [55.1% done overall]
+    ✓ ok
+
+  [187/336] TCGA-67-4679-01B-01-BS1.d6a20cd8-c299-427b-83ee-095fae02e488.svs  (52 MB)  [55.4% done overall]
+    ✓ ok
+
+  [188/336] TCGA-78-7147-01A-01-TS1.8efc5b05-55cb-450a-a75d-1d5033334f51.svs  (98 MB)  [55.7% done overall]
+    ✓ ok
+
+  [189/336] TCGA-69-7978-01A-01-TS1.0ca29f79-55a2-4dd7-9cfc-dd5ecdce23cb.svs  (37 MB)  [56.0% done overall]
+    ✓ ok
+
+  [190/336] TCGA-64-1676-01A-01-BS1.48c91c0b-928e-46c8-b3cc-f6b67edf5fc3.svs  (196 MB)  [56.2% done overall]
+    ✓ ok
+
+  ── Progress: 190 OK, 0 failed of 336 total ──
+
+  [191/336] TCGA-64-1678-01A-01-BS1.7cb663b8-f94b-4803-b581-317aaa10d113.svs  (55 MB)  [56.5% done overall]
+    ✓ ok
+
+  [192/336] TCGA-64-5774-01A-01-TS1.1b1c8581-82a8-43a9-a780-ec43f1c386e2.svs  (126 MB)  [56.8% done overall]
+    ✓ ok
+
+  [193/336] TCGA-62-A472-01A-01-TSA.C466E996-B1B6-4AE9-8A4A-31BB4D7944E2.svs  (322 MB)  [57.1% done overall]
+    ✓ ok
+
+  [194/336] TCGA-67-6215-01A-01-BS1.d10d04fe-ce17-4011-ae46-7b8a10d8551d.svs  (65 MB)  [57.4% done overall]
+    ✓ ok
+
+  [195/336] TCGA-75-6212-01A-01-BS1.c95f81b0-7f24-43e2-afe3-3d70177ed0cf.svs  (252 MB)  [57.7% done overall]
+    ✓ ok
+
+  [196/336] TCGA-78-7149-01A-01-BS1.837bfa58-ec4d-445e-a7a0-b5f2984c4788.svs  (84 MB)  [58.0% done overall]
+    ✓ ok
+
+  [197/336] TCGA-64-5781-01A-01-TS1.21393a9e-867d-457b-853d-9dae2ae1cfbb.svs  (116 MB)  [58.3% done overall]
+    ✓ ok
+
+  [198/336] TCGA-75-6206-01A-01-TS1.35324f87-d70a-4938-8384-1bade0824039.svs  (57 MB)  [58.6% done overall]
+    ✓ ok
+
+  [199/336] TCGA-69-8253-01A-01-TS1.2de254ef-a6df-433b-a9b5-9d16c30fd6aa.svs  (83 MB)  [58.9% done overall]
+    ✓ ok
+
+  [200/336] TCGA-78-7159-01A-01-TS1.ae248361-8091-4127-a148-608751a4ac65.svs  (54 MB)  [59.2% done overall]
+    ✓ ok
+
+  ── Progress: 200 OK, 0 failed of 336 total ──
+
+  [201/336] TCGA-78-7156-01A-01-TS1.b87a0bce-676c-437a-be81-6cf7854d8385.svs  (52 MB)  [59.5% done overall]
+    ✓ ok
+
+  [202/336] TCGA-78-7161-01A-01-TS1.459783b5-2956-4045-a1c2-a605248a6ffa.svs  (96 MB)  [59.8% done overall]
+    ✓ ok
+
+  [203/336] TCGA-86-A4P7-01A-01-TSA.7DE944AC-3D14-4E0A-BF05-5E98113C29A8.svs  (213 MB)  [60.1% done overall]
+    ✓ ok
+
+  [204/336] TCGA-78-7536-01A-01-BS1.976e5028-cc47-4c8b-a069-b8aa4761acda.svs  (53 MB)  [60.4% done overall]
+    ✓ ok
+
+  [205/336] TCGA-91-6840-01A-01-TS1.34968e0a-95a9-429b-b0a3-0a96b314b797.svs  (43 MB)  [60.7% done overall]
+    ✓ ok
+
+  [206/336] TCGA-91-6831-11A-01-TS1.4346239f-de98-4c3f-8790-40766161d2c7.svs  (428 MB)  [61.0% done overall]
+    ✓ ok
+
+  [207/336] TCGA-91-6836-11A-01-TS1.269174cd-2593-4e3c-a52a-3c0496b059ed.svs  (57 MB)  [61.3% done overall]
+    ✓ ok
+
+  [208/336] TCGA-78-7633-01A-01-TS1.dd3ba417-5cd2-4de4-9814-fbf39c7ee8dc.svs  (265 MB)  [61.6% done overall]
+    ✓ ok
+
+  [209/336] TCGA-86-7954-01A-01-TS1.d6705b3e-39d4-4468-9e26-0e3ce5f4e880.svs  (197 MB)  [61.9% done overall]
+    ✓ ok
+
+  [210/336] TCGA-78-7166-11A-01-TS1.bb97df24-da32-4cf5-964b-21d98b860422.svs  (44 MB)  [62.2% done overall]
+    ✓ ok
+
+  ── Progress: 210 OK, 0 failed of 336 total ──
+
+  [211/336] TCGA-86-8054-01A-01-BS1.807cd36d-2c75-4820-97fc-6f471e0ab0f6.svs  (1210 MB)  [62.5% done overall]
+    ✓ ok
+
+  [212/336] TCGA-78-7162-01A-01-BS1.c4ea5644-a749-456e-a834-d1954f0cd581.svs  (67 MB)  [62.8% done overall]
+    ✓ ok
+
+  [213/336] TCGA-78-8662-01A-01-TS1.50bbe95d-2c68-4b7e-97fa-1a76b9b10689.svs  (85 MB)  [63.1% done overall]
+    ✓ ok
+
+  [214/336] TCGA-91-6829-11A-01-TS1.242f265c-2a71-4f9f-a740-a679587b6eaf.svs  (73 MB)  [63.4% done overall]
+    ✓ ok
+
+  [215/336] TCGA-86-8056-01A-01-TS1.2f1a2681-bd8c-4510-ba48-23aa480eee2a.svs  (742 MB)  [63.7% done overall]
+    ✓ ok
+
+  [216/336] TCGA-91-6830-01A-01-BS1.0ea7ad95-852a-4d1b-9152-0c6582df4d14.svs  (70 MB)  [64.0% done overall]
+    ✓ ok
+
+  [217/336] TCGA-78-8660-01A-01-TS1.6726c584-c4c2-49b7-8ded-0d38a68e56ce.svs  (89 MB)  [64.3% done overall]
+    ✓ ok
+
+  [218/336] TCGA-86-8281-01A-01-TS1.fbde9bd8-5f55-45e4-9af6-077b2cca496c.svs  (479 MB)  [64.6% done overall]
+    ✓ ok
+
+  [219/336] TCGA-78-7539-01A-01-TS1.1f2c8802-8e2b-4acf-adfe-6ac9bbf745ae.svs  (90 MB)  [64.9% done overall]
+    ✓ ok
+
+  [220/336] TCGA-86-8075-01A-01-BS1.4aa32862-77f2-4ade-873e-57afb82c5e29.svs  (721 MB)  [65.2% done overall]
+    ✓ ok
+
+  ── Progress: 220 OK, 0 failed of 336 total ──
+
+  [221/336] TCGA-91-6847-01A-01-BS1.42810728-6d6c-4116-bd23-71f502f4f6ed.svs  (53 MB)  [65.5% done overall]
+    ✓ ok
+
+  [222/336] TCGA-86-7701-01A-01-BS1.01830866-acbf-4de5-8237-eea8ca06f8cd.svs  (159 MB)  [65.8% done overall]
+    ✓ ok
+
+  [223/336] TCGA-78-8655-01A-01-TS1.5a514f0a-6e90-4ddb-9623-d053c48906c4.svs  (74 MB)  [66.1% done overall]
+    ✓ ok
+
+  [224/336] TCGA-86-8673-01A-01-TS1.07b1fc57-7059-42ef-87d8-f4c2002bf012.svs  (3099 MB)  [66.4% done overall]
+    ✓ ok
+
+  [225/336] TCGA-86-8672-01A-01-BS1.228338a2-10cb-499c-9f8d-8a3e287a2ea4.svs  (1596 MB)  [66.7% done overall]
+    ✓ ok
+
+  [226/336] TCGA-86-8073-01A-01-BS1.69853b5d-bcc8-43b2-8ed2-557fbfcd0441.svs  (972 MB)  [67.0% done overall]
+    ✓ ok
+
+  [227/336] TCGA-86-7713-11A-01-TS1.30b00886-b7f2-496c-8386-76cd8f4a74bc.svs  (640 MB)  [67.3% done overall]
+    ✓ ok
+
+  [228/336] TCGA-78-7535-01A-01-TS1.35e405f0-fc84-4049-b0a8-a99a075dac6b.svs  (51 MB)  [67.6% done overall]
+    ✓ ok
+
+  [229/336] TCGA-86-A4D0-01A-01-TSA.B2F7A5B9-19C5-4FF5-A644-E089AB3889DD.svs  (194 MB)  [67.9% done overall]
+    ✓ ok
+
+  [230/336] TCGA-78-8648-01A-01-TS1.861b33a9-153f-4115-a314-91e0d1a8d697.svs  (115 MB)  [68.2% done overall]
+    ✓ ok
+
+  ── Progress: 230 OK, 0 failed of 336 total ──
+
+  [231/336] TCGA-91-6828-11A-01-TS1.77bf5b0c-5ecb-4e17-b25a-5445871520c5.svs  (97 MB)  [68.5% done overall]
+    ✓ ok
+
+  [232/336] TCGA-86-8278-01A-01-BS1.19e62dcc-ceec-44b2-89dd-bc9f165d8159.svs  (350 MB)  [68.8% done overall]
+    ✓ ok
+
+  [233/336] TCGA-86-6851-01A-01-TS1.17b19b68-834e-46da-9b9b-be5fd84e60b2.svs  (161 MB)  [69.0% done overall]
+    ✓ ok
+
+  [234/336] TCGA-78-8640-11A-01-TS1.8540fc90-8746-4818-b658-fade11a838ca.svs  (155 MB)  [69.3% done overall]
+    ✓ ok
+
+  [235/336] TCGA-91-6835-01A-01-BS1.307c5dae-e277-4d87-bbf1-1ed73e3c994b.svs  (74 MB)  [69.6% done overall]
+    ✓ ok
+
+  [236/336] TCGA-86-8585-01A-01-BS1.d0844406-98b9-4398-a4f4-3e358a111c61.svs  (514 MB)  [69.9% done overall]
+    ✓ ok
+
+  [237/336] TCGA-78-7537-01A-01-TS1.4571601f-a256-4394-b5d1-60e22115072b.svs  (104 MB)  [70.2% done overall]
+    ✓ ok
+
+  [238/336] TCGA-86-8359-01A-01-BS1.2a11bec7-7449-460d-a61f-6d539037bb91.svs  (2077 MB)  [70.5% done overall]
+    ✓ ok
+
+  [239/336] TCGA-86-A456-01A-01-TSA.996EFBE2-10E2-454B-B4E7-981FA24404B0.svs  (283 MB)  [70.8% done overall]
+    ✓ ok
+
+  [240/336] TCGA-86-7955-01A-01-TS1.04f83263-1dde-49ac-b5b7-db297c8e3d46.svs  (67 MB)  [71.1% done overall]
+    ✓ ok
+
+  ── Progress: 240 OK, 0 failed of 336 total ──
+
+  [241/336] TCGA-86-8055-01A-01-TS1.2bca74b2-c8db-4a44-bda5-264eed68c76d.svs  (1456 MB)  [71.4% done overall]
+    ✓ ok
+
+  [242/336] TCGA-78-7542-11A-01-TS1.106ddc1a-b0a6-4f1a-9288-b48e030aadf6.svs  (173 MB)  [71.7% done overall]
+    ✓ ok
+
+  [243/336] TCGA-78-7220-01A-01-TS1.322a58dc-7371-4745-90f7-395370a8fd53.svs  (37 MB)  [72.0% done overall]
+    ✓ ok
+
+  [244/336] TCGA-86-A4JF-01A-01-TSA.E1DCED94-3236-4C39-8DC3-A20A2471DDA5.svs  (296 MB)  [72.3% done overall]
+    ✓ ok
+
+  [245/336] TCGA-78-7155-01A-01-TS1.4bc5118e-2673-40f2-93a0-a28b1a268705.svs  (59 MB)  [72.6% done overall]
+    ✓ ok
+
+  [246/336] TCGA-78-7154-01A-01-TS1.da270c1b-b487-44e8-b9a0-0394e06dcdad.svs  (55 MB)  [72.9% done overall]
+    ✓ ok
+
+  [247/336] TCGA-78-7160-01A-01-TS1.96723471-7a98-4954-9b82-a15d4b0a0f65.svs  (76 MB)  [73.2% done overall]
+    ✓ ok
+
+  [248/336] TCGA-78-7167-01A-01-TS1.c8054ac6-d838-455f-bd0a-1e2c6b025136.svs  (70 MB)  [73.5% done overall]
+    ✓ ok
+
+  [249/336] TCGA-91-8499-01A-01-BS1.5defdd3c-e8ab-4b69-b857-4903584f3b62.svs  (89 MB)  [73.8% done overall]
+    ✓ ok
+
+  [250/336] TCGA-J2-8192-01A-01-BS1.651a26ef-07a0-48cc-80dc-ca1e83076f5b.svs  (491 MB)  [74.1% done overall]
+    ✓ ok
+
+  ── Progress: 250 OK, 0 failed of 336 total ──
+
+  [251/336] TCGA-91-8496-01A-01-BS1.af760190-ab2f-45d6-a632-ce7b34eff52c.svs  (48 MB)  [74.4% done overall]
+    ✓ ok
+
+  [252/336] TCGA-97-8174-01A-01-TS1.f19910fa-2262-4965-9841-b73767571290.svs  (104 MB)  [74.7% done overall]
+    ✓ ok
+
+  [253/336] TCGA-99-8033-01A-01-TS1.c9f52107-d2d5-4e7d-b30a-3d1d6cf5a5f6.svs  (58 MB)  [75.0% done overall]
+    ✓ ok
+
+  [254/336] TCGA-91-6849-01A-01-TS1.c7d56655-6e3d-492f-b5fa-4781ec6f94ab.svs  (161 MB)  [75.3% done overall]
+    ✓ ok
+
+  [255/336] TCGA-99-7458-01A-01-BS1.d96cc75b-eccd-403b-8c5e-7eaa1bf6326a.svs  (181 MB)  [75.6% done overall]
+    ✓ ok
+
+  [256/336] TCGA-95-A4VK-01A-01-TSA.29579482-F5BF-4A43-A763-D66BD51FE01C.svs  (215 MB)  [75.9% done overall]
+    ✓ ok
+
+  [257/336] TCGA-95-7948-01A-01-TS1.3606c6a9-6823-46e3-b5a5-71622e853363.svs  (155 MB)  [76.2% done overall]
+    ✓ ok
+
+  [258/336] TCGA-95-7562-01A-01-TS1.1ba56ba5-ecd4-4eb1-ac49-3d8108114b72.svs  (105 MB)  [76.5% done overall]
+    ✓ ok
+
+  [259/336] TCGA-91-7771-01A-01-BS1.038f7715-e60b-434a-bcc4-072d61e5700c.svs  (174 MB)  [76.8% done overall]
+    ✓ ok
+
+  [260/336] TCGA-J2-8194-01A-01-TS1.03393bf7-9863-4dda-a5ac-e5820acce09d.svs  (259 MB)  [77.1% done overall]
+    ✓ ok
+
+  ── Progress: 260 OK, 0 failed of 336 total ──
+
+  [261/336] TCGA-97-8177-01A-01-TS1.5b2fb8cf-2f14-41ac-8a47-81022f66fe53.svs  (116 MB)  [77.4% done overall]
+    ✓ ok
+
+  [262/336] TCGA-95-7567-01A-01-TS1.16f9328c-0060-43e2-b998-e15022e75fff.svs  (86 MB)  [77.7% done overall]
+    ✓ ok
+
+  [263/336] TCGA-97-A4M3-01A-01-TS1.DD77078C-6988-4137-94C2-C7F9A3000CE4.svs  (248 MB)  [78.0% done overall]
+    ✓ ok
+
+  [264/336] TCGA-97-A4M5-01A-01-TS1.CC8B002B-FDBC-49FC-B84D-D0215E880827.svs  (556 MB)  [78.3% done overall]
+    ✓ ok
+
+  [265/336] TCGA-91-8497-01A-01-BS1.abbe6914-76eb-4133-befc-62d0a979430d.svs  (52 MB)  [78.6% done overall]
+    ✓ ok
+
+  [266/336] TCGA-95-8494-01A-01-TS1.a615b4da-7282-485a-97f1-1994fab75e3a.svs  (70 MB)  [78.9% done overall]
+    ✓ ok
+
+  [267/336] TCGA-93-A4JQ-01A-01-TSA.AF3ED215-95C2-4130-9D72-078078390ECD.svs  (148 MB)  [79.2% done overall]
+    ✓ ok
+
+  [268/336] TCGA-97-7554-01A-01-TS1.f7ebd35c-ecac-4d02-8765-c2d7b4303df3.svs  (238 MB)  [79.5% done overall]
+    ✓ ok
+
+  [269/336] TCGA-97-A4M0-01A-01-TSA.1B700ABB-DEBB-4879-A11B-B11255CE7970.svs  (366 MB)  [79.8% done overall]
+    ✓ ok
+
+  [270/336] TCGA-95-8039-01A-01-TS1.1f7a1e11-9d0b-4c48-b8de-e8f2f812dbf3.svs  (320 MB)  [80.1% done overall]
+    ✓ ok
+
+  ── Progress: 270 OK, 0 failed of 336 total ──
+
+  [271/336] TCGA-95-A4VP-01A-02-TSB.A921BC6C-0CEC-4131-8A8C-6FDB41ED1448.svs  (256 MB)  [80.4% done overall]
+    ✓ ok
+
+  [272/336] TCGA-97-7941-01A-01-TS1.9a810408-791e-445f-97b0-7e628b1dfc44.svs  (167 MB)  [80.7% done overall]
+    ✓ ok
+
+  [273/336] TCGA-95-7947-01A-01-TS1.15869217-87cb-4f87-bacf-c12a10bddb77.svs  (59 MB)  [81.0% done overall]
+    ✓ ok
+
+  [274/336] TCGA-97-8172-01A-01-TS1.1069812b-9e45-41a0-9fe3-4becfddfdc8d.svs  (61 MB)  [81.2% done overall]
+    ✓ ok
+
+  [275/336] TCGA-95-7043-01A-01-BS1.ef0e9345-c695-481d-98f7-0bd114aef3e9.svs  (45 MB)  [81.5% done overall]
+    ✓ ok
+
+  [276/336] TCGA-91-6848-11A-01-TS1.0bb06db2-7b3e-4d0a-bb3f-6c03aa315387.svs  (392 MB)  [81.8% done overall]
+    ✓ ok
+
+  [277/336] TCGA-99-8025-01A-01-TS1.c94ae7e9-42a9-4a34-a676-7397b5b48c82.svs  (156 MB)  [82.1% done overall]
+    ✓ ok
+
+  [278/336] TCGA-93-A4JN-01A-01-TSA.22080F8B-B9FE-4534-879B-049AA07CCD99.svs  (151 MB)  [82.4% done overall]
+    ✓ ok
+
+  [279/336] TCGA-97-8547-01A-01-TS1.cf6c29cd-1bf5-41f4-b008-d3e47aeff4ac.svs  (42 MB)  [82.7% done overall]
+    ✓ ok
+
+  [280/336] TCGA-95-7039-01A-01-TS1.e11bc968-6fff-4889-8062-6a8c73a2e7c6.svs  (140 MB)  [83.0% done overall]
+    ✓ ok
+
+  ── Progress: 280 OK, 0 failed of 336 total ──
+
+  [281/336] TCGA-95-7944-01A-01-TS1.79285495-7f57-40c4-848b-4449c9348499.svs  (138 MB)  [83.3% done overall]
+    ✓ ok
+
+  [282/336] TCGA-97-8179-01A-01-TS1.a0f057a9-7b89-4161-a0a4-52adc66153d5.svs  (79 MB)  [83.6% done overall]
+    ✓ ok
+
+  [283/336] TCGA-97-8176-01A-01-TS1.0f1b7e3a-6e9f-4d3e-bc6a-c640ff041549.svs  (94 MB)  [83.9% done overall]
+    ✓ ok
+
+  [284/336] TCGA-97-A4M6-01A-01-TSA.7B0A16DF-23E8-47A5-92A4-A395CC6B73C8.svs  (282 MB)  [84.2% done overall]
+    ✓ ok
+
+  [285/336] TCGA-97-7938-01A-01-TS1.b8ccb4a5-0bdc-4a7c-92ef-a41bcec791a1.svs  (109 MB)  [84.5% done overall]
+    ✓ ok
+
+  [286/336] TCGA-93-7347-11A-01-TS1.59544adf-4a21-4088-ba4d-46556e498e38.svs  (128 MB)  [84.8% done overall]
+    ✓ ok
+
+  [287/336] TCGA-97-8175-01A-01-TS1.805dfbde-6af0-4860-b04e-c6fb6087d8c0.svs  (68 MB)  [85.1% done overall]
+    ✓ ok
+
+  [288/336] TCGA-97-7937-01A-01-TS1.52bec102-5ea6-4f89-b3c4-2fa2e5c0ef20.svs  (107 MB)  [85.4% done overall]
+    ✓ ok
+
+  [289/336] TCGA-97-A4LX-01A-01-TS1.61D371DC-CDB4-4DC7-AA8D-5071D2251B68.svs  (367 MB)  [85.7% done overall]
+    ✓ ok
+
+  [290/336] TCGA-93-7348-11A-01-TS1.6099aed6-04da-4208-8fdf-fd76bb78de41.svs  (143 MB)  [86.0% done overall]
+    ✓ ok
+
+  ── Progress: 290 OK, 0 failed of 336 total ──
+
+  [291/336] TCGA-97-7553-01A-01-BS1.f82bd92f-124e-47c7-9a57-09bbbe1d06ae.svs  (293 MB)  [86.3% done overall]
+    ✓ ok
+
+  [292/336] TCGA-95-A4VN-01A-01-TSA.4C5915A1-C86B-423B-BDE1-DEBE9C69DB2C.svs  (293 MB)  [86.6% done overall]
+    ✓ ok
+
+  [293/336] TCGA-93-A4JO-01A-02-TS2.FEAD5F22-72C6-409A-87C3-E582D075E899.svs  (231 MB)  [86.9% done overall]
+    ✓ ok
+
+  [294/336] TCGA-97-8552-01A-01-TS1.24ca90a7-5762-4ab5-a404-67dfcd416f79.svs  (133 MB)  [87.2% done overall]
+    ✓ ok
+
+  [295/336] TCGA-97-A4M1-01A-01-TS1.88CE11B3-CE2E-427A-A5F3-53BA0BB5D0A8.svs  (502 MB)  [87.5% done overall]
+    ✓ ok
+
+  [296/336] TCGA-97-A4M7-01A-01-TSA.968E9B8F-D1F7-486D-B2BF-D056F4A686A5.svs  (456 MB)  [87.8% done overall]
+    ✓ ok
+
+  [297/336] TCGA-97-8171-01A-01-TS1.a9b71814-44b1-4baa-ab24-c00f84be8339.svs  (70 MB)  [88.1% done overall]
+    ✓ ok
+
+  [298/336] TCGA-93-8067-01A-01-TS1.be831fc5-8d86-4bfd-af78-8d04ebfcf2fc.svs  (97 MB)  [88.4% done overall]
+    ✓ ok
+
+  [299/336] TCGA-NJ-A4YQ-01A-01-TS1.E59FACAB-AB32-4D8D-BF11-C68DE16F2A8E.svs  (218 MB)  [88.7% done overall]
+    ✓ ok
+
+  [300/336] TCGA-L9-A444-01A-02-TS2.C284BE25-0367-4B78-A70A-B4B22A73E835.svs  (66 MB)  [89.0% done overall]
+    ✓ ok
+
+  ── Progress: 300 OK, 0 failed of 336 total ──
+
+  [301/336] TCGA-MP-A4T6-01A-03-TSC.DC283477-48E1-4EB5-AC22-B73FFFA34CC3.svs  (202 MB)  [89.3% done overall]
+    ✓ ok
+
+  [302/336] TCGA-MP-A4TJ-01A-05-TSE.665B2D35-EAD3-46B6-9784-37CFE51412ED.svs  (281 MB)  [89.6% done overall]
+    ✓ ok
+
+  [303/336] TCGA-NJ-A7XG-01A-01-TSA.EC93FEC3-6CE3-47B4-9643-3C5B208129E0.svs  (276 MB)  [89.9% done overall]
+    ✓ ok
+
+  [304/336] TCGA-MP-A4TD-01A-03-TS3.678DF757-79E3-4E08-883B-8524F3C7B93F.svs  (374 MB)  [90.2% done overall]
+    ✓ ok
+
+  [305/336] TCGA-MP-A4T7-01A-01-TSA.5FF42954-1596-49E0-B739-ADCD1C58FFEA.svs  (221 MB)  [90.5% done overall]
+    ✓ ok
+
+  [306/336] TCGA-L9-A7SV-01A-01-TS1.E157B486-A95D-4D6F-9978-1B323B4B7065.svs  (260 MB)  [90.8% done overall]
+    ✓ ok
+
+  [307/336] TCGA-MN-A4N1-01A-01-TSA.04CDF8D0-66C6-40DE-9DBF-82702391BA88.svs  (204 MB)  [91.1% done overall]
+    ✓ ok
+
+  [308/336] TCGA-MP-A4T8-01A-01-TSA.07230EEB-5976-4395-9AD4-2D02B3D9E91A.svs  (200 MB)  [91.4% done overall]
+    ✓ ok
+
+  [309/336] TCGA-MP-A4TF-01A-01-TS1.23093891-0A89-490A-A5F2-71386E26F6A7.svs  (149 MB)  [91.7% done overall]
+    ✓ ok
+
+  [310/336] TCGA-MP-A4SY-01A-02-TSB.3E74E5C2-2D51-45CD-9A94-13FFB2F67A93.svs  (293 MB)  [92.0% done overall]
+    ✓ ok
+
+  ── Progress: 310 OK, 0 failed of 336 total ──
+
+  [311/336] TCGA-NJ-A4YF-01A-01-TSA.609E6AD3-35AD-4348-9376-A779576E7DCF.svs  (147 MB)  [92.3% done overall]
+    ✓ ok
+
+  [312/336] TCGA-MP-A4SV-01A-01-TSA.7992EFFD-ADE1-434B-86E2-918AFE46C7AE.svs  (375 MB)  [92.6% done overall]
+    ✓ ok
+
+  [313/336] TCGA-NJ-A55O-01A-01-TSA.C00B4B20-4079-4AED-AC21-DE1B24E39897.svs  (194 MB)  [92.9% done overall]
+    ✓ ok
+
+  [314/336] TCGA-MP-A4TC-01A-01-TS1.2C09E387-BF15-4ED1-944A-D27EE4972287.svs  (409 MB)  [93.2% done overall]
+    ✓ ok
+
+  [315/336] TCGA-L9-A743-01A-04-TS4.873E50BA-0B07-4174-9FBE-7A830A85F83E.svs  (476 MB)  [93.5% done overall]
+    ✓ ok
+
+  [316/336] TCGA-MN-A4N4-01A-01-TSA.1FBBCCAE-F87E-44C2-A796-A7FF6B32D88C.svs  (168 MB)  [93.8% done overall]
+    ✓ ok
+
+  [317/336] TCGA-MN-A4N5-01A-01-TS1.A4B7035B-2419-404A-A13B-AA19CCAAB74D.svs  (95 MB)  [94.0% done overall]
+    ✓ ok
+
+  [318/336] TCGA-MP-A4T9-01A-01-TSA.B7A40984-AD7A-4BBD-8BEB-AF66CB6B8382.svs  (260 MB)  [94.3% done overall]
+    ✓ ok
+
+  [319/336] TCGA-NJ-A55R-01A-01-TSA.7F8B9781-D74D-4047-A139-9DC7124AA8BC.svs  (224 MB)  [94.6% done overall]
+    ✓ ok
+
+  [320/336] TCGA-MP-A4TH-01A-03-TSC.57AD0C24-9D71-4914-9776-1B93A3A6044D.svs  (418 MB)  [94.9% done overall]
+    ✓ ok
+
+  ── Progress: 320 OK, 0 failed of 336 total ──
+
+  [321/336] TCGA-NJ-A4YG-01A-02-TSB.DD3F8A7E-60E7-4B9A-BF12-6FACDC094E13.svs  (205 MB)  [95.2% done overall]
+    ✓ ok
+
+  [322/336] TCGA-NJ-A55A-01A-01-TSA.EB8E4F53-589A-4F7D-AC10-7D65DF72F1BB.svs  (242 MB)  [95.5% done overall]
+    ✓ ok
+
+  [323/336] TCGA-J2-A4AD-01A-01-TSA.1B4E7C9F-CBEA-4FCE-B109-BCE80EFDF018.svs  (227 MB)  [95.8% done overall]
+    ✓ ok
+
+  [324/336] TCGA-L4-A4E5-01A-01-TSA.F2860E58-BFE8-444D-BACF-04C1594B6656.svs  (167 MB)  [96.1% done overall]
+    ✓ ok
+
+  [325/336] TCGA-J2-A4AE-01A-02-TSB.26806978-962F-4468-A37C-901A8B44DEE6.svs  (64 MB)  [96.4% done overall]
+    ✓ ok
+
+  [326/336] TCGA-J2-A4AG-01A-01-TSA.626552CF-7A7C-45C5-BCA7-4F58F3E753FC.svs  (128 MB)  [96.7% done overall]
+    ✓ ok
+
+  [327/336] TCGA-NJ-A4YI-01A-01-TS1.73EDF6BC-67F5-44E3-97F0-E2F6C0C6B638.svs  (278 MB)  [97.0% done overall]
+    ✓ ok
+
+  [328/336] TCGA-L9-A443-01A-01-TSA.73AF0603-4992-4DD1-8FCD-1ADC290382BE.svs  (107 MB)  [97.3% done overall]
+    ✓ ok
+
+  [329/336] TCGA-O1-A52J-01A-01-TS1.FCFF64A7-FA65-4964-9C2C-AEE4C5E33113.svs  (133 MB)  [97.6% done overall]
+    ✓ ok
+
+  [330/336] TCGA-L9-A8F4-01A-01-TS1.045CA12F-09B3-4135-9CCB-CD3252F1D71A.svs  (186 MB)  [97.9% done overall]
+    ✓ ok
+
+  ── Progress: 330 OK, 0 failed of 336 total ──
+
+  [331/336] TCGA-L9-A50W-01A-01-TS1.9D074435-CE6B-49C9-A777-03915F6E0132.svs  (286 MB)  [98.2% done overall]
+    ✓ ok
+
+  [332/336] TCGA-S2-AA1A-01A-01-TSA.3E0FD5CE-7E85-47A8-80A4-246B10343F4B.svs  (194 MB)  [98.5% done overall]
+    ✓ ok
+
+  [333/336] TCGA-NJ-A4YP-01A-01-TS1.E45234CC-1B1E-4EEA-925C-AA7969C9C54C.svs  (388 MB)  [98.8% done overall]
+    ✓ ok
+
+  [334/336] TCGA-MP-A4TE-01A-02-TS2.A7C25CC2-22F2-45B7-BD62-9DEFD67B2244.svs  (362 MB)  [99.1% done overall]
+    ✓ ok
+
+  [335/336] TCGA-MP-A4TK-01A-01-TSA.4A2E44AF-7DDD-4F63-B8C9-156CDFFDD5FE.svs  (503 MB)  [99.4% done overall]
+    ✓ ok
+
+  [336/336] TCGA-MP-A4T2-01A-01-TSA.6A132B42-1022-4E08-8801-1E4499B5EE25.svs  (355 MB)  [99.7% done overall]
+    ✓ ok
+
+=================================================================
+  DOWNLOAD COMPLETE
+=================================================================
+  Successfully downloaded : 336
+  Failed                  : 0
+  Log saved to            : /home/rapids/notebooks/slima/TGCA MAF/svs_download_log.tsv
+  Slides directory        : /home/rapids/notebooks/slima/data/slides
+
+  NEXT STEPS:
+  1. Run tile extraction + FuzzyArcLoss on new slides
+     (pattern_probs.npy for each new slide)
+  2. Run embedding extraction (embeddings.npy)
+  3. Re-run benchmark with LUAD-only cohort (~557 slides)
+=================================================================

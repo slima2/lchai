@@ -3,28 +3,29 @@
   "auprc": 0.2961975357221537,
   "f1": 0.16,
   "fuzzy_shapley_values": {
-    "acinar": 0.5418633222579956,
-    "lepidic": 0.5425212383270264,
-    "micropapillary": 0.541312038898468,
-    "mucinous": 0.5409819483757019,
-    "papillary": 0.5408347845077515,
-    "solid": 0.5413165092468262
+    "micropapillary": 0.5418633222579956,
+    "cribriform": 0.5425212383270264,
+    "papillary": 0.541312038898468,
+    "lepidic": 0.5409819483757019,
+    "solid": 0.5408347845077515,
+    "acinar": 0.5413165092468262
   },
   "fuzzy_interactions": {
-    "acinar\u00d7lepidic": -0.011121170595288277,
-    "acinar\u00d7micropapillary": 0.0015773680061101913,
-    "acinar\u00d7mucinous": -0.007640892174094915,
-    "acinar\u00d7papillary": 0.0039037575479596853,
-    "acinar\u00d7solid": 0.01733015477657318,
-    "lepidic\u00d7micropapillary": -0.006803612224757671,
-    "lepidic\u00d7mucinous": -0.02486046776175499,
-    "lepidic\u00d7papillary": -0.006163563579320908,
-    "lepidic\u00d7solid": -0.019821278750896454,
-    "micropapillary\u00d7mucinous": -0.0062466454692184925,
-    "micropapillary\u00d7papillary": 0.0008767545805312693,
-    "micropapillary\u00d7solid": 0.004272985737770796,
-    "mucinous\u00d7papillary": -0.0026157295797020197,
-    "mucinous\u00d7solid": 0.003947186749428511,
-    "papillary\u00d7solid": -0.004313511773943901
-  }
+    "micropapillary×cribriform": -0.011121170595288277,
+    "micropapillary×papillary": 0.0015773680061101913,
+    "micropapillary×lepidic": -0.007640892174094915,
+    "micropapillary×solid": 0.0039037575479596853,
+    "micropapillary×acinar": 0.01733015477657318,
+    "cribriform×papillary": -0.006803612224757671,
+    "cribriform×lepidic": -0.02486046776175499,
+    "cribriform×solid": -0.006163563579320908,
+    "cribriform×acinar": -0.019821278750896454,
+    "papillary×lepidic": -0.0062466454692184925,
+    "papillary×solid": 0.0008767545805312693,
+    "papillary×acinar": 0.004272985737770796,
+    "lepidic×solid": -0.0026157295797020197,
+    "lepidic×acinar": 0.003947186749428511,
+    "solid×acinar": -0.004313511773943901
+  },
+  "_pattern_names_corrected_4_apr_2026": "Pattern names remapped from the legacy (pre-4-Apr-2026) labels to the verified ANORAK classes; numeric values untouched. Mapping: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar"
 }

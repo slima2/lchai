@@ -1,0 +1,111 @@
+# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
+nohup: ignoring input
+[I 2026-02-23 02:06:43,371] A new study created in memory with name: fuzzyarcloss_v2_ctranspath
+[I 2026-02-23 02:08:55,818] Trial 0 finished with value: 0.9223175315571299 and parameters: {'S_SCALE': 47.69007878170112, 'M_MARGIN': 0.5367033975171001, 'TAU': 0.7470084820543716, 'BACKBONE_LR': 4.556579871627548e-05, 'HEAD_LR_MULT': 6.5216936208476435, 'FREEZE_LAYERS': 2, 'WARMUP_EPOCHS': 4, 'USE_FOCAL_CE': False, 'FOCAL_GAMMA': 2.2525998154232414}. Best is trial 0 with value: 0.9223175315571299.
+[I 2026-02-23 02:10:59,176] Trial 1 finished with value: 0.8926279397989922 and parameters: {'S_SCALE': 26.428030523463512, 'M_MARGIN': 0.6563498375979807, 'TAU': 0.49400882379448674, 'BACKBONE_LR': 2.8770673099491153e-05, 'HEAD_LR_MULT': 7.863603687525018, 'FREEZE_LAYERS': 3, 'WARMUP_EPOCHS': 4, 'USE_FOCAL_CE': False, 'FOCAL_GAMMA': 1.0484866623675224}. Best is trial 0 with value: 0.9223175315571299.
+[I 2026-02-23 02:13:01,330] Trial 2 finished with value: 0.9009967347467347 and parameters: {'S_SCALE': 17.375240600006965, 'M_MARGIN': 0.47740834267226695, 'TAU': 0.3649711069835532, 'BACKBONE_LR': 6.010785732619585e-05, 'HEAD_LR_MULT': 14.304542236907784, 'FREEZE_LAYERS': 2, 'WARMUP_EPOCHS': 9, 'USE_FOCAL_CE': True, 'FOCAL_GAMMA': 2.04353332111509}. Best is trial 0 with value: 0.9223175315571299.
+[I 2026-02-23 02:15:17,001] Trial 3 finished with value: 0.9080635094354605 and parameters: {'S_SCALE': 22.82470135024603, 'M_MARGIN': 0.27241485645095037, 'TAU': 0.8064378205233197, 'BACKBONE_LR': 0.0003560732130206075, 'HEAD_LR_MULT': 4.004655883350939, 'FREEZE_LAYERS': 0, 'WARMUP_EPOCHS': 7, 'USE_FOCAL_CE': False, 'FOCAL_GAMMA': 1.9005782427022693}. Best is trial 0 with value: 0.9223175315571299.
+[I 2026-02-23 02:17:18,022] Trial 4 finished with value: 0.9147165932726278 and parameters: {'S_SCALE': 22.266931662675134, 'M_MARGIN': 0.4531908389593706, 'TAU': 0.19596793737727725, 'BACKBONE_LR': 0.00012156342832827599, 'HEAD_LR_MULT': 12.386440777339482, 'FREEZE_LAYERS': 2, 'WARMUP_EPOCHS': 8, 'USE_FOCAL_CE': True, 'FOCAL_GAMMA': 2.56196121636873}. Best is trial 0 with value: 0.9223175315571299.
+[I 2026-02-23 02:17:58,959] Trial 5 pruned. 
+[I 2026-02-23 02:19:58,683] Trial 6 finished with value: 0.9193039832314129 and parameters: {'S_SCALE': 45.5697885996603, 'M_MARGIN': 0.13085116270202338, 'TAU': 0.57248682957672, 'BACKBONE_LR': 9.386666225359755e-05, 'HEAD_LR_MULT': 11.636752676268838, 'FREEZE_LAYERS': 1, 'WARMUP_EPOCHS': 7, 'USE_FOCAL_CE': False, 'FOCAL_GAMMA': 2.797484440940771}. Best is trial 0 with value: 0.9223175315571299.
+[I 2026-02-23 02:20:41,593] Trial 7 pruned. 
+[I 2026-02-23 02:21:24,866] Trial 8 pruned. 
+[I 2026-02-23 02:22:04,515] Trial 9 pruned. 
+[I 2026-02-23 02:24:10,955] Trial 10 finished with value: 0.9046800301148128 and parameters: {'S_SCALE': 49.00305454290277, 'M_MARGIN': 0.786063186144977, 'TAU': 0.8416072073413351, 'BACKBONE_LR': 1.7286490202005236e-05, 'HEAD_LR_MULT': 8.465852131533955, 'FREEZE_LAYERS': 1, 'WARMUP_EPOCHS': 5, 'USE_FOCAL_CE': False, 'FOCAL_GAMMA': 2.229095707901488}. Best is trial 0 with value: 0.9223175315571299.
+[I 2026-02-23 02:24:53,757] Trial 11 pruned. 
+[I 2026-02-23 02:25:35,763] Trial 12 pruned. 
+[I 2026-02-23 02:26:18,026] Trial 13 pruned. 
+[I 2026-02-23 02:27:00,149] Trial 14 pruned. 
+[I 2026-02-23 02:27:42,328] Trial 15 pruned. 
+[I 2026-02-23 02:28:25,308] Trial 16 pruned. 
+[I 2026-02-23 02:29:06,444] Trial 17 pruned. 
+[I 2026-02-23 02:29:47,820] Trial 18 pruned. 
+[I 2026-02-23 02:30:28,431] Trial 19 pruned. 
+[I 2026-02-23 02:31:09,230] Trial 20 pruned. 
+[I 2026-02-23 02:31:51,533] Trial 21 pruned. 
+[I 2026-02-23 02:32:34,778] Trial 22 pruned. 
+[I 2026-02-23 02:33:17,330] Trial 23 pruned. 
+[I 2026-02-23 02:33:58,702] Trial 24 pruned. 
+[I 2026-02-23 02:34:40,038] Trial 25 pruned. 
+[I 2026-02-23 02:35:22,126] Trial 26 pruned. 
+[I 2026-02-23 02:37:22,079] Trial 27 finished with value: 0.9099741815918287 and parameters: {'S_SCALE': 21.758422088835616, 'M_MARGIN': 0.7242381440805041, 'TAU': 0.7782106802755642, 'BACKBONE_LR': 3.335424178754807e-05, 'HEAD_LR_MULT': 13.258916229847323, 'FREEZE_LAYERS': 1, 'WARMUP_EPOCHS': 6, 'USE_FOCAL_CE': False, 'FOCAL_GAMMA': 2.4685292960577185}. Best is trial 0 with value: 0.9223175315571299.
+[I 2026-02-23 02:38:05,513] Trial 28 pruned. 
+[I 2026-02-23 02:38:47,111] Trial 29 pruned. 
+[I 2026-02-23 02:40:50,798] Trial 30 finished with value: 0.930596613484932 and parameters: {'S_SCALE': 46.101434376822986, 'M_MARGIN': 0.5178476475091369, 'TAU': 0.44787389912216496, 'BACKBONE_LR': 7.478950876910481e-05, 'HEAD_LR_MULT': 8.282463948665386, 'FREEZE_LAYERS': 2, 'WARMUP_EPOCHS': 8, 'USE_FOCAL_CE': False, 'FOCAL_GAMMA': 2.1150898395290807}. Best is trial 30 with value: 0.930596613484932.
+[I 2026-02-23 02:42:43,251] Trial 31 finished with value: 0.9224226163699849 and parameters: {'S_SCALE': 45.938490147349185, 'M_MARGIN': 0.5274690254417277, 'TAU': 0.44449362405992354, 'BACKBONE_LR': 8.205456539892903e-05, 'HEAD_LR_MULT': 6.684223776978593, 'FREEZE_LAYERS': 2, 'WARMUP_EPOCHS': 8, 'USE_FOCAL_CE': False, 'FOCAL_GAMMA': 2.1159416119430445}. Best is trial 30 with value: 0.930596613484932.
+[I 2026-02-23 02:43:24,029] Trial 32 pruned. 
+[I 2026-02-23 02:44:06,263] Trial 33 pruned. 
+[I 2026-02-23 02:44:46,136] Trial 34 pruned. 
+[I 2026-02-23 02:45:25,739] Trial 35 pruned. 
+[I 2026-02-23 02:46:08,312] Trial 36 pruned. 
+[I 2026-02-23 02:46:48,969] Trial 37 pruned. 
+[I 2026-02-23 02:47:30,522] Trial 38 pruned. 
+[I 2026-02-23 02:48:11,511] Trial 39 pruned. 
+[I 2026-02-23 02:48:51,598] Trial 40 pruned. 
+[I 2026-02-23 02:49:31,387] Trial 41 pruned. 
+[I 2026-02-23 02:50:11,949] Trial 42 pruned. 
+[I 2026-02-23 02:50:52,526] Trial 43 pruned. 
+[I 2026-02-23 02:51:32,101] Trial 44 pruned. 
+[I 2026-02-23 02:52:13,346] Trial 45 pruned. 
+[I 2026-02-23 02:52:52,750] Trial 46 pruned. 
+[I 2026-02-23 02:53:33,646] Trial 47 pruned. 
+[I 2026-02-23 02:54:14,885] Trial 48 pruned. 
+[I 2026-02-23 02:54:54,851] Trial 49 pruned. 
+======================================================================
+  OPTUNA HPO: FuzzyArcLoss V2 (CTransPath)
+  Searching for optimal s, m, τ + training hyperparameters
+======================================================================
+  GPUs: 6 x NVIDIA H100 80GB HBM3
+[1/3] Loading data...
+  [PAIRING] matched=731  unmatched=0
+  XLS columns: label_col='pattern', file_col='tile_id'
+  After label join: 731 rows
+  After filter: 637 rows, classes=['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
+  Train: 509, Val: 128
+  Class counts: {'micropapillary': 46, 'cribriform': 38, 'papillary': 100, 'lepidic': 70, 'solid': 89, 'acinar': 166}
+  [GPU MODE] Pre-caching datasets...
+    Pre-caching 509 images+masks to memory... done!
+    Pre-caching 128 images+masks to memory... done!
+
+[2/3] Running 50 trials (60 epochs each)
+  Search space: s∈[15,55], m∈[0.1,0.8], τ∈[0.15,0.85]
+  + LR, HEAD_LR_MULT, FREEZE, WARMUP, USE_FOCAL_CE, FOCAL_GAMMA
+======================================================================
+  ✓ New best! avgPR=0.9223 → saved checkpoint
+  ✓ New best! avgPR=0.9306 → saved checkpoint
+
+======================================================================
+[3/3] OPTUNA RESULTS
+======================================================================
+
+Completed: 50 trials
+  Completed: 10
+  Pruned:    40
+
+======================================================================
+  BEST TRIAL: #30
+  avgPR = 0.9306
+======================================================================
+  Parameters:
+    S_SCALE: 46.101434376822986
+    M_MARGIN: 0.5178476475091369
+    TAU: 0.44787389912216496
+    BACKBONE_LR: 7.478950876910481e-05
+    HEAD_LR_MULT: 8.282463948665386
+    FREEZE_LAYERS: 2
+    WARMUP_EPOCHS: 8
+    USE_FOCAL_CE: False
+    FOCAL_GAMMA: 2.1150898395290807
+
+✓ Results: /home/rapids/notebooks/slima/outputs/optuna_v2_search/optuna_v2_results.json
+
+Top 5 trials:
+   #    avgPR       s      m      τ         LR   HLR×  FRZ  WU   FCE     γ
+  30   0.9306   46.10  0.518  0.448   7.48e-05   8.28    2   8     N  2.12
+  31   0.9224   45.94  0.527  0.444   8.21e-05   6.68    2   8     N  2.12
+   0   0.9223   47.69  0.537  0.747   4.56e-05   6.52    2   4     N  2.25
+   6   0.9193   45.57  0.131  0.572   9.39e-05  11.64    1   7     N  2.80
+   4   0.9147   22.27  0.453  0.196   1.22e-04  12.39    2   8     Y  2.56
+
+✓ Best checkpoint: /home/rapids/notebooks/slima/outputs/optuna_v2_search/best_fuzzyarcloss_v2_optuna.pth
+  Use this in the ablation script and inference pipeline
