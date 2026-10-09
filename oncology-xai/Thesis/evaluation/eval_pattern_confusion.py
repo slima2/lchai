@@ -31,7 +31,7 @@ import seaborn as sns
 CHECKPOINT = "/data/models/best_fuzzyarcloss_v2.pth"
 TILES_DIR  = Path("/data/anorak_tiles")
 MASKS_DIR  = Path("/data/anorak_masks")
-INDEX_XLS  = "/data/overlay_index_corrected.xlsx"
+INDEX_XLS  = "/data/overlay_index.xlsx"   # = Thesis/training/data_preparation/overlay_index.xlsx
 OUT_DIR    = Path("/data/eval_output")
 OUT_DIR.mkdir(exist_ok=True)
 
