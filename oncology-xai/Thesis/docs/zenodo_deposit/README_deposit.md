@@ -16,6 +16,7 @@ Everything here is too large for git. Pattern names in every file follow the
 | `best_fuzzyarcloss_v2_labels4apr2026.pth` | 112 MB | **Artefact 1** — CTransPath (Swin-T) + FuzzyArcLoss V2 six-pattern classifier (ablation winner, 5-fold 92.31 % ± 2.04, held-out test acc 0.9375 / macro-F1 0.939, best epoch 77). Byte-identical weights to the DGX file `outputs/ablation_study_v16_optuna/best_fuzzyarcloss_v2.pth` (sha256 `e2b2c99b…`); only `id2label`/`label2id` were rewritten to the true class names. Keys: `model`, `loss_fn`, `config`, `label2id`, `id2label`, `id2label_legacy_pre_4apr2026`, `provenance`, `loss_kwargs`, `test_f1`, `test_accuracy`, `best_epoch`. |
 | `checkpoints_luad_v2.zip` | 104 MB | **Artefacts 2/3** — the 150 PyTorch checkpoints (`ckpt_<condition>_<gene>_fold<k>.pth`) of the Chapter 6 benchmark: 5 MIL conditions × 6 genes (TP53, KRAS, EGFR, STK11, KEAP1, RBM10) × 5 folds, trained 14–15 Mar 2026 by `training/artefact2_mutation_abmil/pattern_informed_abmil_benchmark_v2_patched.py`. |
 | `pattern_probs_687_slides.zip` | 138 MB | Per-slide `<slide_dir>/pattern_probs.npy`, float32 `[n_tiles, 6]`, Artefact 1 softmax over the six patterns for every 384-px tile of 687 TCGA-LUAD slides. This is the pattern channel consumed by Artefacts 2/3 (`baseline3_abmil_patterns`, `proposed_abmil_concat`, `proposed_fuzzy_choquet`). Column order = index order below. |
+| `embeddings_SAMPLE_6_case_study_slides.zip` | 341 MB | **Sample** of the per-slide CTransPath embeddings for the six slides discussed as case studies in Chapter 6 (TCGA-55-7815, TCGA-49-AAR9, TCGA-86-8280, TCGA-99-8025, TCGA-78-7148, TCGA-49-AAR0): `<slide_dir>/embeddings.npy` (`[n_tiles, 512]` float32), `pattern_probs.npy` (`[n_tiles, 6]` float32) and `pattern_labels.npy` (argmax, int). 569 MB uncompressed, 2 883 – 112 171 tiles per slide. Illustrates the format of the full 38.6 GB set (not deposited, see below); sha256 of each file matches `embeddings_sha256_manifest_REGENERABLE_not_deposited.txt`. |
 | `inference_pipeline_6gpu_tile_predictions_336_slides.zip` | 40 MB | Tile-level CSVs (`x,y,pred_class,prob_micropapillary,…,prob_acinar,pattern`) of the 336 slides processed by `training/data_preparation/pipeline_6gpu_parallel.py` (257 MB uncompressed). |
 | `pred_class_to_pattern_4apr2026.json` | <1 KB | `pred_class` index → true pattern name (same table as below). |
 | `overlay_index_corrected_4_apr_2026.xlsx` | 38 KB | Corrected ANORAK tile index (637 tiles) used to train Artefact 1. |
@@ -57,8 +58,9 @@ Deterministically regenerable from public inputs: TCGA-LUAD diagnostic slides
 (stage 1 tiles + embeds at 384 px / 20×, stage 2 writes `embeddings.npy`,
 `pattern_probs.npy`, `coords.npy`). The sha256 of every regenerated file can be
 checked against `embeddings_sha256_manifest_REGENERABLE_not_deposited.txt`
-(`sha256sum -c`). Available from the author on request if regeneration is not
-practical.
+(`sha256sum -c`). Six slides are included as a format sample
+(`embeddings_SAMPLE_6_case_study_slides.zip`); the full set is available from the
+author on request if regeneration is not practical.
 
 ## How to use
 
