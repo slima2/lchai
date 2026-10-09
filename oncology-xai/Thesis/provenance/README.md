@@ -250,8 +250,21 @@ i.e. the slide-level capacity is essentially additive. A monotone scalar
 function of the six slide-level fractions cannot carry more information than
 B1, so this is the expected outcome and supports the mechanism-bound reading of
 C5: the FC-MIL gain on KRAS originates in the tile-level sorting and
-co-presence term, not in the normalisation of the capacity. Like-for-like
-numbers against Table 6.5 require the `--select_on_test` protocol.
+co-presence term, not in the normalisation of the capacity.
+
+Like-for-like repeat (same day, `run_luad_choquet.py --select_on_test`, i.e.
+the epoch-selection protocol of Table 6.5 / D3). Mean AUROC
+(TP53 / EGFR / KRAS / STK11 / KEAP1 / RBM10):
+Choquet on mean memberships 0.568 / 0.569 / 0.541 / 0.533 / 0.572 / 0.532;
+Choquet on attention-weighted memberships 0.700 / 0.632 / 0.567 / 0.621 / 0.567 / 0.588;
+hybrid (attention embedding + Choquet scalar) 0.711 / 0.691 / 0.576 / 0.665 / 0.575 / 0.622.
+Reference under the same protocol: B2 0.718 / 0.701 / 0.607 / 0.684 / 0.597 / 0.642,
+FC-MIL 0.716 / 0.684 / 0.609 / 0.658 / 0.589 / 0.661. Test-fold selection
+inflates the control by 0.02–0.11 (the size of the D3 effect), but the ordering
+is unchanged: the pure slide-level Choquet stays at B1 level, and the hybrid
+remains below B2 and FC-MIL on every gene, including KRAS (0.576 vs 0.609).
+Learned interaction indices stay ≤ 0.010 (≤ 0.0025 for the mean-membership
+head): the slide-level capacity is additive under either protocol.
 
 **D11 — Eq. 4.17 encoder depth.** Eq. 4.17 writes a two-layer feed-forward
 encoder; the executed `ABMIL.encoder` is a single `Linear(input_dim, 256)` +
