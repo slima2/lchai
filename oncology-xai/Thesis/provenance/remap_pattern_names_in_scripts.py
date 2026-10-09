@@ -16,10 +16,10 @@ What is changed
 * a provenance comment is inserted after the shebang / encoding line
   (.py) or in notebook metadata (.ipynb) -> idempotent;
 * with --fix-class-order (Artefact-1 training scripts):
-    - the default XLS_PATH is pointed to overlay_index_corrected_4_apr_2026.xlsx;
+    - the default XLS_PATH is pointed to overlay_index.xlsx;
     - `labels = sorted(...)` / `classes = sorted(...)` is replaced by a sort
       that keeps the ORIGINAL class-index order of the trained models
-      (alphabetical order of the legacy names, i.e. CLASS_ORDER_4APR2026 in
+      (alphabetical order of the legacy names, i.e. CLASS_ORDER in
       true names).  Positional per-class parameters (class_tau / class_margin /
       class_scale) and checkpoint output indices therefore keep their meaning.
 
@@ -42,18 +42,18 @@ from remap_pattern_names_4apr2026 import LEGACY_TO_TRUE, PROVENANCE_KEY, PROVENA
 
 # true names in the index order used by every trained model / result file
 # (index i == position of the legacy name in alphabetical order)
-CLASS_ORDER_4APR2026 = [LEGACY_TO_TRUE[k] for k in sorted(LEGACY_TO_TRUE)]
+CLASS_ORDER = [LEGACY_TO_TRUE[k] for k in sorted(LEGACY_TO_TRUE)]
 # -> ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
 
 CLASS_ORDER_BLOCK = (
     "# [4-APR-2026] true ANORAK class names in the ORIGINAL index order of the trained models\n"
     "# (= alphabetical order of the legacy names). Used to keep label2id stable.\n"
-    f"CLASS_ORDER_4APR2026 = {CLASS_ORDER_4APR2026!r}\n"
+    f"CLASS_ORDER = {CLASS_ORDER!r}\n"
 )
 
 _SORTED_RE = re.compile(r"^(?P<ind>[ \t]*)(?P<var>labels|classes) = sorted\((?P<inner>.+)\)[ \t]*$", re.M)
 _XLS_RE = re.compile(r"overlay_index ver \d+ nov 2025\.xlsx")
-XLS_NEW = "overlay_index_corrected_4_apr_2026.xlsx"
+XLS_NEW = "overlay_index.xlsx"
 
 
 def _fix_class_order(text: str) -> tuple[str, int]:
@@ -65,8 +65,8 @@ def _fix_class_order(text: str) -> tuple[str, int]:
         return (
             f"{ind}# [4-APR-2026] keep the original class-index order of the trained models;\n"
             f"{ind}# sorted() over the corrected names would shuffle the indices.\n"
-            f"{ind}{var} = sorted({inner}, key=lambda _c: (CLASS_ORDER_4APR2026.index(str(_c).lower())\n"
-            f"{ind}{' ' * (len(var) + 3)}      if str(_c).lower() in CLASS_ORDER_4APR2026 else 99, str(_c)))"
+            f"{ind}{var} = sorted({inner}, key=lambda _c: (CLASS_ORDER.index(str(_c).lower())\n"
+            f"{ind}{' ' * (len(var) + 3)}      if str(_c).lower() in CLASS_ORDER else 99, str(_c)))"
         )
 
     text, n_sorted = _SORTED_RE.subn(_sub, text)

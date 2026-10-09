@@ -10,6 +10,5 @@
     "solid": 0.18856167793273926,
     "acinar": 0.1389327347278595,
     "entropy": 0.10635115206241608
-  },
-  "_pattern_names_corrected_4_apr_2026": "Pattern names remapped from the legacy (pre-4-Apr-2026) labels to the verified ANORAK classes; numeric values untouched. Mapping: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar"
+  }
 }

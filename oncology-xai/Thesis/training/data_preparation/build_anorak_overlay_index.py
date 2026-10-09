@@ -1,13 +1,9 @@
 """
-SLIMA Zenodo overlay CORRECTED - 4 apr 2026
+SLIMA Zenodo (ANORAK) overlay index builder
 ============================================
-Fixes the ID_TO_CLASS mapping to match the official Zenodo ANORAK documentation.
-Regenerates overlay_index.xlsx and overlay images with correct class names.
-
-Previous (INCORRECT) mapping:
-  {1:"lepidic", 2:"acinar", 3:"papillary", 4:"micropapillary", 5:"solid", 6:"mucinous"}
-
-Correct mapping (from Zenodo website + pathologist verification):
+Builds overlay_index.xlsx (tile -> pattern class, 637 tiles) and the overlay images
+from the Zenodo ANORAK dataset, using the official ANORAK ID_TO_CLASS mapping
+(Zenodo documentation, pathologist-verified):
   {1:"cribriform", 2:"micropapillary", 3:"solid", 4:"papillary", 5:"acinar", 6:"lepidic"}
 """
 
@@ -25,10 +21,10 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
 ROOT = Path(r"D:\Dropbox\PHD\ZENODO ANORAK")
 IMAGES_DIR = ROOT / "image"
 MASKS_DIR = ROOT / "mask"
-OUT_DIR = ROOT / "overlays_corrected_4_apr_2026"
+OUT_DIR = ROOT / "overlays"
 
 # ============================================================
-# CORRECTED mapping (Zenodo official)
+# ID_TO_CLASS mapping (Zenodo official)
 # ============================================================
 ID_TO_CLASS: Dict[int, str] = {
     1: "cribriform",
@@ -169,15 +165,15 @@ def main():
             logging.exception(f"Error: {img_path.name}: {e}")
             fail += 1
 
-    # Save corrected overlay index
+    # Save overlay index
     df = pd.DataFrame(records)
-    xlsx_path = ROOT / "overlay_index_corrected_4_apr_2026.xlsx"
+    xlsx_path = ROOT / "overlay_index.xlsx"
     df.to_excel(str(xlsx_path), index=False, sheet_name="overlay_index")
     logging.info(f"Saved {xlsx_path} ({len(df)} rows)")
     logging.info(f"OK: {ok}, Failed: {fail}")
 
     # Summary
-    print("\n=== CLASS DISTRIBUTION (corrected) ===")
+    print("\n=== CLASS DISTRIBUTION ===")
     dist = df[df["pattern"] != "none"]["pattern"].value_counts()
     for pat, count in dist.items():
         print(f"  {pat}: {count}")

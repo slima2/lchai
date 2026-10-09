@@ -1,4 +1,3 @@
-# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
 """
 generate_attention_maps.py
 ==========================
@@ -50,9 +49,8 @@ PATTERN_NAMES  = ["micropapillary", "cribriform", "papillary", "lepidic", "solid
 PATTERN_COLORS = ["#4C72B0", "#55A868", "#C44E52", "#8172B2", "#CCB974", "#DD8452"]
 
 # Known mutation→pattern associations for annotation.
-# Literature priors in TRUE ANORAK class names (not legacy labels), hence NOT
-# permuted by the 4-Apr-2026 remap. The former "mucinous" prior for KRAS is
-# expressed through the lepidic×solid IMA proxy of the thesis (Table 6.12).
+# Literature priors (ANORAK class names). The mucinous/IMA morphology of KRAS is
+# expressed through the lepidic×solid proxy of the thesis (Table 6.12).
 EXPECTED_PATTERNS = {
     "TP53":  ["solid", "micropapillary"],
     "EGFR":  ["lepidic", "papillary"],

@@ -52,12 +52,9 @@ from PIL import Image
 BASE           = Path("/home/rapids/notebooks/slima")
 SLIDES_DIR     = BASE / "data" / "slides"          # where SVS folders land
 INFERENCE_OUT  = BASE / "outputs" / "inference_pipeline_6gpu"   # tile CSVs
-# best_fuzzyarcloss_v2_labels4apr2026.pth = same weights as best_fuzzyarcloss_v2.pth
-# with id2label/label2id rewritten to the true ANORAK names (4-Apr-2026 correction);
-# prob_* headers and the `pattern` column are derived from id2label, so they come out
-# correct. Deposited on Zenodo (see README_ADDENDUM §4); the original file still works
-# but yields legacy column names.
-MODEL_PATH     = BASE / "outputs/ablation_study_v16_optuna/best_fuzzyarcloss_v2_labels4apr2026.pth"
+# Artefact 1 checkpoint (Thesis/models/best_fuzzyarcloss_v2.pth.xz, decompressed). prob_* headers
+# and the `pattern` column are taken from its id2label (fixed class index order, see CLASS_ORDER).
+MODEL_PATH     = BASE / "models/best_fuzzyarcloss_v2.pth"
 CTRANSPATH_CKPT= BASE / "models/ctranspath.pth"
 LOG_FILE       = BASE / "TGCA MAF" / "pipeline_progress.tsv"
 

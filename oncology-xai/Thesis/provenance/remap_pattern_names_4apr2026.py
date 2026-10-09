@@ -12,7 +12,7 @@ of class names.  The model, its 6 output indices, and every downstream result
 (ABMIL / Choquet metrics, XGBoost feature importances, per-class F1 of the
 pattern classifier) are unchanged; only the *names* attached to each index
 were wrong.  The correction was verified by a histopathologist on 4 Apr 2026
-(see overlay_index_corrected_4_apr_2026.xlsx and PATTERN_REMAP_4_apr_2026.py).
+(see overlay_index.xlsx and PATTERN_REMAP_4_apr_2026.py).
 
 Legacy name (pre-4-Apr)  ->  True ANORAK class
     acinar               ->  micropapillary

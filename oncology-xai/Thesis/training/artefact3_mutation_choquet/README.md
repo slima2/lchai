@@ -17,7 +17,6 @@ The Shapley values and interaction indices of Table 6.12 are read from
 and plotted by `figures/gen_choquet_plots.py`.
 
 A stand-alone, earlier version of the same classes
-(`pattern_informed_abmil_benchmark_FuzzyChoquetAggregation.py`, 28 Feb 2026,
-LUAD+LUSC cohort, 768-d embeddings) produced a different, superseded result set
-and was removed from the repository on 9 Oct 2026; it remains in git history
-(commit `d7543a2`) and on the DGX.
+(`pattern_informed_abmil_benchmark_FuzzyChoquetAggregation.py`, Feb 2026,
+LUAD+LUSC cohort, 768-d embeddings) produced a superseded result set and is kept
+only in git history (see `../../provenance/README.md` §3).

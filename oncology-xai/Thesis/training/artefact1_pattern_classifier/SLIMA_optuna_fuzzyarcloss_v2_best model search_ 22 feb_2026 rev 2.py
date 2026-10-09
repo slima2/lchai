@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
-# [4-APR-2026] true ANORAK class names in the ORIGINAL index order of the trained models
-# (= alphabetical order of the legacy names). Used to keep label2id stable.
-CLASS_ORDER_4APR2026 = ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
+# Class index order of the trained checkpoints (fixed; labels are NOT sorted alphabetically).
+CLASS_ORDER = ['micropapillary', 'cribriform', 'papillary', 'lepidic', 'solid', 'acinar']
 """
 SLIMA Optuna Hyperparameter Optimization — FuzzyArcLoss V2 (Feb 2026)
 =====================================================================
@@ -95,7 +93,7 @@ class Config:
     ROOT_DIR: str = "/home/rapids/notebooks/slima/Zenodo_Anorak_original"
     IMAGE_DIR = f"{ROOT_DIR}/image"
     MASK_DIR  = f"{ROOT_DIR}/mask"
-    XLS_PATH: str = "/home/rapids/notebooks/slima/overlay_index_corrected_4_apr_2026.xlsx"
+    XLS_PATH: str = "/home/rapids/notebooks/slima/overlay_index.xlsx"
     OUT_DIR: str = "/home/rapids/notebooks/slima/outputs/optuna_v2_search"
     CTRANSPATH_CHECKPOINT: str = "/home/rapids/notebooks/slima/models/ctranspath.pth"
 
@@ -622,10 +620,9 @@ def load_data():
     if df.empty:
         raise RuntimeError("After filtering, dataset is empty. Check XLS and INCLUDE_PATTERNS.")
 
-    # [4-APR-2026] keep the original class-index order of the trained models;
-    # sorted() over the corrected names would shuffle the indices.
-    labels = sorted(df[label_col].str.lower().unique().tolist(), key=lambda _c: (CLASS_ORDER_4APR2026.index(str(_c).lower())
-                   if str(_c).lower() in CLASS_ORDER_4APR2026 else 99, str(_c)))
+    # keep the fixed class-index order of the trained checkpoints (CLASS_ORDER).
+    labels = sorted(df[label_col].str.lower().unique().tolist(), key=lambda _c: (CLASS_ORDER.index(str(_c).lower())
+                   if str(_c).lower() in CLASS_ORDER else 99, str(_c)))
     label2id = {l: i for i, l in enumerate(labels)}
     id2label = {i: l for l, i in label2id.items()}
     df['label'] = df[label_col].str.lower()

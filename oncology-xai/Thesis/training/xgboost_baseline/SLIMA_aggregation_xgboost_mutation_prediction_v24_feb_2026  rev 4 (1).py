@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
 """
 SLIMA Aggregation + XGBoost Mutation Prediction (Feb 2026)
 ============================================================

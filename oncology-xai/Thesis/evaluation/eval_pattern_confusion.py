@@ -1,6 +1,6 @@
 """
 Evaluate FuzzyArcLoss V2 pattern classifier on ANORAK tiles
-using the CORRECTED overlay index (4 Apr 2026).
+using the ANORAK overlay index (overlay_index.xlsx).
 
 Evaluates on the VALIDATION SET ONLY (80/20 split, seed 42)
 to match the thesis protocol.

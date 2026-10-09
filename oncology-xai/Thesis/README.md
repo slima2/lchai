@@ -1,35 +1,41 @@
 # Thesis Reproducibility Archive
 
-Scripts, logs, cohort definitions and results that back the experiments of the doctoral thesis:
+Scripts, model weights, cohort definitions, logs and results that back the experiments of the doctoral thesis:
 
 **"Pattern-Informed Fuzzy Deep Learning for Interpretable Genotype–Phenotype Inference in Lung Adenocarcinoma under Data Scarcity"**
-(Ph.D. Thesis, Department of Informatics, University of Fribourg).
+(Servio Fernando Lima Reina, Ph.D. Thesis, Department of Informatics, University of Fribourg).
 
-All files in this directory were copied from the DGX H100 server where the experiments ran
-(`notebooks/slima/`). Every result file that still used the pre-4-April-2026 histologic pattern
-names has been remapped to the pathologist-verified ANORAK classes (see
-`README_ADDENDUM_pattern_correction_and_provenance.md` and `tools/`). Original, unmodified
-copies are kept on the DGX under `notebooks/slima/backups/`.
+One script per archived result: every log / CSV / JSON in `logs/` was produced by the script
+that sits next to it in `training/`, `evaluation/` or `figures/`. All files were copied from the
+DGX H100 server where the experiments ran (`notebooks/slima/`). Audit notes are in `provenance/`.
 
 ## Directory Structure
 
 ```
 Thesis/
-├── training/                            # one script per result (old/redundant versions pruned 9 Oct 2026, see addendum §5)
-│   ├── artefact1_pattern_classifier/    # FuzzyArcLoss V2 on Zenodo-ANORAK (6 patterns)
+├── training/
+│   ├── artefact1_pattern_classifier/    # FuzzyArcLoss V2 on Zenodo-ANORAK (6 patterns, 637 tiles)
 │   │   ├── SLIMA_ablation_study_loss_functions_ver_23_feb_2026_gpu_rev_13 (1).py  # 18-loss ablation -> output_ablation_best_rev13.txt (Table 6.1)
 │   │   ├── SLIMA_optuna_fuzzyarcloss_v2_best model search_ 22 feb_2026 rev 2.py   # Optuna s,m,tau -> output_optuna_fuzzyarcv2_best.txt, best_fuzzyarcloss_v2.pth
 │   │   └── SLIMA_kfold_statistical_validation_23 feb_2026 rev 13.py             # 5-fold x 3 seeds -> output_kfold_fuzzyv2_sphereface.txt (Table 6.3, 92.31%)
 │   ├── artefact2_mutation_abmil/        # PI-ABMIL + all six benchmark conditions, 5-fold CV
-│   │   └── pattern_informed_abmil_benchmark_v2_patched.py   # <-- script that produced results_luad_full_v2 (14 Mar 2026)
-│   ├── artefact3_mutation_choquet/      # FC-MIL: implemented inside *_v2_patched.py (classes FuzzyMeasure,
+│   │   └── pattern_informed_abmil_benchmark_v2_patched.py   # <-- produced logs/mutation_5fold_results (14 Mar 2026)
+│   ├── artefact3_mutation_choquet/      # FC-MIL is implemented inside *_v2_patched.py (classes FuzzyMeasure,
 │   │   └── README.md                    #   FuzzyChoquetAggregation, FuzzyChoquetMIL); README points to them
 │   ├── xgboost_baseline/                # stand-alone XGBoost + TreeSHAP on slide-level pattern profiles (B1 development)
-│   └── data_preparation/                # GDC download, tiling, CTransPath embeddings, MAF -> labels,
-│                                        # ANORAK overlay correction (4 Apr 2026)
+│   └── data_preparation/                # GDC download, MAF -> labels, cohort cross-reference, ANORAK overlay index,
+│       ├── build_anorak_overlay_index.py        #   builds overlay_index.xlsx (637 tiles) from the Zenodo ANORAK release
+│       ├── overlay_index.xlsx                   #   tile -> pattern index used to train Artefact 1
+│       ├── pipeline_6gpu_parallel.py            #   tiling -> FuzzyArcLoss V2 -> CTransPath embeddings -> per-slide .npy (687 slides)
+│       ├── SLIMA_PARALLEL_inferencing_hist_patterns_ver_24_feb_2026_gpu_optimized.py
+│       ├── SLIMA_PARALELL_inferencing_hist_patterns_roi_parallel_ver_14_dec_2025.py  # produced logs/tcga_tile_inference_dec2025
+│       ├── SLIMA Mapping MAF to CSV per tile wsi classification TGCA ver 17 dec 2025.ipynb  # -> *_dec2025.csv summaries
+│       ├── crossref_slides_vs_luad_maf.py       #   defines the 505-slide cohort
+│       ├── prepare_benchmark_inputs (1).py, extract_embeddings (2).py
+│       └── download_*.py, mutation_report.py
 │
 ├── models/
-│   ├── best_fuzzyarcloss_v2_labels4apr2026.pth.xz   # Artefact 1 weights (xz, 96.8 MiB -> 111.8 MB .pth); see models/README.md
+│   ├── best_fuzzyarcloss_v2.pth.xz      # Artefact 1 weights (xz, 96.8 MiB -> 111.8 MB .pth); see models/README.md
 │   └── SHA256SUMS
 │
 ├── data/
@@ -48,20 +54,21 @@ Thesis/
 │   │   ├── summary_table.csv            # 36 (condition, gene) rows: AUROC / AUPRC / F1 mean+std over 5 folds
 │   │   ├── per_fold_json/               # 180 JSON files (6 cond x 6 genes x 5 folds)
 │   │   │   └── metrics_<cond>_<gene>_fold<k>.json
-│   │   └── worker_logs/                 # Per-gene training logs (one H100 per gene)
-│   │       └── worker_<gene>.txt
+│   │   ├── orchestrator_output_benchmark_v2_patched.txt
+│   │   └── worker_logs/worker_<gene>.txt    # per-gene training logs (one H100 per gene)
 │   ├── pattern_classifier_results/      # Artefact 1 logs and evaluations
-│   │   ├── output_ablation_best_rev13.txt       # 18-loss ablation benchmark (Table 6.3)
+│   │   ├── output_ablation_best_rev13.txt       # 18-loss ablation benchmark (Table 6.1)
 │   │   ├── output_optuna_fuzzyarcv2_best.txt    # Optuna search for FuzzyArcLoss V2
-│   │   ├── output_kfold_fuzzyv2_sphereface.txt  # K-fold statistical validation
+│   │   ├── output_kfold_fuzzyv2_sphereface.txt  # K-fold statistical validation (Table 6.3)
 │   │   ├── ablation_results_v16_optuna.json
 │   │   ├── eval_results.json                    # Full-dataset evaluation (N=637 tiles)
-│   │   └── eval_results_val_set.json            # Held-out evaluation (N=128 tiles, 80/20 split)
+│   │   ├── eval_results_val_set.json            # Held-out evaluation (N=128 tiles, 80/20 split)
+│   │   └── confusion_matrix_val_set.png         # Figure 6.5 as rendered
 │   ├── data_pipeline/                   # SVS download and 6-GPU embedding pipeline logs
 │   └── tcga_tile_inference_dec2025/     # ROI-model tile inference on 322 TCGA slides (14 Dec 2025, B1 development)
-│       ├── tcga_tiles_384_predictions_322_slides.zip   # x,y,pred_class,pattern  (corrected names)
-│       ├── tcga_*_patterns*_dec2025.csv                # per-case (305) / per-slide (322) pattern % (notebook input)
-│       └── pred_class_to_pattern_4apr2026.json         # index -> true class sidecar
+│       ├── tcga_tiles_384_predictions_322_slides.zip   # x,y,pred_class,pattern
+│       ├── tcga_*_patterns*_dec2025.csv                # per-case (305) / per-slide (322) pattern %
+│       └── pred_class_to_pattern.json                  # index -> pattern sidecar
 │
 ├── evaluation/
 │   ├── eval_pattern_confusion.py        # Confusion matrix of FuzzyArcLoss V2 (Figure 6.5)
@@ -82,15 +89,38 @@ Thesis/
 │   └── gen_*.py                         # Diagrams (ablation flowchart, fuzzy MFs, SHAP quadrant, ...)
 │
 ├── tools/
-│   ├── remap_pattern_names_4apr2026.py  # idempotent legacy -> true pattern-name remapper (JSON/TXT/CSV)
-│   ├── remap_pattern_names_in_scripts.py # same remap for .py/.ipynb (+ stable class order for Artefact 1)
-│   ├── add_pattern_names_to_tile_predictions.py  # adds `pattern` (true name of pred_class) to tile CSVs
-│   ├── PATTERN_REMAP_4_apr_2026.py      # mapping table used by the remappers
-│   └── remap_manifest_dgx.json          # which DGX files were remapped, with checksums
-│
-├── README_ADDENDUM_pattern_correction_and_provenance.md
+│   └── add_pattern_names_to_tile_predictions.py  # adds a `pattern` column (name of pred_class) to tile CSVs
+├── docs/zenodo_deposit/                 # manifest, README and metadata of the Zenodo deposit (large artefacts)
+├── provenance/                          # audit notes: class-name correction, what produced Chapter 6, pruned scripts
 └── README.md                            # This file
 ```
+
+## Class index order (applies to every model and result file)
+
+The six pattern classes are indexed in a **fixed, non-alphabetical** order in all
+checkpoints, `pattern_probs.npy` arrays, `prob_*` columns and `pred_class` values:
+
+| index | 0 | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|---|
+| class | micropapillary | cribriform | papillary | lepidic | solid | acinar |
+
+The Artefact 1 training scripts therefore sort labels with the `CLASS_ORDER` constant
+rather than `sorted()`; the inference scripts take the names from the checkpoint's
+`id2label`. Do not re-derive the order alphabetically. Background in `provenance/README.md`.
+
+## Model weights and large artefacts
+
+| Artefact | Where |
+|---|---|
+| `best_fuzzyarcloss_v2.pth` — Artefact 1 (CTransPath Swin-T + FuzzyArcLoss V2; 5-fold 92.31 % ± 2.04, held-out acc 0.9375) | in git: `models/best_fuzzyarcloss_v2.pth.xz` (`xz -d`, verify with `models/SHA256SUMS`) and in the Zenodo deposit |
+| 150 ABMIL / FC-MIL checkpoints of the Chapter 6 benchmark (`checkpoints_luad_v2.zip`, 104 MB) | Zenodo deposit |
+| `pattern_probs.npy` for 687 TCGA-LUAD slides (`[n_tiles, 6]`, 138 MB zip) — the pattern channel of Artefacts 2/3 | Zenodo deposit |
+| tile-level CSVs of the 336 slides processed by `pipeline_6gpu_parallel.py` (40 MB zip) | Zenodo deposit |
+| `embeddings.npy` for 687 slides (`[n_tiles, 512]` float32, 38.6 GB) | regenerable from public TCGA-LUAD + CTransPath with `pipeline_6gpu_parallel.py`; sha256 of every file in `docs/zenodo_deposit/embeddings_sha256_manifest_REGENERABLE_not_deposited.txt`; six case-study slides deposited as a sample (341 MB) |
+| `ctranspath.pth` (third-party backbone, Wang et al. MedIA 2022) | <https://github.com/Xiyue-Wang/TransPath>; sha256 in `docs/zenodo_deposit/ctranspath_sha256_NOT_REDISTRIBUTED.txt`. Only needed to retrain from scratch — the fine-tuned backbone is inside `best_fuzzyarcloss_v2.pth` |
+
+**Zenodo DOI: _pending upload_** (package prepared on the DGX as `zenodo_deposit_thesis/`,
+≈700 MB; `docs/zenodo_deposit/MANIFEST_sha256.txt` lists its contents).
 
 ## Cohort actually evaluated
 
@@ -114,8 +144,8 @@ Backs Tables 6.5–6.8 and Figures 6.6–6.10.
 180 JSON files, one per (condition, gene, fold), with the per-fold AUROC/AUPRC/F1 on the held-out
 fold. They back Table 6.9 (best-fold AUROC) and the statistical tests of Finding 1.
 Fold-level metrics are the maximum over epochs on the held-out fold (early stopping on that fold);
-see the addendum for details. The FC-MIL JSONs also carry the Choquet Shapley values and
-interaction indices used in Table 6.12 (pattern names already corrected).
+see `provenance/README.md` §2. The FC-MIL JSONs also carry the Choquet Shapley values and
+interaction indices used in Table 6.12.
 
 ### `logs/pattern_classifier_results/`
 Artefact 1 evaluations. `eval_results_val_set.json` is the 80/20 held-out evaluation (N=128
@@ -158,7 +188,17 @@ AUPRC values typed by hand and rounded to two decimals; 32 of the 36 cells diffe
 B1/EGFR .31 vs .235). The AUROC figures (6.6–6.9) match the CSV exactly. Regenerating
 Figure 6.10 from the CSV with this script gives the archived values.
 
-## Reproducing the 5-fold benchmark
+## Reproducing the pipeline end to end
+
+1. **Artefact 1** — `training/artefact1_pattern_classifier/` on the ANORAK tiles indexed by
+   `training/data_preparation/overlay_index.xlsx` (ablation → Optuna → K-fold). The resulting
+   checkpoint is `models/best_fuzzyarcloss_v2.pth`.
+2. **Per-slide inputs** — `training/data_preparation/pipeline_6gpu_parallel.py` with
+   `MODEL_PATH = models/best_fuzzyarcloss_v2.pth` and the public CTransPath weights writes, for each
+   TCGA-LUAD slide, `embeddings.npy` (`[n_tiles, 512]`) and `pattern_probs.npy` (`[n_tiles, 6]`).
+   Labels come from the GDC MAF via `download_tcga_luad_maf.py` → `crossref_slides_vs_luad_maf.py`
+   (`data/cohort/labels.csv`).
+3. **Artefacts 2/3 benchmark**:
 
 ```bash
 # <benchmark_inputs> must contain labels.csv plus the per-slide embeddings / pattern probabilities

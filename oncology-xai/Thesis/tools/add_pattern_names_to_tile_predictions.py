@@ -5,10 +5,10 @@ add_pattern_names_to_tile_predictions.py
 The per-slide tile inference CSVs of FuzzyArcLoss V2 on TCGA
 (``TCGA-*_tiles_384_predictions.csv``, columns ``x,y,pred_class``) store the
 model output index 0-5 only.  This script appends a ``pattern`` column with the
-TRUE ANORAK class name of that index (4-Apr-2026 correction) and writes a
-sidecar ``pred_class_to_pattern_4apr2026.json`` next to the files.
+ANORAK class name of that index and writes a
+sidecar ``pred_class_to_pattern.json`` next to the files.
 
-Index -> true class (= CORRECTED_ID2LABEL in PATTERN_REMAP_4_apr_2026.py):
+Index -> class (fixed class index order of the trained checkpoints):
     0 micropapillary, 1 cribriform, 2 papillary, 3 lepidic, 4 solid, 5 acinar
 
 Idempotent: files that already have a ``pattern`` column are skipped.
@@ -24,7 +24,6 @@ import sys
 from pathlib import Path
 
 ID2PATTERN = {0: "micropapillary", 1: "cribriform", 2: "papillary", 3: "lepidic", 4: "solid", 5: "acinar"}
-LEGACY_ID2LABEL = {0: "acinar", 1: "lepidic", 2: "micropapillary", 3: "mucinous", 4: "papillary", 5: "solid"}
 
 
 def main() -> int:
@@ -55,13 +54,11 @@ def main() -> int:
             continue
         with open(f, "w", newline="") as fh:
             csv.writer(fh, lineterminator="\n").writerows(out)  # keep the original LF endings
-    side = args.dir / "pred_class_to_pattern_4apr2026.json"
+    side = args.dir / "pred_class_to_pattern.json"
     if not args.dry_run:
         side.write_text(json.dumps({
-            "note": "pred_class index -> TRUE ANORAK class (4-Apr-2026 correction). "
-                    "The legacy name attached to each index before the correction is given for reference.",
+            "note": "pred_class index -> ANORAK pattern name. This is the fixed class index order of the trained checkpoints (not alphabetical).",
             "pred_class_to_pattern": ID2PATTERN,
-            "legacy_name_before_4_apr_2026": LEGACY_ID2LABEL,
         }, indent=2) + "\n")
     print(f"files={len(files)}  annotated={done}  skipped(already)={skipped}  rows={rows}  sidecar={side}")
     return 0

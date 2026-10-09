@@ -1,4 +1,3 @@
-# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
 """
 Pattern-Informed ABMIL Benchmark — v2 LUAD Full Cohort
 =======================================================

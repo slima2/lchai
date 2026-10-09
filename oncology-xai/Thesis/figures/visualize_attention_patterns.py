@@ -1,4 +1,3 @@
-# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
 """
 Attention Maps with Pattern Overlay — LUAD Thesis Visualisation
 ================================================================
@@ -66,11 +65,9 @@ PATTERN_COLORS = {
 }
 
 # Gene → pattern associations with strength.
-# These are literature priors expressed in TRUE ANORAK class names (not legacy
-# labels), so they were NOT permuted by the 4-Apr-2026 remap. The former
-# "mucinous" entries (KRAS/STK11) are expressed through the lepidic×solid IMA
-# proxy used in the thesis (Table 6.12); STK11 enrichment in solid morphology
-# follows §6 [78].
+# Literature priors (ANORAK class names). The mucinous/IMA morphology of KRAS and
+# STK11 is expressed through the lepidic×solid proxy used in the thesis
+# (Table 6.12); STK11 enrichment in solid morphology follows §6 [78].
 GENE_ASSOC = {
     "TP53":  {"solid": "strong", "micropapillary": "moderate"},
     "EGFR":  {"lepidic": "strong", "papillary": "moderate"},

@@ -60,10 +60,9 @@ except ImportError:
 # CONFIGURATION
 # ============================================================
 
-# Ablation winner: V2 Optuna (K-fold validated: 92.31% ± 2.04). The *_labels4apr2026 file has
-# the same weights as best_fuzzyarcloss_v2.pth with id2label/label2id rewritten to the true
-# ANORAK names (4-Apr-2026 correction), so prob_* headers come out correct. On Zenodo (README_ADDENDUM §4).
-MODEL_PATH     = "/home/rapids/notebooks/slima/outputs/ablation_study_v16_optuna/best_fuzzyarcloss_v2_labels4apr2026.pth"
+# Ablation winner: V2 Optuna (K-fold validated: 92.31% ± 2.04). Artefact 1 checkpoint
+# (Thesis/models/best_fuzzyarcloss_v2.pth.xz, decompressed); prob_* headers come from its id2label.
+MODEL_PATH     = "/home/rapids/notebooks/slima/models/best_fuzzyarcloss_v2.pth"
 CTRANSPATH_CKPT = "/home/rapids/notebooks/slima/models/ctranspath.pth"
 SVS_DIR        = "/home/rapids/notebooks/slima/TGCA LUAD LUSC/TCGA LUAD LUSC"
 OUT_DIR        = "/home/rapids/notebooks/slima/outputs/inference_results_v2_ctranspath_fast"

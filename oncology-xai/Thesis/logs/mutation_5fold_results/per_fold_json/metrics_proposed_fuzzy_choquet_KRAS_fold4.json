@@ -26,6 +26,5 @@
     "lepidic×solid": 0.030533237382769585,
     "lepidic×acinar": -0.017209695652127266,
     "solid×acinar": 0.019694244489073753
-  },
-  "_pattern_names_corrected_4_apr_2026": "Pattern names remapped from the legacy (pre-4-Apr-2026) labels to the verified ANORAK classes; numeric values untouched. Mapping: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar"
+  }
 }

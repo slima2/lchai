@@ -1,4 +1,3 @@
-# [PATTERN NAMES CORRECTED 4-APR-2026] legacy->true: acinar->micropapillary, lepidic->cribriform, micropapillary->papillary, mucinous->lepidic, papillary->solid, solid->acinar (numeric values untouched)
 nohup: ignoring input
 ======================================================================
   COMPLETE ABLATION STUDY: FuzzyArcLoss V1 vs V2 vs V2.5 vs V3
