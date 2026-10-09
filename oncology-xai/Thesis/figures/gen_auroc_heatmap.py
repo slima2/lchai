@@ -1,22 +1,18 @@
-"""Regenerate AUROC heatmap with PI-ABMIL/FC-MIL labels."""
+"""AUROC heatmap, condition x gene (thesis Figure 6.7), regenerated from summary_table.csv."""
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
-genes = ["TP53", "EGFR", "KRAS", "STK11", "KEAP1", "RBM10"]
-conditions = ["B1: XGB", "B2: ABMIL-emb", "B3: ABMIL-pat",
-              "PI-ABMIL (ours)", "Abl: one-hot", "FC-MIL (ours)"]
+from summary_data import load_summary, parse_args, matrix, GENES, LABELS
 
-data = np.array([
-    [.518, .634, .522, .545, .489, .474],
-    [.718, .701, .607, .684, .597, .642],
-    [.616, .625, .545, .617, .588, .653],
-    [.716, .694, .590, .695, .610, .640],
-    [.716, .695, .594, .691, .594, .623],
-    [.716, .684, .609, .658, .589, .661],
-])
+args = parse_args("auroc_heatmap.png")
+S = load_summary(args.summary)
+
+genes = GENES
+conditions = LABELS
+data = np.array(matrix(S, "auroc_mean"))
 
 best_per_gene = data.max(axis=0)
 
@@ -32,13 +28,12 @@ for i in range(len(conditions)):
         val = data[i, j]
         is_best = abs(val - best_per_gene[j]) < 0.0005
         weight = "bold" if is_best else "normal"
-        color = "black"
         ax.text(j, i, f"{val:.3f}", ha="center", va="center",
-                fontsize=10, fontweight=weight, color=color)
+                fontsize=10, fontweight=weight, color="black")
         if is_best:
             rect = plt.Rectangle((j - 0.45, i - 0.45), 0.9, 0.9,
-                                  linewidth=2, edgecolor="black",
-                                  facecolor="none")
+                                 linewidth=2, edgecolor="black",
+                                 facecolor="none")
             ax.add_patch(rect)
 
 ax.set_xticks(range(len(genes)))
@@ -51,6 +46,6 @@ cbar = fig.colorbar(im, ax=ax, shrink=0.8, pad=0.02)
 cbar.set_label("AUROC", fontsize=10)
 
 plt.tight_layout()
-out = r"D:\Dropbox\PHD\THESIS\SLIMA_Thesis_Research_ver_2026_rev_9\chapters\figures\auroc_heatmap_ver_15_mar_2026.png"
+out = args.out_dir / args.out_name
 fig.savefig(out, dpi=200, bbox_inches="tight", facecolor="white")
 print(f"Saved: {out}")

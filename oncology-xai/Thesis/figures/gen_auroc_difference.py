@@ -1,24 +1,20 @@
-"""Regenerate AUROC difference vs B2 heatmap with PI-ABMIL/FC-MIL labels."""
+"""AUROC difference vs the B2 ceiling baseline (thesis Figure 6.8), regenerated from summary_table.csv."""
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
 
-genes = ["TP53", "EGFR", "KRAS", "STK11", "KEAP1", "RBM10"]
+from summary_data import load_summary, parse_args, GENES, LABELS
 
-b2 = np.array([.718, .701, .607, .684, .597, .642])
+args = parse_args("auroc_difference_vs_b2.png")
+S = load_summary(args.summary)
 
-others = {
-    "B1: XGB":          np.array([.518, .634, .522, .545, .489, .474]),
-    "B3: ABMIL-pat":    np.array([.616, .625, .545, .617, .588, .653]),
-    "PI-ABMIL (ours)":  np.array([.716, .694, .590, .695, .610, .640]),
-    "Abl: one-hot":     np.array([.716, .695, .594, .691, .594, .623]),
-    "FC-MIL (ours)":    np.array([.716, .684, .609, .658, .589, .661]),
-}
+genes = GENES
+B2 = "B2: ABMIL-emb"
+b2 = np.array([S[B2][g]["auroc_mean"] for g in genes])
 
-cond_names = list(others.keys())
-deltas = np.array([others[c] - b2 for c in cond_names])
+cond_names = [c for c in LABELS if c != B2]
+deltas = np.array([[S[c][g]["auroc_mean"] for g in genes] for c in cond_names]) - b2
 
 vmax = max(abs(deltas.min()), abs(deltas.max())) + 0.01
 cmap = plt.cm.RdBu
@@ -46,6 +42,6 @@ cbar = fig.colorbar(im, ax=ax, shrink=0.8, pad=0.02)
 cbar.set_label("delta AUROC vs B2", fontsize=10)
 
 plt.tight_layout()
-out = r"D:\Dropbox\PHD\THESIS\SLIMA_Thesis_Research_ver_2026_rev_9\chapters\figures\auroc_difference_vs_b2.png"
+out = args.out_dir / args.out_name
 fig.savefig(out, dpi=200, bbox_inches="tight", facecolor="white")
 print(f"Saved: {out}")

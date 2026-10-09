@@ -1,8 +1,15 @@
 # Thesis Reproducibility Archive
 
-All scripts, logs, and results required to reproduce the experiments in the doctoral thesis:
+Scripts, logs, cohort definitions and results that back the experiments of the doctoral thesis:
 
-**"Fuzzy Logic-Enhanced Computational Pathology for Lung Adenocarcinoma Mutation Prediction: Pattern-Informed Attention and Choquet Aggregation"**
+**"Pattern-Informed Fuzzy Deep Learning for Interpretable Genotype–Phenotype Inference in Lung Adenocarcinoma under Data Scarcity"**
+(Ph.D. Thesis, Department of Informatics, University of Fribourg).
+
+All files in this directory were copied from the DGX H100 server where the experiments ran
+(`notebooks/slima/`). Every result file that still used the pre-4-April-2026 histologic pattern
+names has been remapped to the pathologist-verified ANORAK classes (see
+`README_ADDENDUM_pattern_correction_and_provenance.md` and `tools/`). Original, unmodified
+copies are kept on the DGX under `notebooks/slima/backups/`.
 
 ## Directory Structure
 
@@ -10,91 +17,151 @@ All scripts, logs, and results required to reproduce the experiments in the doct
 Thesis/
 ├── training/
 │   ├── artefact1_pattern_classifier/    # FuzzyArcLoss V2 on Zenodo-ANORAK (6 patterns)
-│   │   ├── logs/                        # Training logs (18 loss functions benchmark)
-│   │   └── *.py                         # Training scripts (Optuna, ablation, K-fold)
+│   │   └── *.py                         # Backbone, ablation (18 losses), Optuna, K-fold scripts
 │   ├── artefact2_mutation_abmil/        # PI-ABMIL: 5-fold CV mutation prediction
-│   │   └── *.py                         # Benchmark runner (6 conditions × 6 genes × 5 folds)
-│   ├── artefact3_mutation_choquet/       # FC-MIL: Fuzzy Choquet MIL training
-│   │   └── *.py                         # Choquet-specific benchmark script
+│   │   ├── pattern_informed_abmil_benchmark_v2_patched.py   # <-- script that produced results_luad_full_v2 (14 Mar 2026)
+│   │   └── *.py                         # earlier versions kept for provenance
+│   ├── artefact3_mutation_choquet/      # FC-MIL: Fuzzy Choquet MIL condition
+│   │   └── pattern_informed_abmil_benchmark_FuzzyChoquetAggregation.py
 │   ├── xgboost_baseline/                # B1: XGBoost on slide-level pattern features
-│   │   └── *.py                         # XGBoost mutation prediction scripts
-│   └── data_preparation/                # Embedding extraction, tiling, label correction
-│       ├── download_gdc_svs.py          # TCGA-LUAD SVS download from GDC
-│       ├── extract_embeddings.py        # CTransPath 512-d embedding extraction
-│       ├── prepare_benchmark_inputs.py  # Tile embeddings + pattern probs → benchmark input
-│       ├── mutation_report.py           # MAF → per-slide binary mutation labels
-│       └── SLIMA Zenodo overlay CORRECTED 4 apr 2026.py  # Fix ANORAK class mapping
+│   └── data_preparation/                # GDC download, tiling, CTransPath embeddings, MAF -> labels,
+│                                        # ANORAK overlay correction (4 Apr 2026)
+│
+├── data/
+│   └── cohort/
+│       ├── labels.csv                   # 687-slide inventory x 6 genes (binary labels from the GDC MAF)
+│       ├── luad_slide_ids_available.txt # 505 LUAD slides actually evaluated (benchmark --slide_list)
+│       ├── luad_slide_ids_full.txt      # all 687 slide ids of the inventory (same set as labels.csv)
+│       └── luad_cases_missing_slides.txt # 51 LUAD cases whose SVS could not be downloaded
 │
 ├── inference/
-│   └── *.ipynb                          # XGBoost inference notebooks (legacy)
+│   └── *.ipynb                          # XGBoost inference notebooks (legacy, B1 development)
 │
 ├── logs/
-│   ├── mutation_5fold_results/
-│   │   ├── summary_table.csv            # All 36 (condition,gene) AUROC/AUPRC/F1 means
-│   │   ├── per_fold_json/               # 180 JSON files (6 cond × 6 genes × 5 folds)
+│   ├── mutation_5fold_results/          # = results_luad_full_v2 on the DGX
+│   │   ├── summary_table.csv            # 36 (condition, gene) rows: AUROC / AUPRC / F1 mean+std over 5 folds
+│   │   ├── per_fold_json/               # 180 JSON files (6 cond x 6 genes x 5 folds)
 │   │   │   └── metrics_<cond>_<gene>_fold<k>.json
-│   │   └── worker_logs/                 # Per-gene training logs from H100 GPUs
+│   │   └── worker_logs/                 # Per-gene training logs (one H100 per gene)
 │   │       └── worker_<gene>.txt
-│   └── pattern_classifier_results/
-│       ├── eval_results.json            # Full-dataset evaluation (N=637)
-│       └── eval_results_val_set.json    # Validation-set evaluation (N=128, 80/20 split)
+│   ├── pattern_classifier_results/      # Artefact 1 logs and evaluations
+│   │   ├── output_ablation_best_rev13.txt       # 18-loss ablation benchmark (Table 6.3)
+│   │   ├── output_optuna_fuzzyarcv2_best.txt    # Optuna search for FuzzyArcLoss V2
+│   │   ├── output_kfold_fuzzyv2_sphereface.txt  # K-fold statistical validation
+│   │   ├── ablation_results_v16_optuna.json
+│   │   ├── eval_results.json                    # Full-dataset evaluation (N=637 tiles)
+│   │   └── eval_results_val_set.json            # Held-out evaluation (N=128 tiles, 80/20 split)
+│   └── data_pipeline/                   # SVS download and 6-GPU embedding pipeline logs
 │
 ├── evaluation/
-│   ├── eval_pattern_confusion.py        # Generate confusion matrix from FuzzyArcLoss V2
-│   ├── verify_fold_aurocs.py            # Verify Table 6.12 best-fold values from JSONs
+│   ├── eval_pattern_confusion.py        # Confusion matrix of FuzzyArcLoss V2 (Figure 6.5)
+│   ├── verify_fold_aurocs.py            # Verify best-fold AUROCs (Table 6.9) from per_fold_json
 │   ├── extract_fold_aurocs.py           # Extract per-fold AUROCs from checkpoints
-│   └── find_high_prob_slides.py         # Identify high-P(mut) slides for case studies
+│   └── find_high_prob_slides.py         # High-P(mut) slides for the case studies
 │
 ├── figures/
-│   ├── gen_auroc_bar_chart.py           # Figure 6.2: AUROC per gene (6 conditions)
-│   ├── gen_auroc_heatmap.py             # Figure 6.3: AUROC heatmap (condition × gene)
-│   ├── gen_auroc_difference.py          # Figure 6.4: Delta AUROC vs B2
-│   ├── gen_auroc_radar.py               # Figure 6.5: Radar plot (4 conditions)
-│   ├── gen_auprc_bar_chart.py           # Figure 6.6: AUPRC per gene
-│   ├── gen_ablation_flowchart.py        # Ablation causal chain diagram
-│   ├── gen_choquet_plots.py             # Choquet Shapley/interaction bar charts
-│   ├── gen_fuzzy_mf_plots.py            # Fuzzy membership function plots (5 scales)
-│   ├── gen_shap_ablation_quadrant.py    # SHAP attribution vs ablation utility quadrant
-│   ├── gen_tile_filtering_pipeline.py   # Tile filtering pipeline flowchart
-│   ├── gen_visual_summary.py            # Thesis visual summary (RQ → chapter mapping)
-│   ├── gen_active_learning_diagrams.py  # Active learning workflow diagrams
-│   └── gen_questionnaire_docx.py        # Expert questionnaire DOCX generator
+│   ├── summary_data.py                  # shared loader: reads logs/mutation_5fold_results/summary_table.csv
+│   ├── gen_auroc_bar_chart.py           # Figure 6.6:  AUROC per gene (6 conditions)
+│   ├── gen_auroc_heatmap.py             # Figure 6.7:  AUROC heatmap (condition x gene)
+│   ├── gen_auroc_difference.py          # Figure 6.8:  delta AUROC vs B2
+│   ├── gen_auroc_radar.py               # Figure 6.9:  radar plot (4 conditions)
+│   ├── gen_auprc_bar_chart.py           # Figure 6.10: AUPRC per gene
+│   ├── gen_choquet_plots.py             # Choquet Shapley / interaction bar charts (Table 6.12)
+│   ├── generate_attention_maps.py       # Attention heatmaps on WSIs
+│   ├── visualize_attention_patterns.py
+│   └── gen_*.py                         # Diagrams (ablation flowchart, fuzzy MFs, SHAP quadrant, ...)
 │
+├── tools/
+│   ├── remap_pattern_names_4apr2026.py  # idempotent legacy -> true pattern-name remapper (JSON/TXT/CSV)
+│   ├── PATTERN_REMAP_4_apr_2026.py      # mapping table used by the remapper
+│   └── remap_manifest_dgx.json          # which DGX files were remapped, with checksums
+│
+├── README_ADDENDUM_pattern_correction_and_provenance.md
 └── README.md                            # This file
 ```
+
+## Cohort actually evaluated
+
+* `data/cohort/labels.csv` lists **687 slides** (505 single-slide LUAD + 19 extra slides of
+  multi-slide LUAD patients + 150 TCGA-LUSC + 13 slides without a MAF match). Slides absent from
+  `cohortMAF_LUAD2.maf` received all-zero (wild-type) labels in this file.
+* The Chapter 6 benchmark (`results_luad_full_v2`) was run with
+  `--slide_list luad_slide_ids_available.txt`, i.e. on the **505 LUAD slides from 505 distinct
+  patients**. Each 5-fold split therefore has ≈404 training and ≈101 test slides.
+  (The methodology text in §5.8 describes the larger 668-patient / 687-slide inventory with
+  ≈549/138 slides per fold; the archived results correspond to the 505-slide run.)
 
 ## Key Results Files
 
 ### `logs/mutation_5fold_results/summary_table.csv`
-Master table with all 36 (condition, gene) results. Columns: `condition, gene, n_folds, auroc_mean, auroc_std, auprc_mean, auprc_std, f1_mean, f1_std`. This file backs Tables 6.5, 6.6, 6.7, and 6.8 in the thesis.
+Master table with all 36 (condition, gene) results. Columns:
+`condition, gene, n_folds, auroc_mean, auroc_std, auprc_mean, auprc_std, f1_mean, f1_std`.
+Backs Tables 6.5–6.8 and Figures 6.6–6.10.
 
 ### `logs/mutation_5fold_results/per_fold_json/`
-180 individual JSON files, one per (condition, gene, fold). Each contains the test-fold AUROC. These back Table 6.12 (best fold AUROC) and the statistical tests in Finding 1.
+180 JSON files, one per (condition, gene, fold), with the per-fold AUROC/AUPRC/F1 on the held-out
+fold. They back Table 6.9 (best-fold AUROC) and the statistical tests of Finding 1.
+Fold-level metrics are the maximum over epochs on the held-out fold (early stopping on that fold);
+see the addendum for details. The FC-MIL JSONs also carry the Choquet Shapley values and
+interaction indices used in Table 6.12 (pattern names already corrected).
 
 ### `logs/pattern_classifier_results/`
-Evaluation of FuzzyArcLoss V2 on ANORAK tiles. `eval_results_val_set.json` backs the confusion matrix (Figure 6.1, N=128 val set).
-
-## Computational Environment
-
-- **Pattern classifier training**: 6× NVIDIA H100 80GB HBM3, CUDA 12.x, PyTorch 2.x
-- **Mutation prediction 5-fold CV**: 6× NVIDIA H100 (one gene per GPU), ~15-16 hours total
-- **Inference service**: Docker container with CTransPath + FuzzyArcLoss V2 checkpoint
-
-## Reproducing the Figures
-
-All figure generators in `figures/` are standalone Python scripts using matplotlib. Run:
-```bash
-python Thesis/figures/gen_auroc_bar_chart.py
-```
-Output paths are hardcoded to the thesis figures directory.
+Artefact 1 evaluations. `eval_results_val_set.json` is the 80/20 held-out evaluation (N=128
+tiles, macro-F1 0.886, per-class confusion counts) and `eval_results.json` the full-dataset
+evaluation (N=637 tiles).
+Note: the printed caption of Figure 6.5 states N=138 tiles; no evaluation with 138 tiles exists
+on the DGX, the archived held-out evaluation has 128 tiles.
 
 ## Condition Naming Convention
 
-| Code | Name | Description |
+| Code in CSV/JSON | Thesis label | Description |
 |------|------|-------------|
-| B1 | XGBoost | Slide-level pattern features → XGBoost |
-| B2 | ABMIL-emb | CTransPath 512-d embeddings → ABMIL |
-| B3 | ABMIL-pat | Pattern probabilities 6-d → ABMIL |
-| PI-ABMIL | PI-ABMIL (ours) | Embeddings + patterns 518-d → ABMIL |
-| A | Ablation one-hot | Embeddings + one-hot 518-d → ABMIL |
-| FC-MIL | FC-MIL (ours) | Dual-pathway: ABMIL + Choquet integral |
+| `baseline1_xgboost` | B1: XGB | Slide-level pattern features → XGBoost |
+| `baseline2_abmil_embeddings` | B2: ABMIL-emb | CTransPath 512-d embeddings → ABMIL |
+| `baseline3_abmil_patterns` | B3: ABMIL-pat | Pattern probabilities 6-d → ABMIL |
+| `proposed_abmil_concat` | PI-ABMIL (ours) | Embeddings + patterns 518-d → ABMIL |
+| `ablation_abmil_onehot` | Abl: one-hot | Embeddings + one-hot 518-d → ABMIL |
+| `proposed_fuzzy_choquet` | FC-MIL (ours) | Dual pathway: ABMIL + Choquet integral |
+
+## Reproducing the Figures
+
+The five AUROC/AUPRC generators read `logs/mutation_5fold_results/summary_table.csv` through
+`figures/summary_data.py`; nothing is hard-coded. Output goes to `figures/output/` by default:
+
+```bash
+cd Thesis/figures
+python gen_auroc_bar_chart.py            # -> output/auroc_by_gene.png
+python gen_auroc_heatmap.py              # -> output/auroc_heatmap.png
+python gen_auroc_difference.py           # -> output/auroc_difference_vs_b2.png
+python gen_auroc_radar.py                # -> output/auroc_radar_profile.png
+python gen_auprc_bar_chart.py            # -> output/auprc_by_gene.png
+# optional: --summary <path/to/summary_table.csv> --out-dir <dir> --out-name <file.png>
+```
+
+Requirements: `numpy`, `matplotlib` (no pandas needed).
+
+**AUPRC caveat.** The version of `gen_auprc_bar_chart.py` used for the printed Figure 6.10 carried
+AUPRC values typed by hand and rounded to two decimals; 32 of the 36 cells differ from
+`summary_table.csv` (largest: FC-MIL/TP53 printed .63 vs archived .706; B2/TP53 .64 vs .695;
+B1/EGFR .31 vs .235). The AUROC figures (6.6–6.9) match the CSV exactly. Regenerating
+Figure 6.10 from the CSV with this script gives the archived values.
+
+## Reproducing the 5-fold benchmark
+
+```bash
+# <benchmark_inputs> must contain labels.csv plus the per-slide embeddings / pattern probabilities
+python training/artefact2_mutation_abmil/pattern_informed_abmil_benchmark_v2_patched.py \
+    --data_dir <benchmark_inputs> \
+    --slide_list data/cohort/luad_slide_ids_available.txt \
+    --results_dir results_luad_full_v2 --genes TP53 EGFR KRAS STK11 KEAP1 RBM10 \
+    --gene_parallel 6
+```
+Defaults: 5 folds, seed 42, 50 ABMIL epochs, lr 1e-4, hidden 256, attention 128, dropout 0.25,
+XGBoost 300 estimators. Per-gene logs of the original run are in
+`logs/mutation_5fold_results/worker_logs/`.
+
+## Computational Environment
+
+- **Pattern classifier training**: NVIDIA DGX, 6× H100 80GB HBM3, CUDA 12.x, PyTorch 2.x
+- **Mutation prediction 5-fold CV**: 6× H100 (one gene per GPU), ~15–16 h total
+- **Inference service**: Docker container with CTransPath + FuzzyArcLoss V2 checkpoint
