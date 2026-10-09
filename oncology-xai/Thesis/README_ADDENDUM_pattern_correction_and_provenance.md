@@ -161,9 +161,38 @@ Thesis/
                             PATTERN_REMAP_4_apr_2026.py
 ```
 
-Still **not** in git (size): `best_fuzzyarcloss_v2.pth`, `ctranspath.pth`,
-`results_luad_full_v2/checkpoints_luad_v2.zip` (150 checkpoints), per‑slide
-`embeddings.npy` / `pattern_probs.npy`, per‑tile CSVs in
-`outputs/inference_pipeline_6gpu/` (336 slides, 201 MB; headers already
-corrected on the DGX, see §1b).
-Recommended: Zenodo deposit referenced from the Reproducibility Statement.
+## 4. Large artefacts outside git (Zenodo deposit, prepared 9 Oct 2026)
+
+Files above GitHub's 100 MB limit (or too large to be sensible in git) are
+packaged on the DGX in `notebooks/slima/zenodo_deposit_thesis_4apr2026/`
+(≈393 MB) with `README_deposit.md`, `MANIFEST_sha256.txt` and a draft
+`zenodo_metadata.json`; copies of the three text files are in
+`docs/zenodo_deposit/`. **DOI: _pending upload_** — replace this line with the
+Zenodo DOI and cite it from the Reproducibility Statement.
+
+| Deposited file | Size | sha256 (prefix) |
+|---|---|---|
+| `best_fuzzyarcloss_v2_labels4apr2026.pth` — Artefact 1 weights. Byte-identical tensors to the DGX `best_fuzzyarcloss_v2.pth` (`e2b2c99b…`, 24 Feb 2026); only `id2label`/`label2id` rewritten to the true names, legacy map kept in `id2label_legacy_pre_4apr2026`, `provenance` key added. `pipeline_6gpu_parallel.py` and the parallel inference script now point to it (they take `prob_*` headers from `id2label`). | 112 MB | `dc2847d4…` |
+| `checkpoints_luad_v2.zip` — 150 ABMIL/Choquet checkpoints of the Chapter 6 benchmark | 104 MB | `24395fbd…` |
+| `pattern_probs_687_slides.zip` — `<slide>/pattern_probs.npy` (`[n_tiles, 6]` float32) for 687 TCGA-LUAD slides, the pattern channel of Artefacts 2/3 | 138 MB | `ba4b392e…` |
+| `inference_pipeline_6gpu_tile_predictions_336_slides.zip` — tile CSVs `x,y,pred_class,prob_*,pattern` (257 MB uncompressed) | 40 MB | `3cc40e14…` |
+| `pred_class_to_pattern_4apr2026.json`, `overlay_index_corrected_4_apr_2026.xlsx` | <40 KB | `50a9e061…`, `c6a0659c…` |
+
+Deliberately **not** deposited:
+
+* `ctranspath.pth` (111 MB) — third-party weights (Wang et al., MedIA 2022,
+  <https://github.com/Xiyue-Wang/TransPath>); download from the authors and
+  check `sha256 7c998680060c8743551a412583fac689db43cec07053b72dfec6dcd810113539`.
+  Not needed for inference: the fine-tuned backbone is inside
+  `best_fuzzyarcloss_v2_labels4apr2026.pth`.
+* `embeddings.npy` per slide (687 × `[n_tiles, 512]` float32, **38.6 GB**) —
+  regenerable from public TCGA-LUAD slides + `ctranspath.pth` with
+  `training/data_preparation/pipeline_6gpu_parallel.py`; the sha256 of every
+  file is in `docs/zenodo_deposit/embeddings_sha256_manifest_REGENERABLE_not_deposited.txt`
+  (`sha256sum -c`), and the files are available from the author on request.
+
+The pattern-classifier checkpoints trained after the correction
+(`outputs/optuna_v2_search/best_fuzzyarcloss_v31_subcenter_optuna.pth`,
+`…_v4_boundary_optuna.pth`, 6 Jul 2026) belong to the follow-up paper, use a
+*different* index order (alphabetical on the true names: acinar, cribriform,
+lepidic, micropapillary, papillary, solid) and are **not** the thesis model.

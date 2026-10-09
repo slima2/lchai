@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "upload_type": "dataset",
+    "title": "LCHAI thesis artefacts: FuzzyArcLoss V2 histologic-pattern classifier, 150 ABMIL/Fuzzy-Choquet mutation-prediction checkpoints and per-slide TCGA-LUAD pattern probabilities (pattern names corrected 4 Apr 2026)",
+    "creators": [
+      {"name": "Lima Reina, Servio Fernando", "affiliation": "University of Fribourg, Department of Informatics"}
+    ],
+    "description": "<p>Companion deposit for <a href=\"https://github.com/slima2/lchai\">github.com/slima2/lchai</a> (folder oncology-xai/Thesis). Contains (1) the Artefact 1 CTransPath + FuzzyArcLoss V2 six-pattern classifier with corrected id2label metadata; (2) the 150 PyTorch checkpoints of the Chapter 6 benchmark (5 MIL conditions x 6 genes x 5 folds); (3) per-slide pattern_probs.npy for 687 TCGA-LUAD slides; (4) tile-level prediction CSVs for 336 slides; (5) the corrected ANORAK tile index and the pred_class-to-pattern mapping. Class index order 0..5 = micropapillary, cribriform, papillary, lepidic, solid, acinar. Third-party CTransPath weights and the 38.6 GB of raw 512-d tile embeddings are not redistributed; sha256 manifests are provided so they can be verified after download/regeneration. See README_deposit.md.</p>",
+    "access_right": "open",
+    "license": "cc-by-4.0",
+    "keywords": ["computational pathology", "lung adenocarcinoma", "TCGA-LUAD", "histologic growth patterns", "FuzzyArcLoss", "multiple instance learning", "ABMIL", "Choquet integral", "mutation prediction", "CTransPath", "explainable AI"],
+    "related_identifiers": [
+      {"identifier": "https://github.com/slima2/lchai", "relation": "isSupplementTo", "resource_type": "software"},
+      {"identifier": "10.1016/j.media.2022.102559", "relation": "requires", "resource_type": "publication-article"}
+    ],
+    "notes": "Pattern names in every file follow the 4 April 2026 correction of the ANORAK folder-name mix-up; the numeric class indices are unchanged with respect to the original training runs. Verify files with sha256sum -c MANIFEST_sha256.txt.",
+    "version": "1.0.0-4apr2026-labels",
+    "language": "eng"
+  }
+}
