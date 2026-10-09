@@ -18,7 +18,14 @@
 3. Shapley values from the archived Mobius masses: phi_k = m_k + 1/2 sum_j m_jk
    (the JSON key "fuzzy_shapley_values" stores m_k = sigmoid(v_k), i.e. the singleton
    Mobius masses, not phi_k).
+
+4. Formal Shapley interaction indices of the composite set function sigma(inner game)
+   on crisp subsets (brute force over 64 subsets), compared with the pair masses m_jk:
+   the outer sigmoid is concave on the operating range, so every formal index carries a
+   common negative offset; the ranking of the pairs follows m_jk (Spearman reported).
 """
+import itertools
+import math
 import glob
 import json
 import os
@@ -76,6 +83,27 @@ def archived_measures():
     return rows
 
 
+def formal_interactions(m1, M):
+    def gf(S):
+        inner = sum(m1[i] for i in S) + sum(M[i, j] for i, j in itertools.combinations(S, 2))
+        return 1.0 / (1.0 + math.exp(-inner))
+    out = np.zeros((6, 6))
+    for i, j in itertools.combinations(range(6), 2):
+        rest = [k for k in range(6) if k not in (i, j)]
+        tot = 0.0
+        for r in range(len(rest) + 1):
+            for S in itertools.combinations(rest, r):
+                w = math.factorial(len(S)) * math.factorial(6 - len(S) - 2) / math.factorial(5)
+                tot += w * (gf(S + (i, j)) - gf(S + (i,)) - gf(S + (j,)) + gf(S))
+        out[i, j] = out[j, i] = tot
+    return out
+
+
+def spearman(a, b):
+    ra = np.argsort(np.argsort(a)); rb = np.argsort(np.argsort(b))
+    return float(np.corrcoef(ra, rb)[0, 1])
+
+
 if __name__ == "__main__":
     print(f"1. identity  max|code - rhs| over random bags: {identity_check():.1e}")
     rows = archived_measures()
@@ -88,3 +116,10 @@ if __name__ == "__main__":
         if phis:
             ph = np.mean(phis, 0)
             print(f"   {gene:6s} " + "  ".join(f"{p[:5]}={x:.3f}" for p, x in zip(PATTERNS, ph)))
+    iu = np.triu_indices(6, 1)
+    rhos, offs = [], []
+    for _, _, m1, M in rows:
+        If = formal_interactions(m1, M)
+        rhos.append(spearman(M[iu], If[iu])); offs.append(If[iu].mean())
+    print(f"4. formal interaction indices of sigma(inner game): common offset {np.mean(offs):+.4f}; "
+          f"Spearman with pair masses m_jk: mean {np.mean(rhos):.2f}, min {min(rhos):.2f} over {len(rows)} folds")
