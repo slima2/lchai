@@ -199,27 +199,59 @@ the ones hashed in `docs/zenodo_deposit/embeddings_sha256_manifest_REGENERABLE_n
 available at printing time. The deposit content is fixed by
 `docs/zenodo_deposit/MANIFEST_sha256.txt`.
 
-**D10 — §4.4.2 / §4.4.4 / §5.5: FC-MIL fuzzy measure and training objective.**
-The text describes Shapley weights obtained by softmax over logits ψ (Eq. 4.25,
-Σφ = 1), an L1 regulariser on the 15 interaction indices (Eq. 4.26,
-λ_I = 0.01), a soft monotonicity penalty (Eq. 5.2, λ_M = 0.1, 100 sampled
-subset pairs) and a Choquet integral that sorts the six pattern values of a
-slide-level vector. The executed `FuzzyMeasure` / `FuzzyChoquetAggregation`
-(`pattern_informed_mil_benchmark.py`) parameterise the 6 singletons as
-`sigmoid(v)` (not normalised), the 15 interactions as the upper triangle of a
-6×6 tensor, squash `g(A)` with an outer sigmoid, and train with BCE only — no
-L1 term and no monotonicity penalty are present in `train_one_epoch`. The
-integral is evaluated per pattern k over the tiles ranked by p_k, with the
-nested subsets represented by the running mean composition of the top-i tiles
-(soft masks), producing the 6-d vector c_s that the text describes. Parameter
-count (6 + 15 + 1 scale), the 262→256 merge and the gene head are as described.
-The Shapley values and interaction indices reported in Table 6.12 are
-`sigmoid(v)` and `triu(v2, 1)` of the trained checkpoint; the LCHAI service
-(`apps/inference-service/app/ml/models/fuzzy_measure.py`) displays
-`softmax(v)` for the Level-4 panel. Impact: the interpretation of I_jk as
-synergy/redundancy and the 21-parameter parsimony argument hold; the
-normalisation and monotonicity guarantees stated in §5.5.2–5.5.3 do not apply
-to the archived checkpoints.
+**D10 — §4.4.2 / §4.4.4 / §5.5: FC-MIL fuzzy measure and Choquet integral as
+executed.** The text describes a normalised, monotone 2-additive capacity over
+the six patterns (softmax Shapley weights, Eq. 4.25; L1 on the interactions,
+Eq. 4.26; monotonicity penalty, Eq. 5.2) whose Choquet integral sorts the six
+values of a slide-level membership vector. The executed module
+(`FuzzyMeasure`, `FuzzyChoquetAggregation` in `pattern_informed_mil_benchmark.py`)
+is, exactly:
+
+* a 2-additive set function in Möbius form, `g(S) = σ( Σ_k m_k s_k + Σ_{j<k} m_jk s_j s_k )`
+  with singleton masses `m_k = sigmoid(v_k)` and 15 pair masses `m_jk = triu(v2, 1)`,
+  evaluated on *soft* subsets `s` (multilinear extension) and squashed by an
+  outer sigmoid — 6 + 15 parameters as stated;
+* the discrete Choquet integral **over the N tiles**, one per pattern k: tiles
+  are ranked by their membership `p_k`, the set function is evaluated on the mean
+  pattern composition of the nested top-i sets `U_i`, and the sum is written in
+  summation-by-parts form. `evaluation/check_fuzzy_measure.py` verifies the
+  identity `code_k = x_(1) g(U_1) + x_(N) g(U_N) − C_g(x_k) + Σ_i Δx_i Δg_i`
+  (max error 1.5e-7), where `C_g(x_k) = Σ_i (x_(i) − x_(i+1)) g(U_i)` is the Choquet
+  integral; the sign and the boundary term are absorbed by `choquet_scale` and
+  the linear merge, so the model family is the Choquet one;
+* trained with BCE only: no L1 term and no monotonicity penalty exist in
+  `train_one_epoch`.
+
+Consequences. (i) Because the pair masses of a 2-additive function equal its
+Shapley interaction indices (Grabisch 1997), the `fuzzy_interactions` values of
+Table 6.12 (`m_jk`) are the interaction indices the text interprets; their sign
+(synergy / redundancy) and ranking are unaffected by the outer sigmoid.
+(ii) The JSON key `fuzzy_shapley_values` stores the singleton Möbius masses
+`m_k = sigmoid(v_k)` (≈ 0.54), not Shapley values; `φ_k = m_k + ½ Σ_j m_jk`
+(script above) is nearly uniform (0.162–0.174 after normalisation for KRAS),
+i.e. the discriminative content of the measure is in the interactions.
+(iii) Normalisation (`g(∅) = 0`, `g(N) = 1`) is not enforced; a Choquet integral
+is invariant to it up to the affine terms absorbed downstream. (iv) Monotonicity
+was not enforced but holds a posteriori for all 30 archived FC-MIL folds
+(`m_k − Σ_j max(0, −m_jk) ≥ 0.444` for every pattern), so the missing penalty
+had no effect on the archived checkpoints. (v) The integral acts over tiles,
+not over a slide-level 6-vector: the co-presence term `m_jk s_j s_k` is evaluated
+on the composition of the top-ranked tile sets, which is where inter-pattern
+co-occurrence is observable.
+
+Control experiment (9 Oct 2026, DGX `fuzzy_choquet_2additive/`, not part of the
+thesis). A theory-faithful module — normalised monotone 2-additive capacity
+over the six patterns, Shapley/Möbius exact, Choquet integral of the
+slide-level membership vector — was trained on the same 505 slides and folds
+with an inner 15 % validation split (not test-fold selection, cf. D3).
+Mean AUROC: Choquet-only heads 0.46–0.59 (≈ B1 XGBoost, 0.47–0.63), hybrid with
+the attention embedding 0.48–0.66 (≤ B2); learned interaction indices ≤ 0.002,
+i.e. the slide-level capacity is essentially additive. A monotone scalar
+function of the six slide-level fractions cannot carry more information than
+B1, so this is the expected outcome and supports the mechanism-bound reading of
+C5: the FC-MIL gain on KRAS originates in the tile-level sorting and
+co-presence term, not in the normalisation of the capacity. Like-for-like
+numbers against Table 6.5 require the `--select_on_test` protocol.
 
 **D11 — Eq. 4.17 encoder depth.** Eq. 4.17 writes a two-layer feed-forward
 encoder; the executed `ABMIL.encoder` is a single `Linear(input_dim, 256)` +
