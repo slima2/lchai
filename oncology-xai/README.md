@@ -250,8 +250,10 @@ docker exec oncology-inference-worker python3 -c \
 │   └── langgraph-workflows/  # 5 LangGraph state machines
 ├── infra/
 │   └── docker-compose.yml    # Full stack orchestration with GPU support
-├── scripts/                  # Analysis scripts (mutation report, GDC download)
-├── docs/                     # Architecture diagrams (Graphviz)
+├── scripts/                  # deploy.sh, screenshot capture, db_maintenance/ (one-off SQL fixes, DB seeding)
+├── docs/                     # Architecture diagrams (Graphviz), logo
+├── thesis_edits/             # Thesis LaTeX chapters + figure generators (defence version)
+├── Thesis/                   # Reproducibility archive: scripts, logs, results, model weights (see Thesis/README.md)
 └── ontologies/               # NCIt + MONDO (downloaded at runtime via Fuseki)
 ```
 

@@ -228,6 +228,22 @@ Added at the same time: `training/data_preparation/SLIMA_PARALELL_inferencing_hi
 the script that actually produced `logs/tcga_tile_inference_dec2025/` (it reads
 `id2label` from the checkpoint, so it carries no hard-coded pattern names).
 
+Repository root clean-up (same day): the loose files at `oncology-xai/` and the
+repo root that were unrelated to the thesis or to the archived runs were
+removed (`CasosDeUso_DataCenter_Telconet (1).md`, `check_db.py`, `test_api.py`,
+`push-to-github.ps1`, `.claude/settings.local.json`, three superseded LaTeX
+drafts — `thesis_edits/` holds the defence version — and the byte-identical
+duplicate `PATTERN_REMAP_4_apr_2026.py`, now only in `tools/`). `oncology-xai/scripts/`
+was reduced to the app scripts (`deploy.sh`, `capture-case-overview-screenshot.mjs`,
+`db_maintenance/` with the one-off SQL fixes and DB seeders of the LCHAI
+database): its 22 copies of thesis scripts / notebooks were either identical to
+files already in `Thesis/` or the same superseded versions listed above.
+Moved into `Thesis/`: `logs/pattern_classifier_results/confusion_matrix_val_set.png`
+(Figure 6.5 as rendered), `training/data_preparation/SLIMA Mapping MAF to CSV …
+ver 17 dec 2025.ipynb` (produced the `*_dec2025.csv` summaries) and
+`training/data_preparation/overlay_index_LEGACY_pre_4apr2026.xlsx` (the
+pre-correction ANORAK index, kept as evidence of the mix-up).
+
 Known gap: the pre-audit figure quoted in §3.7 / §6.1.1 ("71–76 % before the
 twenty fixes") has no archived script + log pair. The only pre-audit log on the
 DGX (`output_ablation_allfuzzy_allothers.txt`, 150 epochs) was run on a
