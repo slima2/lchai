@@ -199,6 +199,33 @@ the ones hashed in `docs/zenodo_deposit/embeddings_sha256_manifest_REGENERABLE_n
 available at printing time. The deposit content is fixed by
 `docs/zenodo_deposit/MANIFEST_sha256.txt`.
 
+**D10 — §4.4.2 / §4.4.4 / §5.5: FC-MIL fuzzy measure and training objective.**
+The text describes Shapley weights obtained by softmax over logits ψ (Eq. 4.25,
+Σφ = 1), an L1 regulariser on the 15 interaction indices (Eq. 4.26,
+λ_I = 0.01), a soft monotonicity penalty (Eq. 5.2, λ_M = 0.1, 100 sampled
+subset pairs) and a Choquet integral that sorts the six pattern values of a
+slide-level vector. The executed `FuzzyMeasure` / `FuzzyChoquetAggregation`
+(`pattern_informed_mil_benchmark.py`) parameterise the 6 singletons as
+`sigmoid(v)` (not normalised), the 15 interactions as the upper triangle of a
+6×6 tensor, squash `g(A)` with an outer sigmoid, and train with BCE only — no
+L1 term and no monotonicity penalty are present in `train_one_epoch`. The
+integral is evaluated per pattern k over the tiles ranked by p_k, with the
+nested subsets represented by the running mean composition of the top-i tiles
+(soft masks), producing the 6-d vector c_s that the text describes. Parameter
+count (6 + 15 + 1 scale), the 262→256 merge and the gene head are as described.
+The Shapley values and interaction indices reported in Table 6.12 are
+`sigmoid(v)` and `triu(v2, 1)` of the trained checkpoint; the LCHAI service
+(`apps/inference-service/app/ml/models/fuzzy_measure.py`) displays
+`softmax(v)` for the Level-4 panel. Impact: the interpretation of I_jk as
+synergy/redundancy and the 21-parameter parsimony argument hold; the
+normalisation and monotonicity guarantees stated in §5.5.2–5.5.3 do not apply
+to the archived checkpoints.
+
+**D11 — Eq. 4.17 encoder depth.** Eq. 4.17 writes a two-layer feed-forward
+encoder; the executed `ABMIL.encoder` is a single `Linear(input_dim, 256)` +
+LayerNorm + ReLU + Dropout, as Table 5.6 (131,840 parameters) correctly
+states.
+
 ## 5. Development material removed from the archive
 
 The Nov–Dec 2025 development line of the XGBoost baseline was removed from
