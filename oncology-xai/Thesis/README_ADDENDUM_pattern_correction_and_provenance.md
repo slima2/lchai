@@ -165,7 +165,7 @@ Thesis/
 
 ## 4. Large artefacts outside git (Zenodo deposit, prepared 9 Oct 2026)
 
-Files above GitHub's 100 MB limit (or too large to be sensible in git) are
+Files above GitHub's 100 MiB limit (or too large to be sensible in git) are
 packaged on the DGX in `notebooks/slima/zenodo_deposit_thesis_4apr2026/`
 (≈700 MB) with `README_deposit.md`, `MANIFEST_sha256.txt` and a draft
 `zenodo_metadata.json`; copies of the three text files are in
@@ -174,7 +174,7 @@ Zenodo DOI and cite it from the Reproducibility Statement.
 
 | Deposited file | Size | sha256 (prefix) |
 |---|---|---|
-| `best_fuzzyarcloss_v2_labels4apr2026.pth` — Artefact 1 weights. Byte-identical tensors to the DGX `best_fuzzyarcloss_v2.pth` (`e2b2c99b…`, 24 Feb 2026); only `id2label`/`label2id` rewritten to the true names, legacy map kept in `id2label_legacy_pre_4apr2026`, `provenance` key added. `pipeline_6gpu_parallel.py` and the parallel inference script now point to it (they take `prob_*` headers from `id2label`). | 112 MB | `dc2847d4…` |
+| `best_fuzzyarcloss_v2_labels4apr2026.pth` — Artefact 1 weights. Byte-identical tensors to the DGX `best_fuzzyarcloss_v2.pth` (`e2b2c99b…`, 24 Feb 2026); only `id2label`/`label2id` rewritten to the true names, legacy map kept in `id2label_legacy_pre_4apr2026`, `provenance` key added. `pipeline_6gpu_parallel.py` and the parallel inference script now point to it (they take `prob_*` headers from `id2label`). **Also in git**, xz-compressed (96.8 MiB, `d46352be…`) as `models/best_fuzzyarcloss_v2_labels4apr2026.pth.xz` — see `models/README.md`. | 112 MB | `dc2847d4…` |
 | `checkpoints_luad_v2.zip` — 150 ABMIL/Choquet checkpoints of the Chapter 6 benchmark | 104 MB | `24395fbd…` |
 | `pattern_probs_687_slides.zip` — `<slide>/pattern_probs.npy` (`[n_tiles, 6]` float32) for 687 TCGA-LUAD slides, the pattern channel of Artefacts 2/3 | 138 MB | `ba4b392e…` |
 | `inference_pipeline_6gpu_tile_predictions_336_slides.zip` — tile CSVs `x,y,pred_class,prob_*,pattern` (257 MB uncompressed) | 40 MB | `3cc40e14…` |

@@ -28,6 +28,10 @@ Thesis/
 │   └── data_preparation/                # GDC download, tiling, CTransPath embeddings, MAF -> labels,
 │                                        # ANORAK overlay correction (4 Apr 2026)
 │
+├── models/
+│   ├── best_fuzzyarcloss_v2_labels4apr2026.pth.xz   # Artefact 1 weights (xz, 96.8 MiB -> 111.8 MB .pth); see models/README.md
+│   └── SHA256SUMS
+│
 ├── data/
 │   └── cohort/
 │       ├── labels.csv                   # 687-slide inventory x 6 genes (binary labels from the GDC MAF)
