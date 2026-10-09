@@ -15,15 +15,16 @@ copies are kept on the DGX under `notebooks/slima/backups/`.
 
 ```
 Thesis/
-├── training/
+├── training/                            # one script per result (old/redundant versions pruned 9 Oct 2026, see addendum §5)
 │   ├── artefact1_pattern_classifier/    # FuzzyArcLoss V2 on Zenodo-ANORAK (6 patterns)
-│   │   └── *.py                         # Backbone, ablation (18 losses), Optuna, K-fold scripts
-│   ├── artefact2_mutation_abmil/        # PI-ABMIL: 5-fold CV mutation prediction
-│   │   ├── pattern_informed_abmil_benchmark_v2_patched.py   # <-- script that produced results_luad_full_v2 (14 Mar 2026)
-│   │   └── *.py                         # earlier versions kept for provenance
-│   ├── artefact3_mutation_choquet/      # FC-MIL: Fuzzy Choquet MIL condition
-│   │   └── pattern_informed_abmil_benchmark_FuzzyChoquetAggregation.py
-│   ├── xgboost_baseline/                # B1: XGBoost on slide-level pattern features
+│   │   ├── SLIMA_ablation_study_loss_functions_ver_23_feb_2026_gpu_rev_13 (1).py  # 18-loss ablation -> output_ablation_best_rev13.txt (Table 6.1)
+│   │   ├── SLIMA_optuna_fuzzyarcloss_v2_best model search_ 22 feb_2026 rev 2.py   # Optuna s,m,tau -> output_optuna_fuzzyarcv2_best.txt, best_fuzzyarcloss_v2.pth
+│   │   └── SLIMA_kfold_statistical_validation_23 feb_2026 rev 13.py             # 5-fold x 3 seeds -> output_kfold_fuzzyv2_sphereface.txt (Table 6.3, 92.31%)
+│   ├── artefact2_mutation_abmil/        # PI-ABMIL + all six benchmark conditions, 5-fold CV
+│   │   └── pattern_informed_abmil_benchmark_v2_patched.py   # <-- script that produced results_luad_full_v2 (14 Mar 2026)
+│   ├── artefact3_mutation_choquet/      # FC-MIL: implemented inside *_v2_patched.py (classes FuzzyMeasure,
+│   │   └── README.md                    #   FuzzyChoquetAggregation, FuzzyChoquetMIL); README points to them
+│   ├── xgboost_baseline/                # stand-alone XGBoost + TreeSHAP on slide-level pattern profiles (B1 development)
 │   └── data_preparation/                # GDC download, tiling, CTransPath embeddings, MAF -> labels,
 │                                        # ANORAK overlay correction (4 Apr 2026)
 │
@@ -35,7 +36,8 @@ Thesis/
 │       └── luad_cases_missing_slides.txt # 51 LUAD cases whose SVS could not be downloaded
 │
 ├── inference/
-│   └── *.ipynb                          # XGBoost inference notebooks (legacy, B1 development)
+│   └── SLIMA_histology_mutation_xgboost_rev3_autodelim_threshold ver 1 feb 2026 (2).ipynb
+│                                        # XGBoost B1 development notebook (reads logs/tcga_tile_inference_dec2025/*_dec2025.csv)
 │
 ├── logs/
 │   ├── mutation_5fold_results/          # = results_luad_full_v2 on the DGX
@@ -52,9 +54,9 @@ Thesis/
 │   │   ├── eval_results.json                    # Full-dataset evaluation (N=637 tiles)
 │   │   └── eval_results_val_set.json            # Held-out evaluation (N=128 tiles, 80/20 split)
 │   ├── data_pipeline/                   # SVS download and 6-GPU embedding pipeline logs
-│   └── tcga_tile_inference_dec2025/     # FuzzyArcLoss V2 tile inference on 322 TCGA slides (Nov-Dec 2025,
+│   └── tcga_tile_inference_dec2025/     # ROI-model tile inference on 322 TCGA slides (14 Dec 2025, B1 development)
 │       ├── tcga_tiles_384_predictions_322_slides.zip   # x,y,pred_class,pattern  (corrected names)
-│       ├── tcga_*_histologic_patterns*.csv             # per-case / per-slide pattern % (B1 development input)
+│       ├── tcga_*_patterns*_dec2025.csv                # per-case (305) / per-slide (322) pattern % (notebook input)
 │       └── pred_class_to_pattern_4apr2026.json         # index -> true class sidecar
 │
 ├── evaluation/

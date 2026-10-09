@@ -138,10 +138,12 @@ Thesis/
 ├── data/cohort/            labels.csv, luad_slide_ids_available.txt (505),
 │                           luad_slide_ids_full.txt (687), luad_cases_missing_slides.txt
 ├── training/artefact2_mutation_abmil/
-│                           pattern_informed_abmil_benchmark_v2.py, *_v2_patched.py
+│                           pattern_informed_abmil_benchmark_v2_patched.py
 ├── training/data_preparation/
 │                           pipeline_6gpu_parallel.py            (tiling → FuzzyArcLoss → CTransPath → .npy)
 │                           SLIMA_PARALLEL_inferencing_hist_patterns_ver_24_feb_2026_gpu_optimized.py
+│                           SLIMA_PARALELL_inferencing_hist_patterns_roi_parallel_ver_14_dec_2025.py
+│                                                                (produced logs/tcga_tile_inference_dec2025/; added 9 Oct 2026)
 │                           crossref_slides_vs_luad_maf.py       (defines the 505-slide cohort)
 │                           download_tcga_luad_maf.py, download_missing_luad_svs.py, run_all_downloads.sh
 │                           overlay_index_corrected_4_apr_2026.xlsx
@@ -196,3 +198,36 @@ The pattern-classifier checkpoints trained after the correction
 `…_v4_boundary_optuna.pth`, 6 Jul 2026) belong to the follow-up paper, use a
 *different* index order (alphabetical on the true names: acinar, cribriform,
 lepidic, micropapillary, papillary, solid) and are **not** the thesis model.
+
+## 5. Pruning of superseded script versions (9 Oct 2026)
+
+Rule applied: for every result in the thesis, keep the **one** script version
+that produced the archived log / CSV / JSON, plus the data-preparation scripts
+on its path. Earlier or parallel versions that produced no archived result were
+removed from the repository. All of them remain in git history (commit
+`d7543a2`) and on the DGX (`notebooks/slima/`, and
+`backups/thesis_scripts_pre_pattern_remap_9oct2026.tar.gz`).
+
+| Removed | Why |
+|---|---|
+| `artefact1/SLIMA_ablation_study_loss_functions_ver_11_jan_2026 rev 2 (2).py`, `…_ver_12_feb_2026_rev5.py` | pre-audit ablation versions (150 epochs, before the 20 fixes of §3.7); superseded by `…_ver_23_feb_2026_gpu_rev_13 (1).py`, whose log `output_ablation_best_rev13.txt` is the archived Table 6.1 run |
+| `artefact1/SLIMA_ablation_v2_5 fuzzyarcloss ver 6 jan 2026.py`, `SLIMA_ablation_v3 improved ver 5 jan 2026.py`, `SLIMA_complete_ablation_multigpu ver 3 jan 2026.py`, `SLIMA fuzzy_arc_loss_v2 ver 3 jan 2026.py` | January 2026 exploratory variants; all loss variants they introduced (V2.5, V3 entropy/sub-centers/top-gap) are contained in the rev-13 ablation; the loss module was never imported by any kept script |
+| `artefact1/SLIMA_advanced_benchmark_v3 FSL fixed ver 21 jan 2026 rev 3 (3).py` | few-shot / meta-learning benchmark (Proto, MAML, Relation, TraNFS); not reported in the thesis |
+| `artefact1/SLIMA_improved_pathology_backbone_90_target ver 27 dec 2025 rev 10.py` | Dec-2025 backbone experiment; its model is not the one used anywhere in the archive (the Dec-2025 TCGA inference used the ROI model `anorak_roi_acc6_v5`) |
+| `artefact2/pattern_informed_abmil_benchmark.py`, `…_paralell.py`, `SLIMA pattern informed ABMIL benchmark … ver 27 feb 2026.py` | Feb-28 LUAD+LUSC / 768-d versions; produced the superseded `results/` set |
+| `artefact2/pattern_informed_abmil_benchmark_v2.py` | identical to `…_v2_patched.py` except that it does not save the per-fold checkpoints |
+| `artefact3/pattern_informed_abmil_benchmark_FuzzyChoquetAggregation.py` | Feb-28 stand-alone FC-MIL; produced the superseded `results_FuzzyChoquetAggregation/` set. FC-MIL classes live in `…_v2_patched.py` (see `artefact3_mutation_choquet/README.md`) |
+| `xgboost_baseline/SLIMA_aggregation_xgboost_mutation_prediction_v2_feb_2026 ver 24 feb 2026 (1).py` | earlier revision of `…_v24_feb_2026  rev 4 (1).py` (rev 4 adds multi-MAF / LUSC label loading) |
+| `data_preparation/run_all_downloads.sh` | drives CPTAC-3 / APOLLO / EAGLE downloads through five scripts that were never written; those cohorts are explicitly *not* used (thesis §3.4, Table 3.10) |
+| `inference/SLIMA_histology_mutation_xgboost ver 25 nov 2025 (1).ipynb` | Nov-2025 B1 notebook on 138 slides; superseded by the 1 Feb 2026 notebook on the 322-slide Dec-2025 inference |
+| `logs/tcga_tile_inference_dec2025/tcga_case_histologic_patterns.csv`, `tcga_histologic_pattern_summary_per_slide.csv` | Nov-2025 summaries (134 cases / 138 slides); the `*_dec2025.csv` files (305 cases / 322 slides) match the archived zip |
+
+Added at the same time: `training/data_preparation/SLIMA_PARALELL_inferencing_hist_patterns_roi_parallel_ver_14_dec_2025.py`,
+the script that actually produced `logs/tcga_tile_inference_dec2025/` (it reads
+`id2label` from the checkpoint, so it carries no hard-coded pattern names).
+
+Known gap: the pre-audit figure quoted in §3.7 / §6.1.1 ("71–76 % before the
+twenty fixes") has no archived script + log pair. The only pre-audit log on the
+DGX (`output_ablation_allfuzzy_allothers.txt`, 150 epochs) was run on a
+775-tile split (542/116/117) rather than the 637-tile split and is truncated
+after 3 of 18 losses, so it was not added.
