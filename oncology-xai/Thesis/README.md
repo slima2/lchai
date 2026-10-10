@@ -81,7 +81,7 @@ Thesis/
 ├── tools/
 │   └── add_pattern_names_to_tile_predictions.py  # adds a `pattern` column (name of pred_class) to tile CSVs
 ├── docs/zenodo_deposit/                 # manifest, README and metadata of the Zenodo deposit (large artefacts)
-├── provenance/                          # audit notes: class-name correction, what produced Chapter 6, pruned scripts
+├── provenance/                          # audit notes: what produced Chapter 6, pruned scripts, text/code discrepancies
 └── README.md                            # This file
 ```
 
@@ -96,7 +96,7 @@ checkpoints, `pattern_probs.npy` arrays, `prob_*` columns and `pred_class` value
 
 The Artefact 1 training scripts therefore sort labels with the `CLASS_ORDER` constant
 rather than `sorted()`; the inference scripts take the names from the checkpoint's
-`id2label`. Do not re-derive the order alphabetically. Background in `provenance/README.md`.
+`id2label`. Do not re-derive the order alphabetically.
 
 ## Model weights and large artefacts
 
@@ -134,7 +134,7 @@ Backs Tables 6.5–6.8 and Figures 6.6–6.10.
 180 JSON files, one per (condition, gene, fold), with the per-fold AUROC/AUPRC/F1 on the held-out
 fold. They back Table 6.9 (best-fold AUROC) and the statistical tests of Finding 1.
 Fold-level metrics are the maximum over epochs on the held-out fold (early stopping on that fold);
-see `provenance/README.md` §2. The FC-MIL JSONs also carry the Choquet Shapley values and
+see `provenance/README.md` §1. The FC-MIL JSONs also carry the Choquet Shapley values and
 interaction indices used in Table 6.12.
 
 ### `logs/pattern_classifier_results/`

@@ -9,8 +9,8 @@ acc 0.9375 / macro-F1 0.939, best epoch 77).
 
 It is the checkpoint used for every inference in the archive (DGX,
 `outputs/ablation_study_v16_optuna/`, 24 Feb 2026). Its `id2label` carries the
-fixed class index order below; `id2label_legacy_pre_4apr2026` and `provenance`
-record the class-name history (see `../provenance/README.md`).
+fixed class index order below; the `id2label_legacy_pre_4apr2026` and
+`provenance` keys are internal bookkeeping and can be ignored.
 
 ## Decompress and verify
 

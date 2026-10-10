@@ -4,56 +4,7 @@ Audit trail for the files in this archive. Nothing here is needed to run or
 reproduce the thesis; it exists so that a reviewer comparing the archived
 logs with the original DGX outputs understands the differences.
 
-## 1. Class names in the archived results were renamed after the runs
-
-The ANORAK overlay index used to train the pattern classifier carried a
-permuted set of class names. A histopathologist re-verified the six classes
-against the official Zenodo ANORAK documentation on 4 April 2026; the
-corrected index is `training/data_preparation/overlay_index.xlsx` and the
-builder is `training/data_preparation/build_anorak_overlay_index.py`.
-
-The trained models, their six output indices and every numeric result are
-unaffected; only the *name* attached to each index was wrong. The fixed index
-order of all checkpoints (`best_fuzzyarcloss_v2.pth`, the 150 ABMIL/Choquet
-checkpoints, every `pattern_probs.npy`, every `prob_*` column) is therefore the
-alphabetical order of the old names, not of the correct ones:
-
-| model index | 0 | 1 | 2 | 3 | 4 | 5 |
-|---|---|---|---|---|---|---|
-| **class** | micropapillary | cribriform | papillary | lepidic | solid | acinar |
-| name used in files written before the correction | acinar | lepidic | micropapillary | mucinous | papillary | solid |
-
-Consequences visible in the archive:
-
-* Every log, JSON, CSV, script and notebook under `Thesis/` was rewritten with
-  the single simultaneous permutation above (`remap_pattern_names_in_results.py`
-  for results, `remap_pattern_names_in_scripts.py` for code; mapping table in
-  `pattern_index_mapping.py`). Numeric values were not touched.
-  `remap_manifest_dgx.json` lists every DGX file rewritten, with checksums.
-* The Artefact 1 scripts sort labels with the `CLASS_ORDER` constant instead of
-  `sorted()`, so that `label2id` stays identical to the original runs and the
-  positional per-class parameters of FuzzyArcLoss keep their meaning.
-* `models/best_fuzzyarcloss_v2.pth` is the DGX checkpoint
-  `outputs/ablation_study_v16_optuna/best_fuzzyarcloss_v2.pth` (24 Feb 2026,
-  sha256 `e2b2c99b…`) with only `id2label`/`label2id` rewritten; the tensors
-  are byte-identical (193 tensors checked with `torch.equal`). The checkpoint
-  keeps the old map under `id2label_legacy_pre_4apr2026` and a `provenance` key.
-* The gene→pattern literature priors in `figures/generate_attention_maps.py`
-  and `figures/visualize_attention_patterns.py` are biology, not labels, so
-  they were restored by hand after the mechanical remap.
-* Pre-correction copies of everything are kept on the DGX under
-  `notebooks/slima/backups/` (`thesis_scripts_pre_pattern_remap_9oct2026.tar.gz`,
-  `inference_results_parallel_pre_remap_9oct2026.tar.gz`,
-  `inference_pipeline_6gpu_pre_remap_9oct2026.tar.gz`,
-  `backups_pre_pattern_fix_4apr2026/`). Git history before commit `c42ab8f`
-  also contains the dated file names and the per-file markers.
-
-Consistency check: with the corrected names,
-`per_fold_json/metrics_proposed_fuzzy_choquet_KRAS_fold3.json` gives
-`lepidic×solid = +0.0321` and `solid×acinar = +0.0254`, i.e. the first two rows
-of Table 6.12; RBM10 rows correspond to fold 4.
-
-## 2. What produced the Chapter 6 numbers
+## 1. What produced the Chapter 6 numbers
 
 * Script `training/artefact2_mutation_abmil/pattern_informed_mil_benchmark.py`
   (14 Mar 2026; orchestrator log
@@ -78,7 +29,7 @@ of Table 6.12; RBM10 rows correspond to fold 4.
   "FuzzyArcLoss V2 (Optuna) 92.31 % ± 2.05" is the source of the 92.31 % figure
   (thesis prints ± 2.04).
 
-## 3. Scripts kept vs. removed (9 Oct 2026)
+## 2. Scripts kept vs. removed (9 Oct 2026)
 
 Rule: for every result in the thesis, the one script version that produced the
 archived log / CSV / JSON, plus the data-preparation scripts on its path.
@@ -100,15 +51,14 @@ has no archived script + log pair; the only pre-audit log on the DGX
 (`output_ablation_allfuzzy_allothers.txt`) used a 775-tile split and is
 truncated after 3 of 18 losses.
 
-## 4. Discrepancies between the thesis text (PDF of 3 May 2026) and the archive
+## 3. Discrepancies between the thesis text (PDF of 3 May 2026) and the archive
 
 ### Why they exist
 
 Chapters 5 and 6 were drafted between February and March 2026 from the
-experimental *design* and from intermediate runs. Two things happened after
-much of that text was written: the final benchmark run of 14 March 2026
-(`results_luad_full_v2`, the one archived here) and the class-name audit of
-4 April 2026 (§1). The AUROC tables and figures (Table 6.5, Figures 6.6–6.9,
+experimental *design* and from intermediate runs. The final benchmark run of
+14 March 2026 (`results_luad_full_v2`, the one archived here) took place after
+much of that text was written. The AUROC tables and figures (Table 6.5, Figures 6.6–6.9,
 Table 6.9) were regenerated from the final run and match the archive exactly;
 some prose, captions and one hand-typed figure were not re-synchronised.
 
@@ -289,13 +239,13 @@ with no jump at epoch 11; `train=404, val=101`).
 | Early stopping | patience 15 | patience 15, best-AUROC checkpoint kept (selection on the test fold, D3) |
 | Loss | BCE with logits | `BCEWithLogitsLoss(pos_weight = n_neg / n_pos)`; B1 uses `scale_pos_weight` likewise |
 | Fold split | stratified, grouped by patient | `StratifiedKFold(5, shuffle, seed 42)` on slides; the 505 slides belong to 505 distinct patients (no repeated 12-character TCGA ID), so slide-level and patient-level splits coincide |
-| Fold sizes | ≈ 549 / 138 (687 slides) | 404 / 101 (505 slides, see §2) |
+| Fold sizes | ≈ 549 / 138 (687 slides) | 404 / 101 (505 slides, see §1) |
 | Tile sampling | 4,096 tiles, training only | identical |
 | FC-MIL "faster, 3 vs 8 min" | cheaper Choquet step | FC-MIL runs the same loop as ABMIL (batch 1, patience 15) plus the attention over 512-d; no timing is logged, and the explanation has no basis. (`batch_size=8`, patience 10 exist only in the 28 Feb development version `pattern_informed_abmil_benchmark_FuzzyChoquetAggregation.py`, which produced no archived result.) |
 | B1 early stopping (30 rounds), TreeSHAP | in the benchmark | not in the benchmark: `clf.fit(X_tr, y_tr)` without `eval_set` builds all 300 trees and saves `feature_importances_`. Both exist in the stand-alone B1 `training/xgboost_baseline/xgboost_mutation_from_pattern_profiles.py`. |
 | Paired t-test, Cohen's d, MDE ≈ 1.2 (Sec. 6.2.3) | — | not computed by any archived script; now reproduced by `evaluation/fold_statistics.py` from `per_fold_json/` (d_crit = t₀.₉₇₅,₄/√5 = 1.24; no multiple-comparison correction; the two nominal p < 0.05 differences, PI-ABMIL < B2 on KRAS and one-hot < B2 on EGFR, do not survive a Bonferroni factor of 6). |
 
-## 5. Development material removed from the archive
+## 4. Development material removed from the archive
 
 The Nov–Dec 2025 development line of the XGBoost baseline was removed from
 the repository because none of its numbers appear in the thesis and its
@@ -319,12 +269,12 @@ notebooks. The files remain on the DGX under
 `outputs/inference_results_parallel/` and in git history before commit
 `91dea5f`.
 
-## 6. File names
+## 5. File names
 
 Scripts and logs were renamed on 9 Oct 2026 so that the name states what the
 file does rather than when it was written. The old names still appear inside
-the archived logs (command lines, `Loading ablation code from: …`) and in
-`remap_manifest_dgx.json`; this table maps them.
+the archived logs (command lines, `Loading ablation code from: …`); this table
+maps them.
 
 | Old name (as printed in logs / on the DGX) | Archived as |
 |---|---|
@@ -342,15 +292,14 @@ the archived logs (command lines, `Loading ablation code from: …`) and in
 | `orchestrator_output_benchmark_v2_patched.txt` | `logs/mutation_5fold_results/orchestrator_output_benchmark.txt` |
 | `output_pipeline_6gpu_r2.txt`, `_r3.txt` | `logs/data_pipeline/output_pipeline_6gpu_run2.txt`, `_run3.txt` (resumed runs of the same pipeline) |
 | `output_tcga_luad_download_ver1.txt` | `logs/data_pipeline/output_tcga_luad_maf_download.txt` |
-| `PATTERN_REMAP_4_apr_2026.py`, `remap_pattern_names_4apr2026.py` | `provenance/pattern_index_mapping.py`, `provenance/remap_pattern_names_in_results.py` |
 
 DGX directory names quoted in scripts and logs (`outputs/ablation_study_v16_optuna/`,
-`results_luad_full_v2/`) and the checkpoint key `id2label_legacy_pre_4apr2026`
-are left as they are: they identify real locations and keys on the machine.
+`results_luad_full_v2/`) are left as they are: they identify real locations on
+the machine.
 `best_fuzzyarcloss_v2.pth` keeps its name because "FuzzyArcLoss V2" is the
 name of the loss in the thesis, not a file revision.
 
-## 7. Why the executed choices were made (one entry per discrepancy)
+## 6. Why the executed choices were made (one entry per discrepancy)
 
 Section 4 records *what* differs between the printed text and the archive.
 This section records *why* each executed choice was made and what evidence
