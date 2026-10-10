@@ -271,6 +271,30 @@ encoder; the executed `ABMIL.encoder` is a single `Linear(input_dim, 256)` +
 LayerNorm + ReLU + Dropout, as Table 5.6 (131,840 parameters) correctly
 states.
 
+**D12 — Sec. 5.4.3–5.4.4 training protocol of the mutation benchmark.** The
+text describes settings that no version of the benchmark script ever
+implemented. A search of every `.py`/`.ipynb` on the DGX (1,346 files, all
+subdirectories of `slima/`) found no mutation/MIL script with Adam at
+2 × 10⁻⁴, cosine warm restarts, gradient accumulation or patient grouping;
+the whole lineage (27 Feb → `v2_patched`, 14 Mar 2026) uses the settings in
+the right-hand column, and the archived worker logs confirm them
+(`lr=9.99e-05` at epoch 1 decreasing monotonically to `8.44e-05` at epoch 13,
+with no jump at epoch 11; `train=404, val=101`).
+
+| Item | Thesis text | Executed (`pattern_informed_mil_benchmark.py`) |
+|---|---|---|
+| Optimiser | Adam, lr 2 × 10⁻⁴, "intentionally kept on Adam" | `AdamW`, lr 1 × 10⁻⁴, weight decay 1 × 10⁻⁵ (same for all four deep conditions) |
+| Schedule | cosine with warm restarts, T₀ = 10 | `CosineAnnealingLR`, one cycle, T_max = 50, η_min = 1 × 10⁻⁶ |
+| Gradient accumulation | 4 slides | none, one update per slide (batch 1), FC-MIL included |
+| Early stopping | patience 15 | patience 15, best-AUROC checkpoint kept (selection on the test fold, D3) |
+| Loss | BCE with logits | `BCEWithLogitsLoss(pos_weight = n_neg / n_pos)`; B1 uses `scale_pos_weight` likewise |
+| Fold split | stratified, grouped by patient | `StratifiedKFold(5, shuffle, seed 42)` on slides; the 505 slides belong to 505 distinct patients (no repeated 12-character TCGA ID), so slide-level and patient-level splits coincide |
+| Fold sizes | ≈ 549 / 138 (687 slides) | 404 / 101 (505 slides, see §2) |
+| Tile sampling | 4,096 tiles, training only | identical |
+| FC-MIL "faster, 3 vs 8 min" | cheaper Choquet step | FC-MIL runs the same loop as ABMIL (batch 1, patience 15) plus the attention over 512-d; no timing is logged, and the explanation has no basis. (`batch_size=8`, patience 10 exist only in the 28 Feb development version `pattern_informed_abmil_benchmark_FuzzyChoquetAggregation.py`, which produced no archived result.) |
+| B1 early stopping (30 rounds), TreeSHAP | in the benchmark | not in the benchmark: `clf.fit(X_tr, y_tr)` without `eval_set` builds all 300 trees and saves `feature_importances_`. Both exist in the stand-alone B1 `training/xgboost_baseline/xgboost_mutation_from_pattern_profiles.py`. |
+| Paired t-test, Cohen's d, MDE ≈ 1.2 (Sec. 6.2.3) | — | not computed by any archived script; now reproduced by `evaluation/fold_statistics.py` from `per_fold_json/` (d_crit = t₀.₉₇₅,₄/√5 = 1.24; no multiple-comparison correction; the two nominal p < 0.05 differences, PI-ABMIL < B2 on KRAS and one-hot < B2 on EGFR, do not survive a Bonferroni factor of 6). |
+
 ## 5. Development material removed from the archive
 
 The Nov–Dec 2025 development line of the XGBoost baseline was removed from
