@@ -1,0 +1,78 @@
+Metric: auprc   folds: 5   d_crit (p = 0.05): 1.24   MDE (power 0.80): 1.68
+
+1. Fold-to-fold SD per gene and condition (population SD, as summary_table.csv)
+   gene           B1 XGBoost   B2 embedding-only     B3 pattern-only            PI-ABMIL             one-hot              FC-MIL
+   TP53                0.026               0.043               0.051               0.050               0.044               0.030
+   EGFR                0.042               0.040               0.040               0.021               0.045               0.050
+   KRAS                0.035               0.054               0.052               0.056               0.082               0.048
+   STK11               0.021               0.065               0.053               0.055               0.065               0.039
+   KEAP1               0.014               0.064               0.015               0.056               0.073               0.049
+   RBM10               0.056               0.045               0.036               0.038               0.050               0.050
+
+2. Fold-paired comparisons (difference = condition - reference)
+
+   PI-ABMIL  vs  B2 embedding-only
+   gene   mean_cond  mean_ref   diff    sd_diff   t      p      d_z    verdict
+   TP53      0.701     0.695   +0.006    0.015  +0.94  0.403  +0.42   null (|d| < d_crit)
+   EGFR      0.327     0.360   -0.033    0.046  -1.60  0.186  -0.71   null (|d| < d_crit)
+   KRAS      0.360     0.360   +0.000    0.012  +0.02  0.983  +0.01   null (|d| < d_crit)
+   STK11     0.309     0.306   +0.003    0.046  +0.13  0.905  +0.06   null (|d| < d_crit)
+   KEAP1     0.285     0.264   +0.021    0.043  +1.06  0.348  +0.48   null (|d| < d_crit)
+   RBM10     0.176     0.204   -0.028    0.048  -1.31  0.261  -0.59   null (|d| < d_crit)
+
+   one-hot  vs  B2 embedding-only
+   gene   mean_cond  mean_ref   diff    sd_diff   t      p      d_z    verdict
+   TP53      0.698     0.695   +0.003    0.014  +0.53  0.625  +0.24   null (|d| < d_crit)
+   EGFR      0.342     0.360   -0.017    0.020  -1.91  0.129  -0.85   null (|d| < d_crit)
+   KRAS      0.374     0.360   +0.014    0.042  +0.74  0.503  +0.33   null (|d| < d_crit)
+   STK11     0.344     0.306   +0.038    0.035  +2.45  0.070  +1.10   null (|d| < d_crit)
+   KEAP1     0.270     0.264   +0.006    0.035  +0.40  0.713  +0.18   null (|d| < d_crit)
+   RBM10     0.175     0.204   -0.029    0.034  -1.94  0.124  -0.87   null (|d| < d_crit)
+
+   FC-MIL  vs  B2 embedding-only
+   gene   mean_cond  mean_ref   diff    sd_diff   t      p      d_z    verdict
+   TP53      0.706     0.695   +0.011    0.028  +0.89  0.424  +0.40   null (|d| < d_crit)
+   EGFR      0.316     0.360   -0.044    0.065  -1.51  0.206  -0.67   null (|d| < d_crit)
+   KRAS      0.377     0.360   +0.017    0.029  +1.32  0.256  +0.59   null (|d| < d_crit)
+   STK11     0.271     0.306   -0.035    0.075  -1.05  0.355  -0.47   null (|d| < d_crit)
+   KEAP1     0.262     0.264   -0.002    0.048  -0.08  0.939  -0.04   null (|d| < d_crit)
+   RBM10     0.180     0.204   -0.024    0.063  -0.85  0.443  -0.38   null (|d| < d_crit)
+
+   FC-MIL  vs  PI-ABMIL
+   gene   mean_cond  mean_ref   diff    sd_diff   t      p      d_z    verdict
+   TP53      0.706     0.701   +0.005    0.039  +0.27  0.803  +0.12   null (|d| < d_crit)
+   EGFR      0.316     0.327   -0.011    0.044  -0.57  0.596  -0.26   null (|d| < d_crit)
+   KRAS      0.377     0.360   +0.017    0.031  +1.23  0.285  +0.55   null (|d| < d_crit)
+   STK11     0.271     0.309   -0.038    0.071  -1.19  0.300  -0.53   null (|d| < d_crit)
+   KEAP1     0.262     0.285   -0.022    0.053  -0.94  0.401  -0.42   null (|d| < d_crit)
+   RBM10     0.180     0.176   +0.004    0.036  +0.26  0.808  +0.12   null (|d| < d_crit)
+
+   PI-ABMIL  vs  one-hot
+   gene   mean_cond  mean_ref   diff    sd_diff   t      p      d_z    verdict
+   TP53      0.701     0.698   +0.003    0.025  +0.28  0.797  +0.12   null (|d| < d_crit)
+   EGFR      0.327     0.342   -0.015    0.049  -0.69  0.526  -0.31   null (|d| < d_crit)
+   KRAS      0.360     0.374   -0.014    0.052  -0.59  0.585  -0.26   null (|d| < d_crit)
+   STK11     0.309     0.344   -0.035    0.045  -1.74  0.157  -0.78   null (|d| < d_crit)
+   KEAP1     0.285     0.270   +0.014    0.035  +0.90  0.418  +0.40   null (|d| < d_crit)
+   RBM10     0.176     0.175   +0.001    0.035  +0.07  0.945  +0.03   null (|d| < d_crit)
+
+   B3 pattern-only  vs  B1 XGBoost
+   gene   mean_cond  mean_ref   diff    sd_diff   t      p      d_z    verdict
+   TP53      0.611     0.534   +0.078    0.069  +2.52  0.066  +1.13   null (|d| < d_crit)
+   EGFR      0.254     0.235   +0.019    0.028  +1.54  0.199  +0.69   null (|d| < d_crit)
+   KRAS      0.308     0.290   +0.018    0.040  +1.01  0.368  +0.45   null (|d| < d_crit)
+   STK11     0.206     0.171   +0.035    0.062  +1.27  0.273  +0.57   null (|d| < d_crit)
+   KEAP1     0.244     0.195   +0.049    0.019  +5.80  0.004  +2.60   gain
+   RBM10     0.144     0.105   +0.039    0.060  +1.45  0.220  +0.65   null (|d| < d_crit)
+
+3. Per-fold values for the KRAS close-up (FC-MIL vs B2)
+   fold 0: FC-MIL 0.436  B2 0.404  diff +0.032
+   fold 1: FC-MIL 0.373  B2 0.314  diff +0.058
+   fold 2: FC-MIL 0.299  B2 0.289  diff +0.010
+   fold 3: FC-MIL 0.418  B2 0.433  diff -0.015
+   fold 4: FC-MIL 0.357  B2 0.357  diff -0.000
+
+4. Pairwise ties among the four deep conditions (any gene with p < 0.05?)
+   none
+
+written fold_statistics_auprc.csv
