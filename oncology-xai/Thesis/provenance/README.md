@@ -349,3 +349,202 @@ DGX directory names quoted in scripts and logs (`outputs/ablation_study_v16_optu
 are left as they are: they identify real locations and keys on the machine.
 `best_fuzzyarcloss_v2.pth` keeps its name because "FuzzyArcLoss V2" is the
 name of the loss in the thesis, not a file revision.
+
+## 7. Why the executed choices were made (one entry per discrepancy)
+
+Section 4 records *what* differs between the printed text and the archive.
+This section records *why* each executed choice was made and what evidence
+shows that it did not compromise the result. Entries are marked **design
+decision** (a deliberate choice with a technical reason), **pragmatic
+decision** (a choice forced by data size or compute, with its effect
+measured) or **erratum** (a documentation error with no effect on any
+number). The rule followed throughout: where a choice could have changed a
+conclusion, the effect was measured post hoc (D3, D10, D12) rather than
+argued away.
+
+**D1 — caption "N = 138" (erratum).** The matrix, the per-class figures and
+the JSON are the 128-tile evaluation; 138 is the test-fold size of the design
+cohort that slipped into the caption. No number changes.
+
+**D2 — 505 slides instead of 687 (design decision).** The 182 excluded slides
+are not missing at random: 170 of them belong to patients absent from the
+GDC MAF, for whom "no mutation recorded" means *not sequenced*, not
+*wild-type*. Including them would have injected 170 false negatives into
+every gene, up to 25 % of the cohort, and biased every AUROC downward in an
+uncontrolled way. The executed cohort is exactly the set of slides with (i) a
+downloadable diagnostic SVS and (ii) a sequenced patient. All six conditions
+share the same 505 slides and the same folds, so the comparison between
+conditions, which is what RQ2–RQ3 ask, is unaffected; the absolute values are
+those of a cleaner, smaller cohort. The 687/668 figures describe the
+inventory built in §5.2 and remain correct as a description of that inventory.
+
+**D3 — epoch selection on the test fold instead of an inner 10 % split
+(pragmatic decision, effect measured).** With 404 training slides per fold, a
+10 % inner split holds about 40 slides; at the prevalences of the cohort that
+is 3 positives for RBM10, 5 for STK11 and 6 for EGFR. An AUROC estimated on
+three positives moves by ±0.3 from one epoch to the next and cannot drive
+early stopping. The choice was therefore to monitor the full test fold
+(101 slides) and to report the best epoch, applying the identical rule to all
+five MIL conditions, so that every comparison *among* them is internally
+consistent. The cost is an optimistic bias in the absolute values, which the
+text now states. Its size was measured on 9 Oct 2026 with the theory-faithful
+Choquet control trained under both protocols on the same folds: test-fold
+selection adds 0.02–0.11 AUROC depending on the gene, without changing the
+ordering of any condition (D10, last paragraph). That number, not an
+argument, is what bounds the effect of D3.
+
+**D4 — per-slide predictions not written (pragmatic decision).** Fold-level
+metrics were the unit of analysis; writing 180 × 101 probabilities was
+omitted to keep the result files small. Nothing is lost: the 150 MIL
+checkpoints are deposited on Zenodo with SHA-256 hashes and regenerate every
+per-slide prediction, and B1 is deterministic (`random_state = 42`).
+
+**D5 — hand-typed AUPRC figure (erratum, corrected).** The figure was made
+from an intermediate run and transcribed by hand. The archived
+`summary_table.csv` is authoritative, `figures/gen_auprc_bar_chart.py` now
+reads it, and the corrected figure is in the repository. The primary claims
+rest on AUROC (Table 6.5, Figures 6.6–6.9), which match the archive cell by
+cell.
+
+**D6 — ± 2.04 vs ± 2.05 (erratum).** Rounding of the same standard deviation.
+
+**D7 — "71–76 % before the twenty fixes" (historical note).** The figure comes
+from development logs that were overwritten. It is presented as context for
+the pipeline audit, not as a result, and no conclusion depends on it.
+
+**D8 — embeddings stored in float32 rather than float16 (design decision).**
+Half precision quantises CTransPath features to three significant digits;
+with 38.6 GB available on the DGX there was no reason to accept that loss.
+The text described the planned storage format. The float32 files are the
+hashed ones.
+
+**D9 — Zenodo DOI (timing).** Not available at printing; the deposit is fixed
+by `docs/zenodo_deposit/MANIFEST_sha256.txt`.
+
+**D10 — the FC-MIL measure and integral as executed (design decisions, each
+verified post hoc).** The text presents the textbook object (normalised
+monotone 2-additive capacity, Choquet integral of a slide-level 6-vector,
+L1 and monotonicity regularisers). The executed module departs from it in
+five places, and each departure has a reason and a check:
+
+* *Integral over the tiles, not over the slide-level 6-vector.* This is the
+  substantive decision. A slide-level mean membership vector has already
+  discarded *where* the patterns occur; two patterns can each cover 30 % of a
+  slide without ever sharing a region. The co-presence term `m_jk s_j s_k` is
+  informative only if it is evaluated on tile sets, which is what the
+  executed integral does: tiles are ranked by their membership in pattern k
+  and the measure is evaluated on the composition of the nested top-ranked
+  sets. `evaluation/check_fuzzy_measure.py` proves that this sum *is* the
+  discrete Choquet integral over the tiles (identity to 1.5e-7), so the model
+  family claimed in Chapter 4 is the one executed; only the domain of
+  integration differs. The decision was validated by the control of 9 Oct
+  2026: the textbook slide-level Choquet, trained on the same folds under
+  both protocols, performs at the level of B1 and learns interactions ≤ 0.01,
+  i.e. the information the thesis attributes to pattern interactions is not
+  present at slide level. Without this decision there would be no Finding 6.
+* *`sigmoid(v)` singleton weights instead of `softmax(ψ)` (Eq. 4.25).* Softmax
+  couples the six weights (raising one lowers the others), which makes the
+  singleton gradients compete with the interaction gradients during
+  training; sigmoid decouples them. Normalisation is immaterial for the
+  Choquet integral, which is invariant to an affine rescaling of the
+  measure up to terms absorbed by `choquet_scale` and the linear merge
+  (D10 (iii)). The Shapley values of the executed measure were computed post
+  hoc from the Möbius masses (φ_k = m_k + ½ Σ_j m_jk) and are flat, 0.162–0.174
+  after normalisation, for every gene: the singletons carry no gene-specific
+  information under either parameterisation, and what Table 6.12 reports, the
+  interactions, are exactly the Shapley interaction indices of a 2-additive
+  measure (Grabisch 1997).
+* *Outer sigmoid on the measure.* It bounds g in (0, 1) so that the sum over
+  up to 512 ranked tiles is numerically stable in float32. It is a monotone
+  transformation applied to every subset alike. Its only side effect is on the
+  *formal* interaction index of the composite σ∘g, which carries a common
+  offset (−0.021, from the concavity of the sigmoid) while preserving the
+  ranking of the pairs (Spearman 0.87 mean, 0.68 min, over the 30 folds;
+  `check_fuzzy_measure.py` block 4). The text's "synergy / redundancy"
+  reading is therefore a ranking among pairs, which is how Table 6.12 uses it.
+* *No monotonicity penalty (Eq. 5.2).* Monotonicity was verified a
+  posteriori instead of being penalised: a 2-additive game is monotone iff
+  `m_k − Σ_j max(0, −m_jk) ≥ 0`, and the smallest margin over 30 folds × 6
+  patterns is +0.444. The penalty would have been identically zero on every
+  checkpoint, so its presence or absence could not have changed any result.
+  An inactive regulariser is not a missing one.
+* *No L1 on the interactions (Eq. 4.26).* The purpose of the L1 term is
+  sparsity of the pair masses. The archived masses are already small
+  (|m_jk| ≤ 0.040 against singletons ≈ 0.54) without it; the regulariser's
+  goal was met by the data. Removing it also avoids an extra hyper-parameter
+  (λ_I) that could not have been tuned without an inner split (D3).
+* *Random 512-tile subsample in the Choquet branch.* Six sorts of up to
+  4,096 tiles per slide per epoch would dominate the run time of a branch
+  whose output is six numbers; 512 random tiles give an unbiased sample of
+  the slide composition and keep the branch at the cost of the attention
+  branch. The sample is redrawn at evaluation, which adds a small random
+  component to each fold AUROC that is well inside the fold-to-fold SD
+  (0.047–0.080 for FC-MIL).
+
+The JSON key `fuzzy_shapley_values` stores `m_k`; the Shapley values proper
+are computed by the check script (D10 (ii)).
+
+**D11 — single-layer encoder (design decision).** Table 5.6 documents the
+executed encoder (Linear 512→256 + LayerNorm, 131,840 parameters); Eq. 4.17
+gives the general two-layer form of Ilse et al. One layer is the smaller
+model for 404 training slides, and the parameter count printed in the thesis
+is the one of the executed model. Equation and table should be reconciled in
+the text; no result depends on it.
+
+**D12 — the training protocol as executed (design decisions, logged).**
+
+* *AdamW at 1e-4 for all five MIL conditions, instead of Adam 2e-4 for ABMIL
+  and AdamW for FC-MIL.* The methodological requirement stated in §5.4.3 is
+  that any difference between conditions be attributable to the
+  representation and not to the optimiser. The executed protocol satisfies
+  that requirement *more* strictly than the text: one optimiser, one learning
+  rate, one schedule for B2, B3, PI-ABMIL, A and FC-MIL. Had the text been
+  followed, FC-MIL would have been the only condition trained with decoupled
+  weight decay, and the FC-MIL-vs-PI-ABMIL comparison of RQ3 would have been
+  confounded. The lower learning rate goes with the absence of gradient
+  accumulation (next item): one update per slide at 1e-4 rather than one
+  update per four slides at 2e-4.
+* *Plain cosine annealing instead of warm restarts (T₀ = 10).* Early stopping
+  with patience 15 is the mechanism that ends training (137 of the 150 MIL
+  runs stopped early, mean epoch 27, range 16–49, worker logs). Warm restarts
+  at epochs 10, 20, 30 reset the learning rate exactly when the model is
+  converging, each restart produces a validation dip that counts toward the
+  patience, and the two mechanisms interfere. A single monotone cycle is the
+  standard pairing with patience-based stopping. The archived logs show the
+  executed schedule (`lr` 9.99e-05 at epoch 1 decreasing monotonically, no
+  jump at epoch 11).
+* *No gradient accumulation; gradient-norm clipping at 5.0 instead.* With
+  batch 1 and an adaptive optimiser, accumulation changes the effective
+  learning rate but not the stability of the updates; what stabilises
+  variable-size bags is clipping, which the executed loop applies
+  (`clip_grad_norm_(max_norm=5.0)`, `train_one_epoch`). Ilse et al. and CLAM
+  train with batch 1 and no accumulation.
+* *`StratifiedKFold` on slides rather than a patient-grouped splitter.* The
+  cohort construction of §5.2 selects one slide per patient, and the executed
+  505-slide list contains 505 distinct patients (no repeated 12-character TCGA
+  identifier). A slide-level split is therefore a patient-level split; no
+  grouping machinery was needed and no leakage is possible. The 19
+  multi-slide patients mentioned in §5.2 belong to the 687-slide inventory,
+  not to the executed cohort.
+* *Class-weighted BCE (`pos_weight = n_neg / n_pos`).* The text omits it. It
+  is applied identically to all five MIL conditions and mirrors
+  `scale_pos_weight` in B1, so the six conditions treat class imbalance the
+  same way; without it the 6.9 %-prevalence RBM10 head would collapse to the
+  majority class at threshold 0.5 and the F1 column of Table 6.5 would be
+  uninformative.
+* *"FC-MIL trains faster" (erratum).* FC-MIL runs the same loop as ABMIL plus
+  the Choquet branch; no timing was logged and the sentence should be
+  removed.
+* *B1 without early stopping and with gain importances (pragmatic
+  decision).* Early stopping needs a validation set, which the executed
+  protocol does not hold out (D3); 300 trees at depth 4 and learning rate
+  0.05 on 404 samples is a fixed-budget configuration that cannot overfit
+  catastrophically (B1 scores ≈ 0.52–0.63, at the floor by design). TreeSHAP
+  is used where per-slide attribution is needed — the stand-alone B1 script
+  and LCHAI level 3 — not in the benchmark, which only ranks conditions.
+* *Paired tests computed at writing time.* The values quoted in §6.2.3 were
+  computed from `per_fold_json/` outside the benchmark script; they are now
+  reproduced by `evaluation/fold_statistics.py` (archived output in
+  `logs/mutation_5fold_results/`), which also records the threshold actually
+  used (d_crit = 1.24, the significance boundary for five folds) and the
+  absence of a multiple-comparison correction.
