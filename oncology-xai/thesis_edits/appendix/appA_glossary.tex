@@ -1,0 +1,381 @@
+\chapter{Glossary of Medical and Technical Terms}
+\label{app:glossary}
+
+This glossary provides definitions of the medical and technical terms used throughout this thesis.
+
+\begin{description}[style=nextline,leftmargin=4cm]
+
+\item[ABMIL] Attention-Based Multiple-Instance Learning.  A deep learning framework in which a small attention network learns to weight the importance of individual instances (tiles) within a bag (slide) for classification.
+
+
+\item[Acinar pattern] One of five WHO-defined predominant histological growth patterns of LUAD.  Characterised by round-to-oval tumour glands with central luminal spaces.  The sixth class used in this thesis is the cribriform pattern, annotated as a distinct class in the ANORAK dataset.
+
+
+\item[Acini] Small, round glandular structures with a central open space (lumen).  In acinar-pattern LUAD, tumour cells form these tube-like glands, resembling the normal architecture of secretory tissue.  The singular form is \emph{acinus}.
+
+
+\item[AdamW] A variant of the Adam optimiser that decouples weight decay from the gradient update, improving generalisation.  Used for training the pattern classifier and ABMIL models.
+
+
+\item[Adenocarcinoma] A type of cancer that originates in glandular (secretory) cells.  Lung adenocarcinoma (LUAD) is the most common subtype of non-small cell lung cancer (NSCLC), accounting for approximately 40\% of all lung cancers.
+
+
+\item[Alveolar walls / septa] The thin tissue walls of the lung's air sacs (alveoli), where gas exchange occurs.  In lepidic growth, tumour cells spread along these pre-existing walls rather than destroying them.
+
+
+\item[ANORAK] Artificial Neural network for Objective Recognition of Adenocarcinoma features by Kernel classification.  A deep learning model for LUAD growth pattern grading, published in \emph{Nature Cancer} (2024).  The expert-annotated tile dataset released alongside ANORAK on Zenodo (DOI: \texttt{10.5281/zenodo.10016027}) is used in this thesis for pattern classifier training.
+
+
+\item[ArcFace] An angular margin loss function that adds a fixed additive angular penalty $m$ to the angle between the feature vector and the correct class weight vector, promoting intra-class compactness and inter-class separability on the hypersphere.
+
+
+\item[Active learning (delta training)] A human-in-the-loop mechanism in LCHAI~v2.0 whereby a pathologist corrects tile-level pattern classifications via a lasso tool, and the correction triggers head-only fine-tuning ($\sim$3{,}000 parameters, $\sim$30 seconds on CPU) of the pattern classifier without retraining the frozen backbone.
+
+\item[AUPRC] Area Under the Precision-Recall Curve.  A metric that summarises the trade-off between precision and recall across all classification thresholds; particularly informative for imbalanced datasets where positive cases are rare.
+
+
+\item[AUROC] Area Under the Receiver Operating Characteristic curve.  A threshold-independent metric that measures the probability that a classifier ranks a randomly chosen positive instance higher than a randomly chosen negative instance.  Values range from 0.5 (random) to 1.0 (perfect).
+
+
+\item[BIF] BigTIFF Image Format.  A whole-slide image format used by Ventana scanners, supporting files larger than 4\,GB.
+
+
+\item[Barcode (TCGA)] A hierarchical identifier assigned to each TCGA sample (e.g., \texttt{TCGA-55-7815-01A-11D-2184-08}).  The first 12 characters (\texttt{TCGA-55-7815}) identify the patient and serve as the key that links whole-slide image filenames to mutation labels in MAF files.
+
+
+\item[Biopsy] A tissue sample removed from the body for microscopic examination and diagnosis.
+
+
+\item[Boundary correction] A numerical safeguard in ArcFace-family losses: when the margin-shifted angle exceeds $\pi$, the target logit is computed in the cosine domain ($\cos\theta - m\sin m$) instead of the angular domain to avoid undefined gradients.
+
+
+\item[Choquet integral] A generalisation of the Lebesgue integral with respect to a non-additive (fuzzy) measure.  In discrete settings, it provides a weighted aggregation that accounts for interactions (synergies and redundancies) among input sources.
+
+
+\item[CNN] Convolutional Neural Network.  A deep learning architecture that learns hierarchical spatial features through stacked convolutional layers with shared weights.
+
+
+\item[COSMIC] Catalogue of Somatic Mutations in Cancer.  A curated database of known cancer mutations maintained by the Sanger Institute.  Variants found in COSMIC are more likely to be genuine driver mutations.  Used by the GDC masking pipeline to distinguish cancer-specific variants from benign population polymorphisms.
+
+
+\item[Conclusive / Inconclusive] A \emph{population-level} (cohort-wide) reliability label assigned by LCHAI~v2.0 \emph{per gene} (not per slide), computed from held-out 5-fold cross-validation on TCGA-LUAD.  A gene is labelled \emph{Conclusive} if its cross-validation AUROC $\geq 0.70$ (following the Hosmer--Lemeshow criterion for acceptable discrimination); otherwise it is labelled \emph{Inconclusive}, indicating that molecular testing is required.  The flag is therefore a property of a gene's signal under the proposed architecture, orthogonal to any per-slide prediction.
+
+\item[Cohen's $d$] An effect size measure defined as the difference between two group means divided by the pooled standard deviation.  Conventionally, $d = 0.2$ is small, $d = 0.5$ is medium and $d = 0.8$ is large.
+
+
+\item[Cross-validation (K-fold)] A resampling strategy that partitions data into $K$ folds; each fold serves as the test set exactly once, and results are averaged to reduce variance.
+
+
+\item[Cribriform pattern] A morphological variant of the acinar pattern characterised by back-to-back glandular fusion without intervening stroma, forming sieve-like structures.  The 2021 WHO Classification classifies cribriform under acinar rather than as a distinct predominant pattern.  The ANORAK dataset annotates cribriform as class~1, and it is included as one of the six pattern classes used in this thesis.
+
+
+\item[CTransPath] A self-supervised Vision Transformer pretrained on 15 million pathology tiles using a contrastive learning objective.  Produces 768-dimensional (or 512-dimensional after projection) feature embeddings per tile.
+
+
+\item[dbSNP] Single Nucleotide Polymorphism Database.  A public database of known genetic variants in the human population, maintained by NCBI.  Variants found in dbSNP but not in COSMIC are likely benign population polymorphisms rather than cancer-specific mutations.
+
+
+\item[DeepSHAP] A variant of SHAP for deep neural networks that combines DeepLIFT with Shapley values to attribute predictions to input features layer by layer.
+
+
+\item[Differentiation] The degree to which tumour cells resemble their tissue of origin.  Well-differentiated tumours (low grade) resemble normal tissue; poorly differentiated tumours (high grade) do not.
+
+
+\item[Docker] A platform for packaging software into portable containers that run identically across development, testing, and production environments.
+
+
+\item[Driver mutation] A somatic mutation that confers a selective growth advantage to cancer cells and contributes to tumour development.  In LUAD, key drivers include \emph{EGFR}, \emph{KRAS}, \emph{TP53}, \emph{STK11} and \emph{KEAP1}.
+
+
+\item[DSR] Design Science Research.  A research paradigm that creates and evaluates IT artefacts to solve identified problems, structured by the DSRM of Peffers~et~al.~(2007).
+
+
+\item[Dual-pathway architecture] A neural network design with two parallel branches processing different input modalities (e.g., visual embeddings and pattern probabilities), merged before classification.  Used in the Fuzzy Choquet MIL (Artefact~3).
+
+
+\item[EGFR] Epidermal Growth Factor Receptor.  A transmembrane protein whose mutations (especially exon 19 deletions and L858R) predict sensitivity to tyrosine kinase inhibitors (TKIs) such as erlotinib and osimertinib.
+
+
+\item[Embedding] A fixed-dimensional numerical vector representation of an input (e.g., a 512-d vector encoding a tile's morphological features via CTransPath).
+
+
+\item[F1 score / Macro-F1] The harmonic mean of precision and recall: $F_1 = 2 \cdot \text{precision} \cdot \text{recall} / (\text{precision} + \text{recall})$.  Macro-F1 averages F1 across all classes equally, penalising models that sacrifice minority classes.
+
+
+\item[Fibrovascular cores] Central stalks of connective tissue containing blood vessels, around which tumour cells arrange themselves in papillary and micropapillary patterns.  Their presence (papillary) or absence (micropapillary) is a key diagnostic distinction between these two growth patterns.
+
+
+\item[Focal loss] A modified cross-entropy loss~\cite{lin2017focal} that down-weights well-classified examples and focuses training on hard cases, controlled by a focusing parameter $\gamma$.
+
+
+\item[FC-MIL (Fuzzy Choquet MIL)] Artefact~3 of this thesis.  A hybrid dual-pathway MIL architecture that augments standard ABMIL with a parallel Choquet integral branch operating on tile-level fuzzy pattern memberships under a learned 2-additive fuzzy measure (21 parameters).  Provides intrinsic interpretability through Shapley values and interaction indices.
+
+\item[FuzzyArcLoss V2] Artefact~1 of this thesis.  A novel angular margin loss function that introduces per-sample fuzzy membership modulation, adaptively reducing the margin penalty for ambiguous samples near class boundaries.  Achieves 92.31\% macro-F1 on six LUAD histological patterns.
+
+\item[Fuzzy linguistic labels] Calibrated intensity terms (e.g., ``Moderate Synergy,'' ``Embedding-Led,'' ``Near-Uniform'') computed deterministically from numeric XAI outputs via trapezoidal membership functions and injected verbatim into LLM-generated explanations to prevent hallucination of intensity terms.  Constitutes Level~6 of the six-level interpretability framework.
+
+\item[Fuzzy measure] A set function $\mu: 2^N \to [0,1]$ that is monotone ($A \subseteq B \Rightarrow \mu(A) \leq \mu(B)$) and satisfies $\mu(\emptyset) = 0$, $\mu(N) = 1$, but is not necessarily additive.  Also called a capacity.
+
+
+\item[Frameshift mutation] An insertion or deletion of nucleotides whose length is not a multiple of three, disrupting the reading frame and typically producing a truncated, non-functional protein.  Classified as \texttt{Frame\_Shift\_Del} or \texttt{Frame\_Shift\_Ins} in MAF files; retained as non-silent variants in this thesis.
+
+
+\item[Fuzzy set] A set in which membership is a matter of degree rather than binary.  Formally, a fuzzy set $A$ in universe $X$ is characterised by a membership function $\mu_A: X \to [0,1]$.
+
+
+\item[Genotype--phenotype gap] The fundamental biological reality that not every DNA mutation produces a visible change in tissue architecture.  Mutations operating at the molecular level (e.g., RNA splicing, metabolic pathways) may leave the H\&E appearance indistinguishable from wild-type tissue, setting an irreducible limit on histology-based mutation prediction.
+
+\item[GDC] Genomic Data Commons.  The NCI portal providing access to TCGA and other cancer genomics datasets.
+
+
+\item[Germline mutation] A genetic variant inherited from a parent and present in every cell of the body.  Distinguished from somatic mutations, which are acquired only by tumour cells.  Germline variants are filtered out of the MAF files used in this thesis.
+
+
+\item[GRCh38] Genome Reference Consortium Human Build 38.  The current standard human reference genome assembly used for mapping sequencing reads and reporting genomic coordinates of somatic mutations in MAF files.
+
+
+\item[H\&E staining] Haematoxylin and Eosin staining.  The standard histological staining technique that colours cell nuclei blue-purple (haematoxylin) and cytoplasm/extracellular matrix pink (eosin).
+
+
+\item[Histology] The study of tissue microstructure under a microscope; the basis for cancer diagnosis and grading.
+
+
+\item[HSV colour space] Hue--Saturation--Value.  A colour representation that separates chromatic content (hue, saturation) from brightness (value), making it useful for tissue segmentation where staining intensity varies.
+
+
+\item[IASLC] International Association for the Study of Lung Cancer.  The body that classifies mucinous invasive adenocarcinoma (IMA) as a distinct LUAD variant alongside the five WHO-defined predominant patterns.
+
+
+\item[IMA] Invasive Mucinous Adenocarcinoma.  A distinct LUAD variant recognised by the IASLC, strongly associated with KRAS mutations (especially G12D).
+
+
+\item[In-frame mutation] An insertion or deletion whose length is a multiple of three, preserving the reading frame but adding or removing amino acids from the protein.  Classified as \texttt{In\_Frame\_Del} or \texttt{In\_Frame\_Ins} in MAF files; retained as non-silent variants.
+
+
+\item[Immunotherapy] Treatment that harnesses the patient's immune system to fight cancer, e.g., PD-1/PD-L1 checkpoint inhibitors such as pembrolizumab and nivolumab.
+
+
+\item[Interaction index] A parameter $I_{jk}$ in a 2-additive fuzzy measure quantifying synergy ($I_{jk} > 0$: the pair combined is more predictive than either alone) or redundancy ($I_{jk} < 0$: they provide overlapping information) between sources $j$ and $k$.
+
+
+
+\item[IRI] Internationalised Resource Identifier.  A globally unique identifier for entities in knowledge graphs and ontologies (e.g., \texttt{NCIT:C3101} for NSCLC).
+
+
+\item[KEAP1] Kelch-like ECH-Associated Protein 1.  Mutations in \emph{KEAP1} activate the NRF2 antioxidant pathway and are associated with resistance to chemotherapy and immunotherapy in LUAD.
+
+
+\item[Keycloak] An open-source identity and access management server providing single sign-on, role-based access control, and OAuth\,2.0 / OpenID Connect authentication.  Used in LCHAI~v2.0 to manage \texttt{clinician}, \texttt{admin}, and \texttt{auditor} roles.
+
+
+\item[Knowledge graph] A structured representation of entities and their relationships as a directed graph, where nodes represent concepts (genes, diseases, treatments) and edges represent typed relations (e.g., \texttt{treatedWith}, \texttt{associatedWithMutation}).  LCHAI~v2.0 constructs a case-specific knowledge graph using NCIt, MONDO, and SO ontologies.
+
+
+\item[KRAS] Kirsten Rat Sarcoma Viral Oncogene Homologue.  The G12C mutation in \emph{KRAS} is targetable by sotorasib and adagrasib.  Approximately 25--30\% of LUAD cases harbour KRAS mutations.
+
+
+\item[Kubernetes] An open-source container orchestration platform for deploying, scaling, and managing containerised applications.  Used for the LCHAI cloud deployment.
+
+
+\item[LCHAI (Lung Cancer Histologic Analysis with AI)] The integrative clinical-prototype system developed in this thesis.  LCHAI composes the three computational artefacts (FuzzyArcLoss~V2, PI-ABMIL, FC-MIL) and the ontology-grounded explanation layer into a single application that ingests a whole-slide H\&E image, predicts mutation status across the six-gene LUAD panel, exposes the six-level interpretability stack, and produces a knowledge-graph--grounded natural-language case explanation.  The current production version is referred to as LCHAI~v2.0; ``LCHAI'' without a version suffix denotes the system as a methodological artefact (see \cref{ch:methodology,ch:implementation}).
+
+
+\item[Label smoothing] A regularisation technique that replaces hard target labels (0 or 1) with soft labels ($\epsilon/K$ and $1-\epsilon+\epsilon/K$), preventing the model from becoming overconfident.
+
+
+\item[LayerNorm] Layer Normalisation.  A technique that normalises activations across the feature dimension within each sample, stabilising training without dependence on batch size.
+
+
+\item[Lepidic pattern] The histological growth pattern of LUAD in which tumour cells grow along pre-existing alveolar septa without stromal, vascular or pleural invasion.  Associated with favourable prognosis and EGFR mutations.
+
+
+\item[LUAD] Lung Adenocarcinoma.  The most common histological subtype of NSCLC, accounting for approximately 40\% of all lung cancers.  The primary cancer type studied in this thesis.
+
+
+\item[MAF file] Mutation Annotation Format.  A tab-delimited text file (typically 140 columns) aggregating somatic variant calls across a cohort, produced by the GDC Somatic Aggregation Workflow.  Key columns include \texttt{Hugo\_Symbol} (gene name), \texttt{Variant\_Classification} (functional consequence), and \texttt{Tumor\_Sample\_Barcode} (patient identifier linking mutations to WSIs).
+
+
+\item[MAT file] MATLAB binary data format (\texttt{.mat}).  In the Zenodo--ANORAK dataset, each \texttt{.mat} file contains a pixel-level annotation matrix of the same dimensions as the corresponding H\&E tile, where each pixel carries an integer class label (0--6) indicating the growth pattern at that location.
+
+
+\item[Membership function] A function $\mu_A: X \to [0,1]$ that defines the degree to which each element belongs to a fuzzy set.  Common forms include triangular, trapezoidal, and Gaussian.
+
+
+\item[Micropapillary pattern] A high-grade LUAD growth pattern characterised by small papillary tufts lacking fibrovascular cores, floating within alveolar spaces.  Strongly associated with aggressive behaviour.
+
+
+\item[MIL] Multiple-Instance Learning.  A weakly supervised framework in which training labels are provided at the bag level (e.g., whole slide) rather than the instance level (e.g., individual tile).
+
+
+\item[Missense mutation] A single nucleotide change that results in the substitution of one amino acid for another in the protein product.  The most frequent non-silent variant type in the TCGA-LUAD cohort ($\sim$65\% of all somatic variants).  Classified as \texttt{Missense\_Mutation} in MAF files.
+
+
+\item[MONDO] Mondo Disease Ontology.  A community-driven ontology that harmonises disease definitions across multiple sources; used in the LCHAI knowledge graph alongside NCIt and SO.
+
+
+\item[Morphology] The form and structure of cells and tissues as observed microscopically; the basis for histological pattern classification in LUAD.
+
+
+\item[Mucinous invasive pattern] An LUAD growth pattern in which tumour cells produce abundant extracellular mucin; recognised by the IASLC as a distinct variant (IMA).  Strongly associated with KRAS mutations.  Note: mucinous is \emph{not} one of the six ANORAK-annotated classes used in this thesis (the ANORAK taxonomy includes cribriform instead).
+
+
+\item[MuTect2] A somatic variant caller developed by the Broad Institute that compares tumour and matched normal sequencing reads to identify cancer-specific mutations.  Used by the GDC pipeline to generate the MAF files from which mutation labels are derived.
+
+
+\item[NCIt] NCI Thesaurus.  A comprehensive biomedical ontology maintained by the National Cancer Institute, used in the LCHAI knowledge graph.
+
+
+\item[Neoplastic cells] Tumour cells---cells that have acquired somatic mutations causing them to divide uncontrollably.  In contrast to normal tissue cells, neoplastic cells form the tumour mass visible under the microscope.  All six LUAD growth patterns describe different architectural arrangements of neoplastic cells.
+
+
+\item[NGS] Next-Generation Sequencing.  High-throughput DNA sequencing technology that identifies mutations across multiple genes simultaneously; the current gold standard for molecular profiling (turnaround: 7--21 days).
+
+
+\item[Nonsense mutation] A single nucleotide change that introduces a premature stop codon, resulting in a truncated (usually non-functional) protein.  Classified as \texttt{Nonsense\_Mutation} in MAF files; retained as a non-silent variant.
+
+
+\item[NSCLC] Non-Small-Cell Lung Cancer.  The broad category encompassing LUAD, LUSC, and large-cell carcinoma, accounting for approximately 85\% of all lung cancers.
+
+
+\item[Oncogene] A gene that, when mutated or overexpressed, actively promotes tumour growth (e.g., \emph{EGFR}, \emph{KRAS}).
+
+
+\item[OncoKB] A precision oncology knowledge base curating actionable gene mutations and FDA-approved therapies, used as a provenance source in the LCHAI knowledge graph.
+
+
+\item[OpenSlide] An open-source C library for reading whole-slide images in various vendor formats (SVS, BIF, NDPI, MRXS), accessed via Python bindings.
+
+
+\item[Optuna] A Bayesian hyperparameter optimisation framework based on the Tree-structured Parzen Estimator (TPE) algorithm; used in this thesis for FuzzyArcLoss~V2 tuning.
+
+
+\item[Otsu's method] An automatic image thresholding algorithm that selects the intensity value maximising the between-class variance of the resulting foreground and background pixel groups.  Used for tissue segmentation in whole-slide images.
+
+
+\item[OWL] Web Ontology Language.  A formal language for authoring ontologies with logical axioms and reasoning support.
+
+
+\item[Panel of Normals (PoN)] A collection of sequencing results from non-tumour samples used to identify recurrent technical artefacts.  Variants appearing frequently in the PoN are filtered from the MAF file as likely false positives rather than genuine somatic mutations.
+
+
+\item[PI-ABMIL (Pattern-Informed ABMIL)] Artefact~2 of this thesis.  A MIL architecture that concatenates CTransPath 512-d visual embeddings with 6-d fuzzy pattern membership probabilities from Artefact~1, producing an enriched 518-d tile representation that explicitly encodes histological domain knowledge.  Displayed as ``Combined'' in the LCHAI clinical interface.
+
+\item[Papillary pattern] An LUAD growth pattern characterised by tumour cells growing on fibrovascular cores, forming finger-like projections.
+
+
+\item[PCR] Polymerase Chain Reaction.  A molecular biology technique that amplifies specific DNA segments, used for targeted mutation detection in individual genes.
+
+
+\item[Piecewise linear function] A function defined by different linear expressions on different intervals.  The FuzzyArcLoss~V2 membership function $\mu_i$ is piecewise linear, with separate slopes for high-confidence ($\cos\theta \geq \tau$) and low-confidence ($\cos\theta < \tau$) regimes.
+
+
+\item[Prognosis] The expected clinical outcome for a patient.  Favourable prognosis indicates better survival rates; poor prognosis indicates higher risk of recurrence and lower survival.
+
+
+\item[PyTorch] An open-source deep learning framework providing tensor computation with GPU acceleration and automatic differentiation.
+
+
+\item[pyvips] A Python binding for the libvips image processing library, used to convert non-standard WSI formats (BIF, flat TIFF) into pyramidal TIFFs readable by OpenSlide.
+
+
+\item[RBM10] RNA-Binding Motif Protein 10.  A tumour suppressor whose loss-of-function mutations occur in approximately 7\% of LUAD cases.
+
+
+\item[RDF] Resource Description Framework.  A W3C standard for representing knowledge as subject--predicate--object triples.  The LCHAI knowledge graph uses RDF-compatible IRIs from NCIt and MONDO to identify entities; the current implementation stores edges in a curated Python edge store and PostgreSQL, with migration to a formal RDF triplestore identified as future work (Section~\ref{sec:disc:future:medium}).
+
+
+\item[RDFLib] A Python library for working with RDF graphs.  Available in the LCHAI codebase for OWL ontology parsing; not used in the primary query path, which operates on the curated edge store directly.
+
+
+\item[Resection] Surgical removal of part or all of a tumour or organ; resected tissue specimens are used for histological examination.
+
+
+\item[SHAP] SHapley Additive exPlanations.  A game-theoretic framework for attributing model predictions to input features via Shapley values.  TreeSHAP and DeepSHAP are efficient variants for tree-based and deep learning models respectively.
+
+
+\item[Shapley value] In cooperative game theory, the unique fair allocation of the total payoff among players, averaging each player's marginal contribution over all possible coalitions.  In the context of fuzzy measures, the Shapley value of criterion $i$ represents its average importance.
+
+
+\item[Silent (synonymous) mutation] A DNA change that does not alter the resulting protein (the codon still encodes the same amino acid).  Silent mutations are excluded from the mutation labels in this thesis because they are unlikely to affect tumour morphology.
+
+
+\item[SO] Sequence Ontology.  A structured vocabulary for describing features and attributes of biological sequences, used in the LCHAI knowledge graph to classify variant types.
+
+
+\item[Softmax] A function that converts a vector of real numbers into a probability distribution by exponentiating each element and normalising by the sum.  Used to normalise Shapley values and compute class probabilities.
+
+
+\item[Solid pattern] A high-grade LUAD growth pattern in which tumour cells form sheets without recognisable glandular, papillary or lepidic architecture.  Strongly associated with TP53 mutations and poor prognosis.
+
+
+\item[Somatic mutation] A genetic alteration acquired by a tumour cell during the patient's lifetime (not inherited).  Distinguished from germline mutations.  Only \emph{non-silent} somatic mutations (missense, nonsense, frameshift, splice-site) are used as mutation labels in this thesis.
+
+
+\item[SPARQL] SPARQL Protocol and RDF Query Language.  A W3C query language for retrieving and manipulating data stored in RDF format.  The LCHAI codebase includes a SPARQL module for querying an Apache Fuseki triplestore as an alternative backend; in the current deployment, the primary query mechanism is a curated edge store with SQL for discovered relations (Section~\ref{sec:meth:ontology:sparql}).  Migration to a SPARQL-native triplestore is identified as medium-term future work.
+
+
+\item[Splice-site mutation] A mutation at an exon--intron boundary that alters mRNA splicing, potentially leading to exon skipping or intron retention and a non-functional protein.  Classified as \texttt{Splice\_Site} in MAF files; retained as a non-silent variant.
+
+
+\item[STK11] Serine/Threonine Kinase 11 (also known as LKB1).  Loss-of-function mutations in \emph{STK11} are associated with resistance to immune checkpoint inhibitors in LUAD.
+
+
+\item[Stroma / stromal] The connective tissue framework that supports organs, including blood vessels, fibroblasts, and immune cells.  ``Stromal invasion'' means tumour cells have penetrated beyond the epithelial layer into this supporting tissue---a defining feature that distinguishes invasive adenocarcinoma from adenocarcinoma in situ.
+
+
+\item[SVS] Aperio SVS format.  A pyramidal TIFF-based file format for storing whole-slide images at multiple resolution levels.
+
+
+\item[TCGA] The Cancer Genome Atlas.  A comprehensive, publicly available genomic and clinical dataset spanning 33 cancer types, maintained by the National Cancer Institute.
+
+
+\item[Tile] A small, fixed-size image patch (typically $224 \times 224$ pixels) extracted from a whole-slide image.  A single WSI may yield 5{,}000--80{,}000 tiles at $20\times$ magnification.
+
+
+\item[TILs] Tumour-Infiltrating Lymphocytes.  Immune cells present within the tumour microenvironment; their density correlates with prognosis and immunotherapy response.
+
+
+\item[Tissue mask] A binary image indicating which regions of a whole-slide image contain tissue versus background glass, computed from a thumbnail using Otsu thresholding and colour analysis.
+
+
+\item[TKI] Tyrosine Kinase Inhibitor.  A class of targeted drugs that block growth factor receptor signalling (e.g., osimertinib for EGFR, sotorasib for KRAS~G12C).
+
+
+\item[TP53] Tumour Protein p53.  The most frequently mutated gene in human cancer.  In LUAD, TP53 mutations occur in approximately 50\% of cases and are associated with high-grade solid and micropapillary patterns.
+
+
+\item[TreeSHAP] A variant of SHAP optimised for tree-based models (e.g., XGBoost) that computes exact Shapley values in polynomial time by exploiting the tree structure.
+
+
+\item[Trapezoidal membership function] A piecewise-linear fuzzy membership function defined by four parameters $(a, b, c, d)$: zero below $a$, rising linearly from $a$ to $b$, full membership from $b$ to $c$, and falling linearly from $c$ to $d$.  Used in LCHAI~v2.0 to define the five fuzzy linguistic label scales (SHAP balance, Shapley profile, Shapley individual, interaction index, attention level).
+
+\item[Tumour suppressor] A gene that normally restrains cell growth; its loss-of-function enables uncontrolled proliferation (e.g., \emph{TP53}, \emph{STK11}).
+
+
+\item[Variant calling] The bioinformatics process of identifying positions in the genome where a sample's DNA sequence differs from a reference.  In cancer genomics, somatic variant calling compares tumour versus matched normal DNA to find tumour-specific mutations.
+
+
+\item[WHO] World Health Organisation.  Publishes the Classification of Thoracic Tumours, which defines the five predominant LUAD growth patterns (lepidic, acinar, papillary, micropapillary, solid).
+
+
+\item[Wild-type] The non-mutated (normal) form of a gene.  A tumour described as ``wild-type for EGFR'' does not carry an EGFR mutation.
+
+
+\item[WSI] Whole-Slide Image.  A high-resolution digital scan of a complete tissue slide, typically at 20$\times$ or 40$\times$ magnification, stored in formats such as SVS or NDPI.  A single WSI may contain 40{,}000--100{,}000 tiles at 224$\times$224 pixels.
+
+
+
+\item[WXS] Whole-Exome Sequencing.  A genomic technique that sequences all protein-coding regions of the genome ($\sim$2\% of total DNA), capturing the regions most likely to harbour functional mutations.  The TCGA-LUAD mutation data used in this thesis was generated from WXS.
+
+
+\item[XGBoost] eXtreme Gradient Boosting.  A gradient-boosted decision tree algorithm used as a baseline mutation prediction method in this thesis (condition~B1).
+
+
+\item[Zenodo] A general-purpose open-access research data repository hosted by CERN, used to publish and distribute the expert-annotated ANORAK tile dataset (DOI: \texttt{10.5281/zenodo.10016027}) from which the 637 training tiles for the pattern classifier were obtained.
+
+
+\item[2-additive (fuzzy measure)] A restriction of a general fuzzy measure to interactions of order at most 2, requiring only $n + \binom{n}{2}$ parameters instead of $2^n - 2$.  For $n = 6$ patterns, this yields 21 learnable parameters.
+
+
+
+\end{description}

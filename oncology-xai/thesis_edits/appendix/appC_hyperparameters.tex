@@ -1,0 +1,133 @@
+\chapter{Hyperparameter Configurations}
+\label{app:hyperparameters}
+
+\section{Location of the Hyperparameter Tables}
+\label{app:hyper:pointers}
+
+The complete hyperparameter configurations for all models are provided
+in the implementation chapter (Chapter~\ref{ch:implementation}):
+
+\begin{itemize}
+    \item \textbf{FuzzyArcLoss~V2 pattern classifier:}
+    Training configuration including Optuna-optimised scale ($s = 46.1$),
+    margin ($m = 0.518$), and threshold ($\tau = 0.448$) is described in
+    Section~\ref{sec:impl:pattern} with the full parameter list in the
+    accompanying text.
+
+    \item \textbf{ABMIL mutation prediction benchmark:}
+    Table~\ref{tab:hyper_abmil2} in
+    Section~\ref{sec:impl:mutation:training} lists all hyperparameters
+    including learning rate ($2 \times 10^{-4}$), early stopping
+    (patience = 15), and maximum tiles per slide (4{,}096).
+
+    \item \textbf{XGBoost baseline (B1):}
+    Table~\ref{tab:hyper_xgboost2} in
+    Section~\ref{sec:impl:mutation:xgboost} lists
+    \texttt{n\_estimators=300}, \texttt{max\_depth=4},
+    \texttt{learning\_rate=0.05}.
+
+    \item \textbf{Fuzzy Choquet MIL:}
+    Table~\ref{tab:hyper_choquet2} in
+    Section~\ref{sec:impl:choquet} lists the 21-parameter
+    configuration (6 Shapley + 15 interaction indices).
+\end{itemize}
+
+This appendix is intentionally kept as a cross-reference to avoid
+duplication with the implementation chapter.
+
+
+\section{Parameter Count Derivations}
+\label{app:param_counts}
+
+The $\sim$200{,}000 and $\sim$266{,}000 parameter counts cited
+throughout the thesis are derived below.
+All layers use the PyTorch convention:
+a fully connected layer from dimension $d_{\text{in}}$ to
+$d_{\text{out}}$ has $d_{\text{in}} \times d_{\text{out}} + d_{\text{out}}$
+parameters (weights + bias); a layer without bias omits the
+$d_{\text{out}}$ term; layer normalisation adds $2 \times d$ parameters
+(scale and shift).
+
+\subsection{ABMIL --- Condition P (input\_dim = 518)}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Parameter count for Pattern-Informed ABMIL (condition~P,
+$\text{input\_dim} = 518$, $\text{hidden} = 256$, $\text{attn} = 128$).}
+\label{tab:params_abmil_detail}
+\begin{tabular}{l l r}
+\hline
+\textbf{Component} & \textbf{Computation} & \textbf{Params} \\
+\hline
+\multicolumn{3}{l}{\textit{Encoder}} \\
+Linear($518 \to 256$)       & $518 \times 256 + 256$    & 132{,}864 \\
+LayerNorm($256$)            & $2 \times 256$            & 512 \\
+\hline
+\multicolumn{3}{l}{\textit{Gated Attention}} \\
+$\mathbf{V}$: Linear($256 \to 128$) & $256 \times 128 + 128$  & 32{,}896 \\
+$\mathbf{U}$: Linear($256 \to 128$) & $256 \times 128 + 128$  & 32{,}896 \\
+$\mathbf{w}$: Linear($128 \to 1$, no bias) & $128$             & 128 \\
+\hline
+\multicolumn{3}{l}{\textit{Classifier}} \\
+Linear($256 \to 1$)         & $256 + 1$                 & 257 \\
+\hline
+\textbf{Total}              &                           & \textbf{199{,}553} \\
+\hline
+\end{tabular}
+\end{table}
+
+For other conditions the encoder input dimension changes:
+B2 ($\text{input\_dim} = 512$): 198{,}017 params;
+B3 ($\text{input\_dim} = 6$): 68{,}481 params;
+A ($\text{input\_dim} = 518$): identical to P.
+
+\subsection{Fuzzy Choquet MIL --- Condition FC (embed\_dim = 512, n\_patterns = 6)}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Parameter count for Fuzzy Choquet MIL (condition~FC).
+The interpretable fuzzy measure contributes only 42 of the total
+$\sim$266{,}000 parameters.}
+\label{tab:params_choquet_detail}
+\begin{tabular}{l l r}
+\hline
+\textbf{Component} & \textbf{Computation} & \textbf{Params} \\
+\hline
+\multicolumn{3}{l}{\textit{Fuzzy Measure (interpretable --- 42 params)}} \\
+Shapley values $\boldsymbol{\psi}$       & $6$                        & 6 \\
+Interaction matrix $\mathbf{v}_2$        & $6 \times 6$               & 36 \\
+\hline
+\multicolumn{3}{l}{\textit{Embedding Pathway (shared with ABMIL)}} \\
+Encoder: Linear($512 \to 256$)           & $512 \times 256 + 256$     & 131{,}328 \\
+Encoder: LayerNorm($256$)                & $2 \times 256$             & 512 \\
+$\mathbf{V}_{\text{attn}}$: Linear($256 \to 128$)  & $256 \times 128 + 128$  & 32{,}896 \\
+$\mathbf{U}_{\text{attn}}$: Linear($256 \to 128$)  & $256 \times 128 + 128$  & 32{,}896 \\
+$\mathbf{w}_{\text{attn}}$: Linear($128 \to 1$, no bias) & $128$            & 128 \\
+\hline
+\multicolumn{3}{l}{\textit{Merge Projection}} \\
+Linear($262 \to 256$)                    & $262 \times 256 + 256$     & 67{,}328 \\
+LayerNorm($256$)                         & $2 \times 256$             & 512 \\
+\hline
+\multicolumn{3}{l}{\textit{Other}} \\
+Choquet scale (scalar)                   & $1$                        & 1 \\
+Classifier: Linear($256 \to 1$)          & $256 + 1$                 & 257 \\
+\hline
+\textbf{Total}                           &                           & \textbf{265{,}900} \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Key observation.}
+The 42-parameter fuzzy measure (6~Shapley values + 36~interaction
+matrix entries, of which 15 upper-triangle entries are used) is the
+\emph{only} component that provides intrinsic interpretability
+(Shapley values and interaction indices).
+The remaining $\sim$265{,}858 parameters constitute the embedding
+encoder, gated attention, and merge projection---shared architectural
+components that are opaque, as in standard ABMIL.
+The merge projection layer ($262 \to 256$, contributing 67{,}840
+parameters) accounts for the $\sim$33\% size increase of FC over
+ABMIL; it is necessary to fuse the 6-d Choquet output with the
+256-d attention-aggregated embedding before classification.

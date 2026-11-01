@@ -7,7 +7,7 @@
 % University of Fribourg
 % ============================================================================
 
-\chapter{Evaluation of Artifacts}
+\chapter{Evaluation of the Artefacts}
 \label{ch:evaluation}
 
 This chapter presents the quantitative and qualitative evaluation of the three computational artifacts developed in this thesis.
@@ -103,7 +103,7 @@ the primary evaluation.}
 \end{tabular}
 \end{table}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.92\textwidth]{chapters/figures/singlerun_18losses_bar.png}
 \caption[Single-run screening: 18 loss functions]{%
@@ -178,7 +178,7 @@ Mean macro-F1 $\pm$ standard deviation with 95\% confidence intervals.}
 \end{tabular}
 \end{table}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.85\textwidth]{chapters/figures/kfold_5methods_bar.png}
 \caption[K-fold evaluation: 5 methods]{%
@@ -315,7 +315,7 @@ SphereFace &
 \end{tabular}
 \end{table}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/perclass_f1_bar.png}
 \caption[Per-class F1 across 5 methods]{%
@@ -414,9 +414,9 @@ apply uniformly to all minority classes.
 
 Figure~\ref{fig:boundary_vs_size} visualises this distinction.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{chapters/figures/boundary_vs_size_v2.png}
+\includegraphics[width=\textwidth,height=7.57in,keepaspectratio]{chapters/figures/boundary_vs_size_v2.png}
 \caption[V2 advantage: boundary-dependent, not class-size-dependent]{%
     FuzzyArcLoss~V2's per-class F1 advantage over ArcFace
     ($\Delta$\,pp) plotted against boundary ambiguity and class
@@ -527,7 +527,7 @@ FuzzyArcLoss~V2 on the ANORAK validation set (138~tiles, 80/20 split,
 seed~42), with class names mapped to the official Zenodo annotation
 scheme (Table~\ref{tab:variant_types_patterns}).
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.75\textwidth]{chapters/figures/confusion_matrix_fuzzyarcloss_v2_zenodo.png}
 \caption[Confusion matrix: FuzzyArcLoss V2 on ANORAK validation set]{%
@@ -569,7 +569,7 @@ Three observations emerge from the confusion matrix:
 \end{enumerate}
 
 \paragraph{Preliminary expert validation on TCGA slides.}
-A board-certified pathologist from SOLCA (Sociedad de Lucha Contra el
+A board-certified pathologist from SOLCA Guayaquil (Sociedad de Lucha Contra el
 C\'{a}ncer del Ecuador) independently reviewed eight subregions from
 five TCGA slides processed through LCHAI~v2.0.
 Of these, one case (TCGA-49-AAR9, solid-dominant) matched exactly,
@@ -651,9 +651,9 @@ FC-MIL  & .716$\pm$.047 & .684$\pm$.037 & .658$\pm$.077 &
 \end{tabular}
 \end{table}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{chapters/figures/auroc_by_gene_ver_15_mar_2026.png}
+\includegraphics[width=\textwidth,height=7.41in,keepaspectratio]{chapters/figures/auroc_by_gene_ver_15_mar_2026.png}
 \caption[AUROC per gene: all six conditions]{%
     PI-ABMIL benchmark results: mean AUROC $\pm$ standard
     deviation per gene across 5-fold patient-stratified cross-validation
@@ -674,7 +674,7 @@ FC-MIL  & .716$\pm$.047 & .684$\pm$.037 & .658$\pm$.077 &
 \label{fig:auroc_by_gene}
 \end{figure}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.85\textwidth]{chapters/figures/auroc_heatmap_ver_15_mar_2026.png}
 \caption[AUROC heatmap: condition $\times$ gene]{%
@@ -717,7 +717,7 @@ AUROC profile of four key conditions, illustrating that
 FC-MIL (FC) expands the profile for KRAS and RBM10 while B2 leads
 for TP53 and EGFR.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/auroc_difference_vs_b2.png}
 \caption[AUROC difference vs B2 ceiling baseline]{%
@@ -733,7 +733,7 @@ for TP53 and EGFR.
 \label{fig:auroc_difference}
 \end{figure}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.7\textwidth]{chapters/figures/auroc_radar_profile.png}
 \caption[AUROC radar profile across genes]{%
@@ -748,9 +748,9 @@ for TP53 and EGFR.
 \end{figure}
 
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{chapters/figures/auprc_by_gene.png}
+\includegraphics[width=\textwidth,height=8.24in,keepaspectratio]{chapters/figures/auprc_by_gene.png}
 \caption[AUPRC per gene: all six conditions]{%
     Area Under the Precision-Recall Curve (AUPRC) per gene for all six
     experimental conditions.
@@ -781,7 +781,7 @@ by overlaying, for each gene sorted by ascending mutation prevalence,
 the best mean AUROC, the mean AUPRC of that same condition, and the
 AUPRC random baseline.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/auroc_auprc_prevalence.png}
 \caption[AUROC, AUPRC and prevalence-driven gap]{%
@@ -1196,7 +1196,7 @@ mechanism explains the B3 and B1 ablations) are detailed in
 Finding~4 (Section~\ref{sec:eval:mutation:finding4},
 Figure~\ref{fig:kras_two_routes}).
 
-\begin{figure}[ht!]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{chapters/figures/kras_lepidic_solid_proxy.png}
   \caption[Why FC-MIL learns
@@ -1242,16 +1242,8 @@ achieve.
 Figure~\ref{fig:signal_tree} consolidates the three regimes and
 their gene assignments in a single view.
 
-\begin{figure}[ht!]
-\centering
-\includegraphics[width=\textwidth]{chapters/figures/signal_tree.png}
-\caption[Three structural regimes of morphology--mutation
-prediction.]{%
-    Decision tree over the six target genes, classified by which
-    of the three structural regimes their mutation prediction
-    falls under (root question: ``where is the discriminative
-    signal $p(\mathrm{slide}\,|\,\mathrm{gene\ mutant})$?'').
-    \textbf{Regime~A --- encoder saturation} (left, green):
+In the figure, the three regimes are as follows.
+\textbf{Regime~A --- encoder saturation} (left, green):
     the pretrained CTransPath embedding already encodes the
     discriminative signal, so explicit pattern probabilities are
     informationally redundant
@@ -1275,22 +1267,31 @@ prediction.]{%
     read; KRAS reaches $P = 0.965$ via the lepidic--solid
     co-presence that proxies the missing IMA class
     (Figures~\ref{fig:kras_lepidic_solid_proxy},~\ref{fig:kras_mu_subset_lattice}).
-    Per-gene cards report the slide-level evidence on the
-    representative case ($P$, TP/FN outcome,
-    $\Delta_{\mathrm{pat}} = P_{\mathrm{combined}} -
-    P_{\mathrm{emb\text{-}only}}$ in pp;
-    Table~\ref{tab:enrichment_summary}).
-    The bottom band reports the cohort-level Hosmer--Lemeshow
+The bottom band reports the cohort-level Hosmer--Lemeshow
     verdict at the AUROC $0.70$ threshold:
     Regime~A genes (TP53, EGFR) are Conclusive; the four
     Regime~B and~C genes are Inconclusive at population level.
-    Note that the slide-level FN at the EGFR card does not
+Note that the slide-level FN at the EGFR card does not
     contradict EGFR's regime~A assignment: the cohort-mean
     AUROC of $0.701$ is Conclusive, but the particular
     representative slide chosen for the case study falls in the
     false-negative tail of the score distribution
     (Section~\ref{sec:eval:tcga:egfr};
-    Figure~\ref{fig:egfr_score_overlap}).}
+    Figure~\ref{fig:egfr_score_overlap}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=7.6in,keepaspectratio]{chapters/figures/signal_tree.png}
+\caption[Three structural regimes of morphology--mutation
+prediction.]{%
+    Decision tree over the six target genes, classified by which
+    of the three structural regimes their mutation prediction
+    falls under (root question: ``where is the discriminative
+    signal $p(\mathrm{slide}\,|\,\mathrm{gene\ mutant})$?'').
+    Per-gene cards report the slide-level evidence on the
+    representative case ($P$, TP/FN outcome, $\Delta_{\mathrm{pat}}$ in pp;
+    Table~\ref{tab:enrichment_summary}); the bottom band reports the cohort-level
+    Hosmer--Lemeshow verdict at the AUROC $0.70$ threshold.}
 \label{fig:signal_tree}
 \end{figure}
 
@@ -1439,7 +1440,7 @@ The full per-gene Choquet behaviour is mapped in Finding~6
 (Section~\ref{sec:eval:mutation:finding6};
 Figure~\ref{fig:choquet_regimes}).
 
-\begin{figure}[ht!]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{chapters/figures/kras_two_routes.png}
   \caption[Why B3 collapses to chance on KRAS: two routes, both
@@ -1508,7 +1509,7 @@ B3~$>$~B1 on five of six genes also without the embedding stream,
 confirming that attention-weighted tile-level aggregation recovers
 more information than slide-level averaging.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{chapters/figures/b3_regimes.png}
   \caption[When does the pattern-only stream (B3) catch up?]{%
@@ -1584,7 +1585,7 @@ attention-weighted aggregation that B3 and B2 perform extracts
 substantially more discriminative information than slide-level
 averaging when the signal is not concentrated.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{chapters/figures/b1_per_gene.png}
   \caption[B1 (XGBoost on slide-level pattern frequencies) AUROC by
@@ -1744,7 +1745,7 @@ branch operates as an active discriminative module is KRAS
   \label{fig:choquet_regimes}
 \end{figure}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{chapters/figures/choquet_variance_map.png}
   \caption[FC-MIL engagement map: AUROC gain $\times$
@@ -1943,7 +1944,7 @@ in Figures~\ref{fig:attn_tp53_tp}--\ref{fig:attn_rbm10_tp}:
     every extracted tile to one of the six ANORAK-annotated growth patterns using a
     categorical colour code consistent with LCHAI~v2.0 (green~= micropapillary,
     red~= acinar, dark red~= solid, cyan~= cribriform, yellow~= papillary,
-    blue~= lepidic), providing a spatial view of tumour heterogeneity.\footnote{Pattern names and colours follow the Zenodo--ANORAK scheme (Section~\ref{sec:uc:zenodo}). A preliminary expert review of TCGA slides by a board-certified pathologist from SOLCA Ecuador is reported in Section~\ref{sec:eval:pattern:confusion}; a formal multi-rater concordance study remains as future work (Section~\ref{sec:eval:lim:data}).}
+    blue~= lepidic), providing a spatial view of tumour heterogeneity.\footnote{Pattern names and colours follow the Zenodo--ANORAK scheme (Section~\ref{sec:uc:zenodo}). A preliminary expert review of TCGA slides by a board-certified pathologist from SOLCA Guayaquil is reported in Section~\ref{sec:eval:pattern:confusion}; a formal multi-rater concordance study remains as future work (Section~\ref{sec:eval:lim:data}).}
 
     \item \textbf{ABMIL attention map} (right panel): shows the
     continuous attention weights assigned by the gene-specific ABMIL
@@ -2054,7 +2055,7 @@ confirms this: the embeddings-only model (95.1\%) outperforms the combined
 model (79.0\%), indicating that adding pattern features introduces
 interference rather than complementary signal for TP53.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \begin{minipage}[t]{0.48\textwidth}
 \centering
@@ -2176,7 +2177,7 @@ lepidic (0.3\%), and cribriform (0.16\%).
 Despite the homogeneous pattern composition, the model assigns a low
 EGFR probability---a false negative.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \begin{minipage}[t]{0.48\textwidth}
 \centering
@@ -2281,7 +2282,7 @@ Three factors explain why:
     are expected to fall.
 \end{enumerate}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/egfr_score_overlap.png}
 \caption[Why a false negative is statistically expected for atypical
@@ -2428,7 +2429,7 @@ These positive $I_{kl}$ tell the Choquet aggregator that
 more informative than either pattern individually---which is the
 mechanism standard additive heads cannot capture.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \begin{minipage}[t]{0.48\textwidth}
 \centering
@@ -2502,7 +2503,7 @@ subset---receives a bump, raising
 $\mu(\{\mathrm{lep,\,sol}\})$ from $0.333$ (the additive baseline
 $\phi_{\mathrm{lep}} + \phi_{\mathrm{sol}}$) to $0.365$.
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/kras_mu_subset_lattice.png}
 \caption[How $I_{\,\mathrm{lep,\,sol}}$ modifies $\mu(S)$ on
@@ -2580,7 +2581,7 @@ spurious correlate, the optimiser explores them, none generalises.
 The slide-level evidence below makes the same diagnosis concrete
 on a single representative case.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \begin{minipage}[t]{0.48\textwidth}
 \centering
@@ -2740,9 +2741,9 @@ Emb-only~$= 10.1\%$) and one closed in the pattern pathway
 slide-level signatures of the cohort behaviour that earned the
 gene its Inconclusive label.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{chapters/figures/stk11_signal_routes.png}
+\includegraphics[width=\textwidth,height=7.40in,keepaspectratio]{chapters/figures/stk11_signal_routes.png}
 \caption[Where does the STK11 signal go in LCHAI~v2.0?]{%
     Two routes by which STK11 biology reaches the LCHAI~v2.0
     classifier on slide TCGA-49-AAR0.
@@ -2856,7 +2857,7 @@ diffusion still drives the pattern channel into interference,
 producing the $-44.7$\,pp ablation gap of
 Figure~\ref{fig:attn_keap1_tp} (bottom right).
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \begin{minipage}[t]{0.48\textwidth}
 \centering
@@ -2994,7 +2995,7 @@ attribution ($60\%$) with the largest negative ablation delta
 diagonal that would be expected if SHAP attribution tracked
 actual usefulness.
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{chapters/figures/keap1_attention_vs_utility.png}
     \caption[KEAP1: pattern attention vs.\ pattern usefulness across
@@ -3116,7 +3117,7 @@ IMA-proxy reading (Finding~4,
 Figure~\ref{fig:kras_two_routes}) can be read as the only
 genuine cross-term signal in the cohort.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \begin{minipage}[t]{0.48\textwidth}
 \centering
@@ -3263,9 +3264,9 @@ and the three factors below decompose why.
     expectation).
 \end{enumerate}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{chapters/figures/rbm10_cleanest_null.png}
+\includegraphics[width=\textwidth,height=7.41in,keepaspectratio]{chapters/figures/rbm10_cleanest_null.png}
 \caption[RBM10/TCGA-78-7148: the cohort's cleanest null]{%
     Synthesis of the three factors discussed above for
     RBM10-mutant slide TCGA-78-7148.
@@ -3686,7 +3687,7 @@ RBM10 & Micropapillary $\times$ Cribriform & $-0.003$ & Negligible \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/choquet_kras_55_7815.png}
 \caption[Choquet Shapley analysis: KRAS (TCGA-55-7815)]{%
@@ -3708,7 +3709,7 @@ RBM10 & Micropapillary $\times$ Cribriform & $-0.003$ & Negligible \\
 \label{fig:choquet_kras}
 \end{figure}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/choquet_rbm10_78_7148.png}
 \caption[Choquet Shapley analysis: RBM10 (TCGA-78-7148)]{%
@@ -3913,7 +3914,7 @@ clinical decision support prototype that integrates all three
 artefacts into a coherent workflow, fulfilling the DSR
 ``demonstration'' activity.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/lchai_v2_graph_tab_55_7815.png}
 \caption[LCHAI~v2.0 knowledge graph for TCGA-55-7815]{%
@@ -4000,7 +4001,7 @@ Choquet--Shapley values should be read with this caveat.
 
 \textbf{Preliminary pathologist validation and absence of spatial
 mutation ground truth.}
-A board-certified pathologist from SOLCA Ecuador reviewed eight
+A board-certified pathologist from SOLCA Guayaquil reviewed eight
 subregions across five TCGA slides
 (Section~\ref{sec:eval:pattern:confusion}), providing the first
 external validation of the pattern classifier on inference data.
@@ -4338,7 +4339,7 @@ model from inventing intensity characterisations
 quotes for KRAS and RBM10 produced by this mechanism).
 
 \textbf{Caveat:} The preliminary expert review by a board-certified
-pathologist from SOLCA Ecuador
+pathologist from SOLCA Guayaquil
 (Section~\ref{sec:eval:pattern:confusion}) revealed domain shift
 between training and inference cohorts, particularly on the
 micropapillary--acinar boundary; a formal multi-rater concordance
@@ -4551,7 +4552,7 @@ into noise.
 
 
 % ============================================================================
-\section{Chapter Summary}
+\section{Summary of the Evaluation Findings}
 \label{sec:eval:summary}
 % ============================================================================
 

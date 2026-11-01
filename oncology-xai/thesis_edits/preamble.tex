@@ -1,0 +1,106 @@
+% ============================================================
+% PREAMBLE — Pattern-Informed Fuzzy Deep Learning Thesis
+% University of Fribourg — Dr. sc. inf.
+% ============================================================
+
+% ---------- encoding & language ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{enumitem}          % description/itemize/enumerate options
+
+% ---------- page geometry ----------
+\usepackage[a4paper,top=30mm,bottom=30mm,left=30mm,right=25mm]{geometry}
+
+% ---------- suppress initial blank page ----------
+
+
+% ---------- fonts ----------
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ---------- math ----------
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{bm}
+\usepackage{mathtools}
+
+% ---------- graphics & floats ----------
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage[labelfont=bf,font=small]{caption}
+\usepackage{pmboxdraw}
+% ---------- tables ----------
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% ---------- colour ----------
+\usepackage[dvipsnames,table]{xcolor}
+\definecolor{unifrblue}{RGB}{0,60,128}
+
+% ---------- code listings ----------
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{unifrblue}\bfseries,
+  commentstyle=\color{gray},
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray}
+}
+
+% ---------- algorithms ----------
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+
+% ---------- hyperlinks & references ----------
+\usepackage[colorlinks,linkcolor=unifrblue,citecolor=unifrblue,urlcolor=unifrblue]{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+
+% ---------- bibliography ----------
+\usepackage[numbers,sort&compress]{natbib}
+
+% ---------- glossary support ----------
+% Manual glossary in Appendix A (description environment); no automated
+% glossaries package needed.
+
+% ---------- headers ----------
+\usepackage{fancyhdr}
+\setlength{\headheight}{26pt}
+\addtolength{\topmargin}{-14pt}
+\fancyhf{}
+\fancyhead[LE]{\slshape\leftmark}
+\fancyhead[RO]{\slshape\rightmark}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ---------- theorem-like environments ----------
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[chapter]
+\newtheorem{proposition}{Proposition}[chapter]
+\newtheorem{remark}{Remark}[chapter]
+
+% ---------- custom commands ----------
+\newcommand{\auroc}{\text{AUROC}}
+\newcommand{\fuzzyarc}{\textsc{FuzzyArcLoss}}
+\newcommand{\abmil}{\textsc{ABMIL}}
+\newcommand{\lchai}{\textsc{LCHAI}}
+\newcommand{\ctranspath}{\textsc{CTransPath}}
+\newcommand{\xgb}{\textsc{XGBoost}}
+\newcommand{\choquet}{\text{Choquet}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\EE}{\mathbb{E}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator{\softmax}{softmax}
+\DeclareMathOperator{\sigmoid}{sigmoid}
+\usepackage{xltabular}
+\usepackage{pdfpages} % ethics approval PDF (Appendix D)
+\usepackage{booktabs}

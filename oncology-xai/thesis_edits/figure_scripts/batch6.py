@@ -1,0 +1,62 @@
+from fx import *
+import numpy as np
+OUT='../man_out/'
+PU,OR,GR,GN,BL,RD='#8e44ad','#e67e22','#bdc3c7','#27ae60','#2980b9','#c0392b'
+def rbm10():
+    W,H=7.2,10.6; c=Canvas(W,H,minpt=8.0); k=c.k; P=lambda p:p/k
+    T=H-10.7
+    def axin(l,b,w,h): return c.fig.add_axes([l/W,b/H,w/W,h/H])
+    def style(ax):
+        ax.tick_params(labelsize=P(8)); ax.grid(alpha=.25,lw=P(.6)); ax.set_axisbelow(True)
+    c.text(W/2,H-0.2,"RBM10 / TCGA-78-7148: the cohort's cleanest null",10.5,weight='bold',w=W-0.3,h=0.4)
+    # (a)
+    c.text(W/2,10.25+T-0.05,'(a) No pattern anchor: Shapley value φk ≈ 1/6 for every pattern',9,weight='bold',w=W-0.3,h=0.35)
+    ax=axin(0.95,8.5+T,6.05,1.5); style(ax)
+    names=['Cribri.','Solid','Acinar','Lepidic','Micropap.','Papillary']; x=np.arange(6)
+    ax.bar(x,[1/6]*6,0.8,color=GR,label='Uniform (1/6 ≈ 0.167)')
+    ax.bar(x,[0.1667,0.1667,0.1667,0.166,0.166,0.166],0.5,color=OR,ec='white',label='RBM10 slide φk (TCGA-78-7148)')
+    ax.axhline(1/6,color='#888',ls='--',lw=P(.9))
+    ax.set_ylim(0,0.38); ax.set_xticks(x); ax.set_xticklabels(names); ax.set_yticks([0,0.05,0.10,0.15,0.20])
+    ax.set_ylabel('Choquet Shapley value',fontsize=P(8.5))
+    ax.legend(fontsize=P(8),ncol=2,loc='upper center',frameon=False,columnspacing=1.2,handlelength=1.2)
+    ax.text(2.5,0.265,'Signature of a gene the Choquet branch cannot anchor on',fontsize=P(8),ha='center',va='center',color='#1f3a5f',bbox=dict(fc='white',ec='#999',boxstyle='round,pad=0.25',lw=.8))
+    ax.annotate('',xy=(2.5,0.171),xytext=(2.5,0.248),arrowprops=dict(arrowstyle='-|>',color='#1f3a5f',lw=P(1)))
+    # (b)
+    c.text(W/2,8.0+T-0.05,'(b) All three ablation pathways collapse on RBM10',9,weight='bold',w=W-0.3,h=0.35)
+    ax=axin(0.95,6.25+T,6.05,1.5); style(ax)
+    xs=np.arange(3); kv=[24.7,69.4,24.7]; rv=[2.9,2.6,5.5]
+    ax.bar(xs-0.2,kv,0.38,color=PU,label='KEAP1 (TCGA-49-AAR9, productive)')
+    ax.bar(xs+0.2,rv,0.38,color=OR,label='RBM10 (TCGA-78-7148, this slide)')
+    for i in range(3):
+        ax.text(i-0.2,kv[i]+2,f'{kv[i]}%',ha='center',va='bottom',fontsize=P(8),color=PU,weight='bold')
+        ax.text(i+0.2,rv[i]+2,f'{rv[i]}%',ha='center',va='bottom',fontsize=P(8),color=OR,weight='bold')
+    ax.axhline(50,color=RD,ls=':',lw=P(1)); ax.text(-0.45,52,'Decision threshold (50%)',fontsize=P(8),color=RD,va='bottom')
+    ax.set_ylim(0,115); ax.set_xlim(-0.5,2.5); ax.set_yticks([0,20,40,60,80]); ax.set_xticks(xs); ax.set_xticklabels(['Combined','Emb-only','Pat-only'])
+    ax.set_ylabel('Mutant probability (%)',fontsize=P(8.5))
+    ax.legend(fontsize=P(8),loc='upper center',ncol=2,frameon=False,handlelength=1.2,columnspacing=1)
+    ax.text(1.95,57,'Neither embedding nor pattern\nchannel recovers RBM10',fontsize=P(8),ha='center',va='bottom',color=OR,bbox=dict(fc='#fff4e8',ec=OR,boxstyle='round,pad=0.25',lw=.8))
+    ax.annotate('',xy=(1.25,18),xytext=(1.55,56),arrowprops=dict(arrowstyle='-|>',color=OR,lw=P(1)))
+    # (c)
+    c.text(W/2,5.75+T-0.05,'(c) Attention-vs-utility plane: RBM10 sits at the origin',9,weight='bold',w=W-0.3,h=0.35)
+    ax=axin(0.95,4.0+T,6.05,1.5); style(ax)
+    ax.axhspan(-3,3,xmin=0,xmax=41/75,color='#fbe3d0',alpha=.8,lw=0); ax.axhline(0,color='#999',lw=P(.8))
+    ax.set_xlim(0,75); ax.set_ylim(-60,32); ax.set_yticks([-40,-20,0,20])
+    ax.plot(62,18,'D',color=GN,ms=P(9)); ax.plot(58,-45,'s',color=PU,ms=P(9)); ax.plot(18,-2,'^',color=BL,ms=P(9)); ax.plot(21,0,'o',color=OR,ms=P(10),mec='white')
+    ax.text(59,18,'Productive (reference)',ha='right',va='center',fontsize=P(8),color=GN,weight='bold')
+    ax.text(55,-45,'KEAP1 (TCGA-49-AAR9)',ha='right',va='center',fontsize=P(8),color=PU,weight='bold')
+    ax.text(24,12,'RBM10 (this slide)',ha='left',va='center',fontsize=P(8),color=OR,weight='bold')
+    ax.text(15,-14,'EGFR (collapsed case)',ha='left',va='top',fontsize=P(8),color=BL,weight='bold')
+    ax.text(44,0,'Absent regime: neither\nproductive nor destructive',ha='left',va='center',fontsize=P(8),color=OR,style='italic')
+    ax.set_xlabel('Pattern-channel attention (%)',fontsize=P(8.5)); ax.set_ylabel('Pattern utility (pp)',fontsize=P(8.5))
+    # (d)
+    c.text(W/2,3.05,'(d) Cohort verdict: Inconclusive → transparent abstention',9,weight='bold',w=W-0.3,h=0.35)
+    c.text(W/2,2.72,'RBM10 cohort statistics',8.5,weight='bold',color='#2c3e50')
+    c.box(0.5,1.85,6.2,0.78,'Prevalence: 5.4% (37 mutated slides, lowest of 6 genes)\nMean 5-fold AUROC = 0.661 (below the 0.70 threshold)\nAUPRC ≈ 0.17 (extreme AUROC-AUPRC gap); ~34% of (mutant, wild-type) pairs mis-ranked',8,fc='#fff8e8',ec=OR)
+    c.text(W/2,1.62,'Slide outcome (TCGA-78-7148)',8.5,weight='bold',color='#2c3e50')
+    c.box(0.5,1.08,6.2,0.45,'Predicted P(mutant) = 0.017: deep in the false-negative tail, as the cohort statistics predict',8,fc='#fadbd8',ec=RD)
+    c.text(W/2,0.88,'Clinical value: transparent abstention',8.5,weight='bold',color=GN)
+    c.box(0.5,0.1,6.2,0.65,'Near-zero probability + Inconclusive label → molecular testing required. Per-slide arbitration is moot: no candidate model would change the prediction sign.',8,fc='#d5f5e3',ec=GN)
+    fig=c.fig
+    c.save(OUT+'rbm10_cleanest_null.png')
+    print(audit(fig))
+rbm10()

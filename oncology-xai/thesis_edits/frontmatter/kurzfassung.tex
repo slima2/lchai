@@ -1,0 +1,144 @@
+\chapter*{Kurzfassung}
+\addcontentsline{toc}{chapter}{Kurzfassung}
+
+Diese Arbeit behandelt die schwach überwachte Mutationsvorhersage aus
+Gigapixel-H\&E-Bildern (mit Hämatoxylin und Eosin gefärbt) von
+Lungenadenokarzinomen (LUAD, dem häufigsten Subtyp des
+Lungenkarzinoms): einem einzigen binären Label pro Gen werden etwa
+$10^9$ Pixel zugeordnet, ohne Annotation auf Subregion-Ebene.
+Bestehende Systeme benötigen Zehntausende proprietärer Schnitte und
+liefern keine Erklärung dafür, \emph{warum} eine Mutation
+vorhergesagt wird --- ein zentrales Hindernis für klinisches
+Vertrauen. Das zugrunde liegende Problem ist seinerseits
+\emph{stochastisch, mehrdeutig (viele-zu-viele) und schwach
+gelabelt}: dieselbe Morphologie kann mehreren Genotypen entsprechen
+und umgekehrt, weshalb die Aussagekraft eines Modells pro Gen und
+pro Schnitt belegt werden muss, nicht aus einer einzigen
+Kohortenmetrik.
+
+Die zentrale Hypothese lautet, dass \emph{strukturiertes
+Domänenwissen} --- konkret die sechs durch Experten definierten
+histologischen Wachstumsmuster des LUAD
+(lepidic, acinar, papillary, micropapillary, solid, cribriform),
+kodiert mittels der Theorie unscharfer Mengen --- in eine
+Deep-Learning-Pipeline integriert werden kann, um gleichzeitig
+wettbewerbsfähige Mutationsvorhersagen unter Datenknappheit
+($<\!700$ öffentliche Schnitte) zu erzielen und die Vorhersagen
+\emph{interpretierbar} zu machen, mittels eines mehrstufigen,
+klinisch verifizierbaren Inspektionsrahmens --- und darüber hinaus
+\emph{erklärbar} durch wissensgraph-basierte
+natürlichsprachliche Begründungen --- in einem Ausmass, das kein
+End-to-End-Black-Box-Ansatz bietet; das Urteil fällt
+\emph{gen-konditional} aus.
+Nach den Prinzipien der Design Science Research werden drei
+Artefakte und ein integratives System (\lchai{},
+\emph{Lung Cancer Histologic Analysis with AI}) entworfen und
+evaluiert.
+
+\textbf{Artefakt~1 (FuzzyArcLoss~V2)} ist eine probenweise
+unscharfe Modulation des ArcFace-Winkelmargins, welche die
+graduellen morphologischen Übergänge zwischen Musterklassen
+respektiert; im Vergleich von 18 Verlustfunktionen erreicht es
+Platz~1 (Macro-F1 $= 92{,}31\,\%\!\pm\!2{,}04$, $p\!=\!0{,}001$,
+Cohen's~$d\!=\!1{,}00$). Sein Vorteil ist
+\emph{abhängig von morphologischen Klassengrenzen, nicht von der
+Klassengrösse}: der Gewinn manifestiert sich auf visuell
+mehrdeutigen, benachbarten Klassen unabhängig von deren Grösse ---
+eine Übertragungsregel, die sich auf Gleason-Grading,
+Pap-Zytologie und Dermatopathologie verallgemeinern lässt.
+
+\textbf{Artefakt~2 (PI-ABMIL)} verkettet einen 512-dimensionalen
+CTransPath-Embedding-Vektor mit den 6-dimensionalen unscharfen
+Musterwahrscheinlichkeiten aus Artefakt~1 vor der
+Gated-Attention-Aggregation und verankert damit die
+Schnitt-Ebene-Argumentation in klinisch validierten Mustern.
+
+\textbf{Artefakt~3 (FC-MIL)} ersetzt die additive Attention durch
+ein erlerntes 2-additives Choquet-Integral, dessen 21~Parameter
+(sechs Shapley-Werte, fünfzehn paarweise Interaktionen)
+supraadditive Wechselwirkungen zwischen morphologischen Kategorien
+erfassen, welche Standard-Attention nicht repräsentieren kann.
+
+Die Evaluation auf TCGA-LUAD (\emph{The Cancer Genome Atlas
+Lung Adenocarcinoma}; 687~Schnitte, 668~Patientinnen und Patienten,
+5-fache patientstratifizierte Kreuzvalidierung) über sechs
+Treibermutationen (\textit{TP53}, \textit{EGFR}, \textit{KRAS},
+\textit{STK11}, \textit{KEAP1}, \textit{RBM10}; absteigende
+Prävalenz) zeigt, dass die Nützlichkeit des Musterwissens
+\emph{gen- und aggregator-konditional} ist und sich in drei
+strukturelle Regime zerlegt:
+
+\textbf{Regime~(i) --- Encoder-Sättigung.}
+Der vorgelernte Encoder erfasst bereits die relevante Morphologie
+und der Musterkanal fügt nichts hinzu (\textit{TP53}, \textit{EGFR}).
+
+\textbf{Regime~(ii) --- Inter-Muster-Kookkurrenz.}
+Das diskriminative Signal lebt in paarweisen Musterinteraktionen
+und nicht in einem einzelnen Muster; nur ein Aggregator, der
+gemeinsame Aktivierungen liest, erfasst es (\textit{KRAS}, durch
+das Choquet-Integral von FC-MIL).
+
+\textbf{Regime~(iii) --- ausserhalb der Ontologie.}
+Keine Repräsentation innerhalb des Sechs-Muster-Simplex
+(ANORAK~\cite{anorak2024}) trägt das Signal; das Regime zerlegt
+sich in drei benannte Mechanismen --- \emph{label-space
+mismatch}~\cite{lipton2018labelshift}, \emph{no morphological
+projection} und
+\emph{collapse-to-prior}~\cite{bowman2016posteriorcollapse} ---,
+welche zusammen begrenzen, was eine reine H\&E-basierte
+Mutationsvorhersage erreichen kann (\textit{STK11}, \textit{KEAP1},
+\textit{RBM10}).
+
+Um diese Grenzen sichtbar zu machen, instrumentiert \lchai{} einen
+sechsstufigen Interpretierbarkeits-Stack (Attention,
+Mustertüberlagerungen, SHAP, Choquet-Shapley-Werte, Kanal-Ablation,
+unscharfe linguistische Labels) sowie einen LLM-Erklärungsagenten,
+verankert in einem kuratierten Wissensgraphen aus den Ontologien
+NCIt und MONDO: unscharfe Labels regeln, \emph{wie} das LLM spricht,
+der Graph regelt, \emph{was} es behaupten darf --- ein doppelter
+Anti-Halluzinations-Mechanismus.
+Eine ergänzende kohortenbezogene Conclusive\,/\,Inconclusive-Markierung
+(aus AUROC abgeleitet) steuert den schnitt-ebenen Erklärungspfad
+und trennt populationsbezogene Signal-Existenz von der
+schnitt-spezifischen morphologischen Konfidenz.
+
+Die Hypothese wird \emph{teilweise gestützt}: Musterwissen liefert
+eine Interpretierbarkeit, die kein bisheriges
+Mutationsvorhersagesystem bietet, sowie einen echten
+inter-musterlichen Vorhersagegewinn bei \textit{KRAS}; bei den
+übrigen Genen liegt die Schranke in der 6-Muster-\emph{Eingabe-%
+repräsentation} selbst (dem ANORAK-Label-Raum), nicht im
+nachgelagerten Modell (Verlust\,/\,Merkmalsfusion\,/\,Aggregator).
+Die Hauptansprüche dieser Arbeit sind demzufolge nicht klinische
+Genauigkeit --- dafür existieren bereits foundation-skalige
+Kohorten von 60\,000+ Schnitten ---, sondern die folgenden zwei,
+destilliert aus den sechs feingranularen Beiträgen C1--C6 in
+Kapitel~\ref{ch:introduction}:
+
+\textbf{Anspruch~(i) --- methodisch.}
+Unscharfe Logik, kohärent angewandt über Verlust, Repräsentation
+und Aggregation, macht eine auf öffentlichen Daten basierende
+Pipeline transparent durch einen wissensgraph-gestützten
+sechsstufigen Interpretierbarkeits-Stack.
+
+\textbf{Anspruch~(ii) --- empirisch/analytisch.}
+Die gen-spezifische Taxonomie aus den schnitt-bezogenen Ablationen
+auf TCGA-LUAD begrenzt, was ein rein morphologie-basiertes Modell
+aus H\&E allein erreichen kann, und identifiziert jene Gene, für
+welche die Fusion zusätzlicher Datenquellen (z.\,B.\
+Genexpressionsprofile oder Radiologie), nicht weitere
+architektonische Verfeinerung, der natürliche nächste Schritt ist.
+
+Zusammen positionieren diese Ansprüche den vorgeschlagenen Ansatz
+als komplementäres Paradigma zur Brute-Force der
+Foundation-Modelle --- eines, in dem eine Pathologin oder ein
+Pathologe das Reasoning des Modells verstehen, verifizieren und
+\emph{korrigieren} kann, und in dem Interpretierbarkeit gerade in
+jenen Fällen am wertvollsten ist, in denen der Prädiktor irrt.
+
+\paragraph{Schlüsselwörter.}
+Unscharfe Logik, Winkelmargin-Verlust, Multiple-Instance-Lernen,
+Choquet-Integral, Shapley-Werte, histopathologische Muster,
+Lungenadenokarzinom, Mutationsvorhersage,
+Genotyp-Phänotyp-Lücke, Design Science Research,
+Computational Pathology, erklärbare KI.
