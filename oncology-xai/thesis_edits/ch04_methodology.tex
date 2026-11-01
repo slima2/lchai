@@ -7,7 +7,7 @@
 % University of Fribourg
 % ============================================================================
 
-\chapter{Methodology}
+\chapter[Methodology]{Methodology: Design of the Three Artefacts}
 \label{ch:methodology}
 
 This chapter presents the methodological design of the three computational artefacts introduced in Section~\ref{sec:uc:artifact_vision}.
@@ -317,9 +317,9 @@ $b_L$ & 0.4 & Principle~3: $b_L = 2 b_H$ &
 \end{tabular}
 \end{table}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{chapters/figures/fuzzyarcloss_v2_coefficient_rationale.png}
+\includegraphics[width=\textwidth,height=7.24in,keepaspectratio]{chapters/figures/fuzzyarcloss_v2_coefficient_rationale.png}
 \caption[Design rationale for FuzzyArcLoss~V2 membership coefficients]{%
     Design rationale for the four membership function coefficients.
     \textbf{(a)}~The chosen V2 membership (purple) with annotated
@@ -403,7 +403,7 @@ This produces a clear interpretation:
     moves toward $c_i$ --- the angular margin is effectively reduced.
 \end{itemize}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/fuzzyarcloss_v2_diagram.png}
 \caption[FuzzyArcLoss~V2 mechanism: membership function and forward
@@ -480,9 +480,9 @@ only 637 annotated tiles.
 Figure~\ref{fig:combined_loss_effect} illustrates the individual
 and combined effects of the two loss components.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{chapters/figures/fuzzyarcloss_v2_combined_loss.png}
+\includegraphics[width=\textwidth,height=7.24in,keepaspectratio]{chapters/figures/fuzzyarcloss_v2_combined_loss.png}
 \caption[Combined loss effect in FuzzyArcLoss~V2]{%
     Effect of the combined loss function
     (Equation~\ref{eq:fuzzyarcloss_v2_loss}).
@@ -588,9 +588,9 @@ FuzzyArcLoss~V2 provides for low-confidence samples---the ``safety
 valve'' that permits the aggressive Optuna-optimised scale
 $s = 46.1$ without training instability.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{chapters/figures/fuzzyarcloss_v2_gradient_decomposition.png}
+\includegraphics[width=\textwidth,height=7.40in,keepaspectratio]{chapters/figures/fuzzyarcloss_v2_gradient_decomposition.png}
 \caption[Gradient decomposition of FuzzyArcLoss~V2]{%
     Gradient decomposition of the modulated target logit
     (Equation~\ref{eq:gradient_derived}).
@@ -729,7 +729,7 @@ between V2 and V3 on the angular embedding space, the parameter
 count increase, and the resulting performance gap in the 15-run
 K-fold evaluation.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/fuzzyarcloss_v3_subcenters.png}
 \caption[FuzzyArcLoss V3 SubCenter extension: geometry and overfitting]{%
@@ -777,7 +777,7 @@ Figure~\ref{fig:v2_classparams} illustrates the per-class membership
 concept, the search space expansion, and the single-run screening
 result that motivated the exclusion from the K-fold benchmark.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/fuzzyarcloss_v2_classparams.png}
 \caption[FuzzyArcLoss V2 ClassParams: per-class margin geometry]{%
@@ -891,7 +891,7 @@ Figure~\ref{fig:optuna_search} visualises the 50-trial search
 process, showing the convergence behaviour and the relationship
 between each hyperparameter and validation performance.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/optuna_search_fuzzyarcloss_v2.png}
 \caption[Optuna hyperparameter search for FuzzyArcLoss~V2]{%
@@ -1136,7 +1136,7 @@ The mutation prediction for gene $g$ is obtained through a linear classifier:
 where $\mathbf{w}_g \in \mathbb{R}^L$ and $b_g \in \mathbb{R}$ are gene-specific parameters.
 A separate ABMIL model is trained for each gene, following the standard practice in the field~\cite{coudray2018classification,saldanha2023npj}.
 
-\subsubsection{Training Objective}
+\subsubsection{Training Objective of Pattern-Informed ABMIL}
 
 The ABMIL model is trained to minimise the binary cross-entropy loss:
 \begin{equation}
@@ -1151,9 +1151,9 @@ representations through the three modules and the loss function,
 with equation references and input dimensions for each experimental
 condition.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{chapters/figures/abmil_architecture.png}
+\includegraphics[width=\textwidth,height=7.74in,keepaspectratio]{chapters/figures/abmil_architecture.png}
 \caption[ABMIL architecture for mutation prediction]{%
     Block diagram of the ABMIL architecture (Artefact~2)
     shared by conditions B2, B3, PI-ABMIL, and~A.
@@ -1215,7 +1215,7 @@ the heterogeneous TCGA-LUAD cohort~\cite{tcga2014luad}.
 The Fuzzy Choquet MIL architecture replaces the attention-weighted aggregation of standard ABMIL with a Choquet integral operating on tile-level fuzzy pattern memberships.
 This section presents its mathematical formulation.
 
-\subsection{Motivation}
+\subsection{Why Pairwise Pattern Interactions Matter}
 \label{sec:meth:choquet:motivation}
 
 The standard ABMIL attention mechanism (Equation~\ref{eq:gated_attn}) learns which \emph{tiles} are important but treats each tile's pattern memberships independently.
@@ -1224,7 +1224,7 @@ It cannot model interactions between patterns: for example, the co-occurrence of
 The Choquet integral~\cite{choquet1954theory,grabisch2009aggregation} provides exactly this capability.
 By operating on the six-dimensional fuzzy membership vector with a learned fuzzy measure, it aggregates pattern contributions while accounting for pairwise (and higher-order) interactions between patterns.
 
-\subsection{Architecture}
+\subsection{Dual-Pathway Architecture of FC-MIL}
 \label{sec:meth:choquet:architecture}
 
 The Fuzzy Choquet MIL pipeline follows a \emph{dual-pathway} architecture
@@ -1318,9 +1318,9 @@ dual-pathway architecture, showing the provenance of both input
 streams from Artefact~1 and the data flow through the embedding
 and Choquet branches to the merged classifier.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{chapters/figures/fcmil_architecture.png}
+\includegraphics[width=\textwidth,height=7.07in,keepaspectratio]{chapters/figures/fcmil_architecture.png}
 \caption[FC-MIL dual-pathway architecture]{%
     FC-MIL (Fuzzy Choquet MIL) dual-pathway architecture (Artefact~3).
     \textbf{Top}: Both input streams originate from Artefact~1
@@ -1396,7 +1396,7 @@ performance difference between conditions PI-ABMIL and FC-MIL is attributable to
 the aggregation mechanism (concatenation vs Choquet integral), not to
 differences in model capacity.
 
-\subsection{Training Objective}
+\subsection{Training Objective of FC-MIL}
 \label{sec:meth:choquet:training}
 
 The Fuzzy Choquet MIL is trained with binary cross-entropy plus the
@@ -1487,9 +1487,9 @@ Shapley values and interaction indices provide intrinsic
 interpretability, contrasting a differentiated profile (TP53) with
 a near-uniform profile (KEAP1).
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{chapters/figures/choquet_interpretability.png}
+\includegraphics[width=\textwidth,height=7.40in,keepaspectratio]{chapters/figures/choquet_interpretability.png}
 \caption[Intrinsic interpretability of the Choquet fuzzy measure
 (KRAS vs RBM10, real data)]{%
     Intrinsic interpretability of the learned Choquet fuzzy measure
@@ -1693,7 +1693,7 @@ Figure~\ref{fig:ablation_causal_chain} illustrates the complete causal
 chain from tile features to $P(\text{mut})$ for the three ablation
 models.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/ablation_causal_chain.png}
 \caption[Causal chain from tile features to $P(\text{mut})$ in the
@@ -1751,7 +1751,7 @@ two-dimensional space, revealing the dissociation between
 (what actually helps)---a key finding of the evaluation
 (Chapter~\ref{ch:evaluation}).
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.85\textwidth]{chapters/figures/shap_ablation_quadrant.png}
 \caption[Attribution vs utility: SHAP pattern attribution versus
@@ -1862,9 +1862,9 @@ choice that minimises expected misranking risk under the
 constraint that selection must be made before observing the
 label.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=0.97\textwidth]{chapters/figures/per_slide_arbitration_fails.png}
+\includegraphics[width=\textwidth,height=7.07in,keepaspectratio]{chapters/figures/per_slide_arbitration_fails.png}
 \caption[Why per-slide model arbitration is statistically ill-posed]{%
     Visual summary of the four reasons why LCHAI~v2.0 fixes the
     model choice at the gene level rather than arbitrating models
@@ -1963,28 +1963,9 @@ The overlapping regions between adjacent sets reflect the gradual
 transition between linguistic categories---a core property of fuzzy
 classification that avoids the brittleness of crisp thresholds.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\begin{minipage}[t]{0.48\textwidth}
-\centering
-\includegraphics[width=\textwidth]{chapters/figures/fuzzy_mf_shap_balance.png}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\textwidth}
-\centering
-\includegraphics[width=\textwidth]{chapters/figures/fuzzy_mf_interaction_index.png}
-\end{minipage}\\[6pt]
-\begin{minipage}[t]{0.48\textwidth}
-\centering
-\includegraphics[width=\textwidth]{chapters/figures/fuzzy_mf_shapley_profile.png}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\textwidth}
-\centering
-\includegraphics[width=\textwidth]{chapters/figures/fuzzy_mf_shapley_individual.png}
-\end{minipage}\\[6pt]
-\begin{minipage}[t]{0.48\textwidth}
-\centering
-\includegraphics[width=\textwidth]{chapters/figures/fuzzy_mf_attention_level.png}
-\end{minipage}
+\includegraphics[width=\textwidth]{chapters/figures/fuzzy_mf_scales_combined.png}
 \caption[Trapezoidal membership functions for fuzzy linguistic XAI scales]{%
     Trapezoidal membership functions for the five fuzzy linguistic
     scales used to classify XAI outputs.
@@ -2215,9 +2196,9 @@ Migration to a formal triplestore with SPARQL endpoints is
 identified as medium-term future work
 (Section~\ref{sec:disc:future:medium}).
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
-\includegraphics[width=0.62\textwidth]{chapters/figures/edge_store_query_flow.png}
+\includegraphics[width=\textwidth]{chapters/figures/edge_store_query_flow.png}
 \caption[Three-layer KG architecture and query flow]{%
     Three-layer knowledge graph architecture and query flow.
     \textbf{Layer~1} (blue): 30 curated edges with PMID provenance.
@@ -2265,7 +2246,7 @@ Without an explicit administrator override, even a type-correct triple
 of this form would otherwise propagate into the LLM prompt.
 
 % ============================================================================
-\section{Evaluation Protocol}
+\section{Validation Protocol, Statistical Tests and Ablation Design}
 \label{sec:meth:evaluation_protocol}
 % ============================================================================
 
@@ -2314,7 +2295,7 @@ fold splits.
 Conditions B2, B3, PI-ABMIL and A evaluate Artefact~2 under different
 input representations, while condition FC-MIL evaluates Artefact~3.
 
-\subsection{Metrics}
+\subsection{Performance Metrics Used in the Experiments}
 \label{sec:meth:eval:metrics}
 
 \textbf{Primary metric:} AUROC (Area Under the Receiver Operating
@@ -2467,7 +2448,7 @@ of them.
 
 
 % ============================================================================
-\section{Chapter Summary}
+\section{Summary of the Artefact Designs}
 \label{sec:meth:summary}
 % ============================================================================
 

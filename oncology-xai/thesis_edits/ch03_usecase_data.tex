@@ -65,7 +65,7 @@ Chapter~\ref{ch:methodology}.
 
 When a patient is diagnosed with lung adenocarcinoma (LUAD), two categories of information guide treatment decisions (Figure~\ref{fig:luad_two_pillars})~\cite{herbst2018lung}.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.92\textwidth]{chapters/figures/luad_two_pillars.png}
     \caption[Two pillars of LUAD diagnostic information]{%
@@ -120,7 +120,7 @@ In contrast, a system that states ``TP53 likely mutated because the model attend
 This requirement for \emph{explainable mutation prediction} motivates the pattern-informed approach developed in this thesis.
 
 
-\subsection{Glossary of Medical Terms}
+\subsection{Compact Glossary of Clinical Terms}
 \label{sec:uc:glossary}
 
 Table~\ref{tab:glossary} provides definitions of the medical terms used throughout this thesis.
@@ -304,7 +304,7 @@ Figure~\ref{fig:zenodo_overlays} shows the corresponding expert-annotated
 colour-coded overlays, which served as spatial ground truth for the
 pattern classifier (Artefact~1).
 
-\begin{figure}[ht!]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{chapters/figures/who_luad_patterns.png}
   \caption[WHO/IASLC LUAD histological growth patterns]{%
@@ -331,7 +331,7 @@ pattern classifier (Artefact~1).
   \label{fig:who_patterns_examples}
 \end{figure}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.155\textwidth]{chapters/figures/zenodo_overlay_lepidic.png}\hfill
   \includegraphics[width=0.155\textwidth]{chapters/figures/zenodo_overlay_acinar.png}\hfill
@@ -395,7 +395,7 @@ crisp---and therefore for the fuzzy-margin design of Artefact~1
 Figure~\ref{fig:growth_pattern_mapping} illustrates this phenomenon on a
 representative LUAD specimen.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
   \centering
   \begin{minipage}[t]{0.48\textwidth}
   \centering
@@ -667,7 +667,7 @@ TKI = tyrosine kinase inhibitor;
 \end{flushleft}
 \end{table}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{chapters/figures/luad_signal_scope.png}
     \caption[A priori signal-location scope diagram for the 6-gene
@@ -807,7 +807,7 @@ condition is bounded by the cohort statistics rather than by the
 algorithm.
 
 
-\subsection{The Central Hypothesis}
+\subsection{The Gene-Specific Hypothesis: From Morphology to Mutation}
 \label{sec:uc:central_hypothesis}
 
 The gene-specific morphological correlates summarised in
@@ -1357,7 +1357,7 @@ were used for algorithm training, testing, or quantitative analysis.
 Nevertheless, an understanding of the standard clinical histopathology
 workflow is essential to correctly interpret the sources of visual
 variability present in real-world H\&E images.
-Clinical observation and expert discussion at SOLCA (Sociedad de Lucha
+Clinical observation and expert discussion at SOLCA Guayaquil (Sociedad de Lucha
 Contra el Cáncer, Ecuador) were used to contextualise the image
 formation process underlying digital histopathology.
 In routine diagnostic practice, tissue specimens are fixed in formalin
@@ -1371,7 +1371,7 @@ variability---staining intensity, scanner optics, section thickness, and
 preprocessing---that motivate the use of robust, noise-aware learning
 objectives in this thesis.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{chapters/figures/he_workflow_solca.png}
   \caption[Standard H\&E histopathology acquisition pipeline]{%
@@ -1388,18 +1388,18 @@ objectives in this thesis.
       morphological ambiguity arises from acquisition variation rather
       than true class overlap.
       Images and workflow are representative of clinical practice as
-      observed at SOLCA Ecuador, used here for didactic and contextual
+      observed at SOLCA Guayaquil, used here for didactic and contextual
       purposes only.}
   \label{fig:he_pipeline_solca}
 \end{figure}
 
-\textbf{Role of SOLCA in this thesis.}
-SOLCA contributed domain expertise through clinical consultation and
+\textbf{Role of SOLCA Guayaquil in this thesis.}
+SOLCA Guayaquil contributed domain expertise through clinical consultation and
 review of representative H\&E slide examples, informing the
 morphological descriptions in Section~\ref{sec:uc:luad_histology} and
 the clinical plausibility assessment of the attention maps
 (Section~\ref{sec:eval:interpretability}).
-No patient data from SOLCA enters the computational pipeline.
+No patient data from SOLCA Guayaquil enters the computational pipeline.
 
 
 \subsection{TCGA-LUAD Mutation Calls and Case-Level Linking}
@@ -1697,7 +1697,7 @@ RQ7 & DeepSearch pipeline (LCHAI v2.0) &
 
 
 % ============================================================================
-\section{Systematic Pipeline Audit: Headline}
+\section{Pipeline Audit: Twenty Fixes and Their Uniform Effect}
 \label{sec:uc:pipeline_fixes}
 % ============================================================================
 
@@ -1740,7 +1740,7 @@ The three artefacts address RQ1--RQ5; the integrative system
 (LCHAI~v2.0) additionally addresses RQ6 (ontology-grounded explanations)
 and RQ7 (knowledge graph enrichment) through its explanation layer.
 
-\subsection{Artefact 1: FuzzyArcLoss V2}
+\subsection{Vision for Artefact 1: FuzzyArcLoss V2}
 \label{sec:uc:artifact1}
 
 \textbf{What it does.}
@@ -1767,7 +1767,7 @@ Chapter~\ref{ch:methodology},
 Section~\ref{sec:meth:pattern_classifier}.
 
 
-\subsection{Artefact 2: Pattern-Informed ABMIL (PI-ABMIL)}
+\subsection{Vision for Artefact 2: Pattern-Informed ABMIL (PI-ABMIL)}
 \label{sec:uc:artifact2}
 
 \textbf{What it does.}
@@ -1795,7 +1795,7 @@ Chapter~\ref{ch:methodology},
 Section~\ref{sec:meth:mutation_prediction}.
 
 
-\subsection{Artefact 3: Fuzzy Choquet MIL (FC-MIL)}
+\subsection{Vision for Artefact 3: Fuzzy Choquet MIL (FC-MIL)}
 \label{sec:uc:artifact3}
 
 \textbf{What it does.}
@@ -1830,7 +1830,7 @@ Chapter~\ref{ch:methodology},
 Section~\ref{sec:meth:choquet_mil}.
 
 
-\subsection{Integrative System: LCHAI --- Clinical Decision Support}
+\subsection{Vision for the Integrative System: LCHAI Clinical Decision Support}
 \label{sec:uc:lchai}
 
 \textbf{What it does.}
@@ -1877,7 +1877,7 @@ Chapter~\ref{ch:implementation}.
 Figure~\ref{fig:lchai_v12_pipeline} illustrates the output and
 explanation layers of LCHAI~v2.0.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{chapters/figures/lchai_v12_pipeline_new.png}
   \caption[LCHAI v2.0 output and explanation layers]{%
@@ -1915,7 +1915,7 @@ using trained checkpoints from the benchmark run, using the LCHAI~v2.0 system.
 Worked examples are presented in Section~\ref{sec:eval:lchai}.
 
 
-\subsection{Summary: Artefact Pipeline}
+\subsection{Artefact Pipeline at a Glance}
 \label{sec:uc:artifact_pipeline}
 
 Figure~\ref{fig:artifact_pipeline_concept} illustrates the data flow
@@ -1954,9 +1954,9 @@ Section~\ref{sec:meth:choquet_mil}).
 Both pathways feed into the LCHAI~v2.0 clinical decision-support
 prototype (Section~\ref{sec:uc:lchai}).
 
-\begin{figure}[ht!]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{chapters/figures/artifact_pipeline.png}
+    \includegraphics[width=\textwidth,height=7.40in,keepaspectratio]{chapters/figures/artifact_pipeline.png}
     \caption[Conceptual pipeline linking the three computational
     artefacts]{%
         Conceptual data-flow pipeline linking the three computational
@@ -1985,7 +1985,7 @@ prototype (Section~\ref{sec:uc:lchai}).
 
 
 % ============================================================================
-\section{Experimental Design: Headline}
+\section{Experimental Design: Six Conditions and Six Genes}
 \label{sec:uc:experimental_design}
 % ============================================================================
 
@@ -2007,7 +2007,7 @@ analysis are reported in Chapter~\ref{ch:evaluation}.
 
 
 % ============================================================================
-\section{Chapter Summary}
+\section{Summary of the Use-Case Definition}
 \label{sec:uc:summary}
 % ============================================================================
 

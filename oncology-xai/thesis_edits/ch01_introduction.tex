@@ -2,7 +2,7 @@
 \label{ch:introduction}
 
 % ============================================================
-\section{Motivation}
+\section{Motivation: Interpretability Gap and Data-Scale Barrier}
 \label{sec:intro:motivation}
 % ============================================================
 
@@ -71,7 +71,7 @@ therefore not directly applicable in data-scarce research environments.
 LUAD is classified by the World Health Organisation (WHO) into five predominant growth patterns---lepidic, acinar, papillary, micropapillary, and solid---each with documented statistical associations with specific molecular subtypes~\cite{travis2011iaslc, tsao2015subtype}.  This thesis adopts the six ANORAK-annotated growth patterns (the five WHO patterns plus cribriform) as domain knowledge that has never been explicitly incorporated as a \emph{structured computational prior} into modern mutation prediction pipelines.  This thesis explores whether doing so can compensate for data scarcity while simultaneously providing the interpretable reasoning pathway that end-to-end models lack.
 
 % ============================================================
-\section{Hypothesis}
+\section{Central Hypothesis of the Thesis}
 \label{sec:intro:hypothesis}
 % ============================================================
 
@@ -140,7 +140,7 @@ The seven research questions below operationalise this hypothesis
 into testable sub-questions.
 
 % ============================================================
-\section{Research Questions}
+\section{Research Questions RQ1--RQ7}
 \label{sec:intro:rq}
 % ============================================================
 
@@ -239,7 +239,7 @@ clinical-prototype application).
 The medical domain (LUAD mutation prediction) serves as the use case in which
 the artefacts are instantiated and evaluated.
 % ============================================================
-\section{Research Method: Fuzzy Design Science Research}
+\section{Research Approach and Phase-to-Chapter Mapping}
 \label{sec:intro:method}
 % ============================================================
 
@@ -279,7 +279,7 @@ they are addressed, the six contributions that result, and the three
 prior publications by the author that serve as foundations for the
 artefacts.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/thesis_visual_summary.png}
 \caption[Visual summary of the thesis]{%
@@ -298,7 +298,7 @@ artefacts.
 
 
 % ============================================================
-\section{Contributions}
+\section{Principal Contributions C1--C6}
 \label{sec:intro:contributions}
 % ============================================================
 
@@ -373,7 +373,7 @@ The principal contributions of this thesis are:
 \end{enumerate}
 
 
-\section{Thesis as a Continuation of Prior Work}
+\section{Relation to the Author's Prior Publications}
 \label{sec:continuation_prior_work}
 
 The research findings of this dissertation have been articulated in
@@ -493,7 +493,7 @@ Lima et al.\ (2025) IEEE~\cite{lima2025enhancing} &
 
 
 % ============================================================
-\section{Thesis Outline}
+\section{Organisation of the Chapters}
 \label{sec:intro:outline}
 % ============================================================
 
@@ -502,7 +502,7 @@ The remainder of this thesis is organised as follows:
 \begin{description}
     \item[\cref{ch:background} --- Background.]  Presents the theoretical foundations underpinning the subsequent chapters: fuzzy sets and fuzzy logic, angular margin loss functions, self-supervised learning for pathology (CTransPath), multiple-instance learning, the Choquet integral and related aggregation operators.
 
-    \item[\cref{ch:usecase} --- The Lung Adenocarcinoma Use Case.]  Introduces the medical use case: LUAD histology, the six growth patterns (five WHO-defined plus cribriform), oncogenic driver mutations, the TCGA--LUAD dataset and the evaluation protocol.  A glossary of clinical and ML terms is provided in \cref{app:glossary}.
+    \item[\cref{ch:usecase} --- The Lung Adenocarcinoma Use Case.]  Introduces the medical use case: LUAD histology, the six growth patterns (five WHO-defined plus cribriform), oncogenic driver mutations, the TCGA--LUAD dataset and the evaluation protocol.  A glossary of clinical and ML terms is provided in Appendix~\ref{app:glossary}.
 
     \item[\cref{ch:methodology} --- Artefact Design: Conceptual Framework.]  Specifies the three artefacts at the mathematical and architectural level: FuzzyArcLoss V2 (loss function design), pattern-informed ABMIL (feature fusion architecture) and Fuzzy Choquet MIL (aggregation module).  Also presents the multi-ontology knowledge graph and explanation layer design (RQ6, RQ7).
 
@@ -519,3 +519,5 @@ The remainder of this thesis is organised as follows:
     remaining limitations, and outlines future work including external
     validation, clinical deployment and extension to other cancer types.
 \end{description}
+
+The Appendices provide supplementary material: a glossary of medical and technical terms (Appendix~\ref{app:glossary}), the Reproducibility Statement (Appendix~\ref{app:reproducibility}), the hyperparameter configurations (Appendix~\ref{app:hyperparameters}), and the approval document of the SOLCA Guayaquil Ethics Committee (Appendix~\ref{app:ethics}).

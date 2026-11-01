@@ -1,0 +1,154 @@
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+Cette thèse traite de la prédiction faiblement supervisée de
+mutations à partir d'images H\&E (colorées à
+l'hématoxyline-éosine) gigapixel d'adénocarcinome pulmonaire
+(LUAD, le sous-type le plus fréquent du cancer du poumon) :
+une seule étiquette binaire par gène est attribuée à environ
+$10^9$ pixels, sans annotation au niveau des sous-régions.
+Les systèmes existants requièrent des dizaines de milliers de
+coupes propriétaires et n'offrent aucune explication du
+\emph{pourquoi} d'une mutation prédite --- un obstacle critique à
+la confiance clinique. Le problème sous-jacent est lui-même
+\emph{stochastique, plusieurs-à-plusieurs et faiblement étiqueté} :
+une même morphologie peut correspondre à plusieurs génotypes et
+inversement, de sorte que la compétence d'un modèle doit être
+argumentée gène par gène et coupe par coupe, et non à partir
+d'une seule métrique de cohorte.
+
+L'hypothèse centrale est qu'une \emph{connaissance structurée du
+domaine} --- en l'occurrence, les six motifs de croissance
+histologiques du LUAD définis par les experts
+(lepidic, acinar, papillary, micropapillary, solid, cribriform),
+encodés via la théorie des ensembles flous --- peut être injectée
+dans un pipeline d'apprentissage profond afin d'atteindre à la
+fois une prédiction de mutations compétitive en condition de
+pénurie de données ($<\!700$ coupes publiques) et de rendre les
+prédictions résultantes \emph{interprétables} grâce à un cadre
+d'inspection multi-niveaux cliniquement vérifiable --- et, à
+travers ce cadre, \emph{explicables} par des justifications en
+langage naturel ancrées dans un graphe de connaissances --- à un
+degré qu'aucune approche boîte noire de bout en bout n'offre ;
+le verdict est \emph{conditionnel au gène}.
+Suivant la démarche de la Design Science Research, trois
+artefacts et un système intégrateur (\lchai{},
+\emph{Lung Cancer Histologic Analysis with AI}) sont conçus et
+évalués.
+
+\textbf{Artefact~1 (FuzzyArcLoss~V2)} est une modulation floue
+échantillon-par-échantillon de la marge angulaire d'ArcFace,
+respectant les transitions morphologiques graduelles entre
+classes de motifs ; il se classe premier parmi 18~fonctions de
+perte (macro-F1 $= 92{,}31\,\%\!\pm\!2{,}04$, $p\!=\!0{,}001$,
+$d$ de Cohen $\!=\!1{,}00$). Son avantage est
+\emph{dépendant des frontières morphologiques, et non de la
+taille des classes} : le gain se matérialise sur les classes
+voisines visuellement ambiguës, indépendamment de leur taille
+--- une règle de transfert qui se généralise au grade de
+Gleason, à la cytologie cervico-utérine et à la dermatopathologie.
+
+\textbf{Artefact~2 (PI-ABMIL)} concatène un \emph{embedding}
+CTransPath de dimension~512 avec les six probabilités floues de
+motifs issues de l'Artefact~1, avant agrégation par
+attention~\emph{gated}, ancrant le raisonnement au niveau de la
+coupe dans des motifs cliniquement validés.
+
+\textbf{Artefact~3 (FC-MIL)} remplace l'attention additive par
+une intégrale de Choquet 2-additive apprise, dont les
+21~paramètres (six valeurs de Shapley, quinze interactions par
+paires) capturent les interactions supra-additives entre
+catégories morphologiques que l'attention standard ne peut
+représenter.
+
+L'évaluation sur TCGA-LUAD (\emph{The Cancer Genome Atlas Lung
+Adenocarcinoma} ; 687~coupes, 668~patients, validation croisée
+5-fold stratifiée par patient) sur six mutations conductrices
+(\textit{TP53}, \textit{EGFR}, \textit{KRAS}, \textit{STK11},
+\textit{KEAP1}, \textit{RBM10} ; prévalence décroissante)
+montre que l'utilité de la connaissance des motifs est
+\emph{conditionnelle au gène et à l'agrégateur}, et se décompose
+en trois régimes structurels :
+
+\textbf{Régime~(i) --- saturation de l'encodeur.}
+L'encodeur pré-entraîné capture déjà la morphologie pertinente
+et le canal des motifs n'apporte rien (\textit{TP53},
+\textit{EGFR}).
+
+\textbf{Régime~(ii) --- co-occurrence inter-motifs.}
+Le signal discriminant réside dans les interactions par paires
+de motifs, et non dans un motif unique ; seul un agrégateur
+lisant les activations conjointes le récupère (\textit{KRAS},
+via l'intégrale de Choquet de FC-MIL).
+
+\textbf{Régime~(iii) --- hors de l'ontologie.}
+Aucune représentation à l'intérieur du simplexe à six motifs
+(ANORAK~\cite{anorak2024}) ne porte le signal ; le régime se
+décompose en trois mécanismes nommés --- \emph{label-space
+mismatch}~\cite{lipton2018labelshift}, \emph{no morphological
+projection} et
+\emph{collapse-to-prior}~\cite{bowman2016posteriorcollapse} ---,
+qui ensemble bornent ce que la prédiction de mutations à partir
+de H\&E seule peut atteindre (\textit{STK11}, \textit{KEAP1},
+\textit{RBM10}).
+
+Pour rendre ces limites visibles, \lchai{} instrumente une pile
+d'interprétabilité à six niveaux (attention, surimpressions de
+motifs, SHAP, valeurs de Shapley issues de Choquet, ablation de
+canaux, étiquettes linguistiques floues) et un agent
+d'explication LLM ancré dans un graphe de connaissances curé,
+construit à partir des ontologies NCIt et MONDO : les étiquettes
+floues contraignent \emph{comment} le LLM s'exprime, le graphe
+contraint \emph{ce qu'}il peut affirmer --- un mécanisme dual
+contre l'hallucination.
+Un drapeau complémentaire au niveau cohorte
+\emph{Conclusive\,/\,Inconclusive} (dérivé de l'AUROC) régit la
+voie d'explication par coupe, séparant la présence d'un signal au
+niveau de la population de la confiance morphologique au niveau
+de chaque coupe.
+
+L'hypothèse est \emph{partiellement confirmée} : la connaissance
+des motifs apporte une interprétabilité qu'aucun système
+antérieur de prédiction de mutations n'offre, ainsi qu'un
+véritable gain prédictif inter-motifs sur \textit{KRAS} ; pour
+les autres gènes, la borne réside dans la \emph{représentation
+d'entrée} à six motifs elle-même (l'espace d'étiquettes ANORAK)
+et non dans le modèle aval
+(perte\,/\,fusion de caractéristiques\,/\,agrégateur).
+Les revendications principales de cette thèse ne sont donc pas
+une précision de qualité clinique --- des cohortes à l'échelle
+des modèles de fondation, comportant plus de 60\,000 coupes,
+existent déjà à cette fin --- mais les deux suivantes,
+distillées des six contributions fines C1--C6 listées au
+chapitre~\ref{ch:introduction} :
+
+\textbf{Revendication~(i) --- méthodologique.}
+La logique floue, appliquée de manière cohérente à la perte, à
+la représentation et à l'agrégation, rend transparent un
+pipeline reposant sur des données publiques, à travers une pile
+d'interprétabilité à six niveaux ancrée dans un graphe de
+connaissances.
+
+\textbf{Revendication~(ii) --- empirique/analytique.}
+La taxonomie gène par gène issue des ablations par coupe sur
+TCGA-LUAD borne ce qu'un modèle reposant uniquement sur la
+morphologie peut atteindre à partir de H\&E seule, et identifie
+les gènes pour lesquels la fusion de sources de données
+supplémentaires (par exemple profils d'expression génique ou
+radiologie), plutôt qu'un raffinement architectural
+supplémentaire, constitue l'étape naturelle suivante.
+
+Ensemble, ces revendications positionnent l'approche comme un
+paradigme complémentaire à la force brute des modèles de
+fondation --- un paradigme dans lequel une pathologiste ou un
+pathologiste peut comprendre, vérifier et \emph{corriger} le
+raisonnement du modèle, et dans lequel l'interprétabilité est la
+plus précieuse précisément sur les cas que le prédicteur prédit
+de manière erronée.
+
+\paragraph{Mots-clés.}
+Logique floue, perte à marge angulaire, apprentissage à
+instances multiples, intégrale de Choquet, valeurs de Shapley,
+motifs histopathologiques, adénocarcinome pulmonaire, prédiction
+de mutations, fossé génotype--phénotype, Design Science Research,
+pathologie computationnelle, IA explicable.

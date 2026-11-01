@@ -1,0 +1,30 @@
+\chapter{Reproducibility Statement}
+\label{app:reproducibility}
+
+All experiments reported in this thesis are fully reproducible.  Source code, trained model checkpoints, and configuration files are available at the following repository:
+
+\begin{center}
+\url{https://github.com/slima2/lchai}
+\end{center}
+
+The TCGA--LUAD whole-slide images and Masked Somatic Mutation MAF files are publicly available through the NCI Genomic Data Commons portal (\url{https://portal.gdc.cancer.gov}).  The Zenodo--Anorak histopathological pattern annotations used for training the pattern classifier are available at \url{https://zenodo.org/records/10016027}.
+
+Hardware configuration: 6$\times$ NVIDIA H100 80\,GB GPUs, CUDA~12.x,
+PyTorch~2.x.
+Approximate wall-clock times on this hardware:
+\begin{itemize}
+    \item Pattern classifier training (18 losses $\times$ 15 runs):
+    $\sim$11~hours.
+    \item CTransPath embedding extraction (687 slides, $\sim$17M tiles):
+    $\sim$3--4~hours on 6~GPUs in data-parallel mode.
+    \item Mutation prediction benchmark (6 genes $\times$ 6 conditions
+    $\times$ 5 folds = 180 model trainings): $\sim$15--16~hours on
+    6~GPUs (one gene per GPU).
+\end{itemize}
+
+Random seeds (42, 123, 456) are fixed for data splits (stratified
+$K$-fold) and weight initialisation.
+Non-determinism from CUDA atomics and cuDNN autotuner is acknowledged;
+the use of 15~runs (5~folds $\times$ 3~seeds) for pattern
+classification and 5-fold cross-validation for mutation prediction
+provides robust performance estimates despite this source of variance.
