@@ -1,7 +1,10 @@
 from fx import *
 import numpy as np, re
 OUT='../man_out/'
-LOG='/home/claude/slima2/lchai/oncology-xai/Thesis/logs/pattern_classifier_results/output_optuna_fuzzyarcloss_search.txt'
+import os
+_d=os.path.dirname(os.path.abspath(__file__))
+while not os.path.isdir(os.path.join(_d,'Thesis','logs')) and os.path.dirname(_d)!=_d: _d=os.path.dirname(_d)
+LOG=os.path.join(_d,'Thesis','logs','pattern_classifier_results','output_optuna_fuzzyarcloss_search.txt')
 fin={};pr=[]
 for l in open(LOG):
     m=re.search(r'Trial (\d+) finished with value: ([\d.]+) and parameters: (\{.*?\})\.',l)

@@ -1,7 +1,8 @@
 from fx import *
 import numpy as np
 OUT='../man_out/'
-SRC='/home/claude/slima2/lchai/oncology-xai/thesis_edits/'
+import os
+SRC=os.path.join(os.path.dirname(os.path.abspath(__file__)),'')   # folder with the gen_*.py scripts (copy them next to this file if missing)
 def load(fn):
     s=open(SRC+fn).read(); s=s[:s.index('conditions =')]
     s=s.replace('import matplotlib.pyplot as plt','').replace('matplotlib.use("Agg")','')

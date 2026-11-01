@@ -1,10 +1,11 @@
+import os
 from fx import *
 import numpy as np
 from matplotlib.lines import Line2D
 OUT='../man_out/'
-src=open('/home/claude/slima2/lchai/oncology-xai/thesis_edits/gen_fuzzy_mf_plots.py').read().split('def trapezoid')[0].split('OUT_DIR')[0]
+src=open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'gen_fuzzy_mf_plots.py')).read().split('def trapezoid')[0].split('OUT_DIR')[0]
 ns={}; exec(src+"\n",ns)
-code=open('/home/claude/slima2/lchai/oncology-xai/thesis_edits/gen_fuzzy_mf_plots.py').read()
+code=open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'gen_fuzzy_mf_plots.py')).read()
 i=code.index('SCALES = {'); j=code.index('def trapezoid'); exec(code[i:j],ns); SC=ns['SCALES']
 def trap(x,abcd):
     a,b,c,d=abcd; y=np.zeros_like(x)
