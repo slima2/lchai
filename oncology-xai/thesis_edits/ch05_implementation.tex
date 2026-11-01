@@ -7,7 +7,7 @@
 % University of Fribourg
 % ============================================================================
 
-\chapter{Implementation}
+\chapter[Implementation]{Implementation of the Artefacts and the LCHAI Prototype}
 \label{ch:implementation}
 
 This chapter describes the concrete software realisation of the three computational artifacts and the integrative LCHAI system designed in Chapter~\ref{ch:methodology}.
@@ -17,7 +17,7 @@ The evaluation of these artifacts is deferred to Chapter~\ref{ch:evaluation}.
 The implementation is organised around the three-stage pipeline illustrated in Figure~\ref{fig:implementation_pipeline}: data acquisition (Section~\ref{sec:impl:data}), pattern classification (Section~\ref{sec:impl:pattern}), and mutation prediction (Section~\ref{sec:impl:mutation}).
 Section~\ref{sec:impl:lchai} presents the LCHAI system prototype, and Section~\ref{sec:impl:reproducibility} addresses reproducibility.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{chapters/figures/implementation_pipeline.png}
     \caption[Implementation pipeline]{%
@@ -297,7 +297,7 @@ model inference occurs.
 Figure~\ref{fig:tile_filtering_pipeline} provides an overview of the
 three-stage pipeline.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.92\textwidth]{chapters/figures/tile_filtering_pipeline.png}
 \caption[Three-stage tile filtering pipeline]{%
@@ -533,7 +533,7 @@ $(s^*, m^*, \tau^*) = (46.1, 0.518, 0.448)$
 The 50-trial trajectory is visualised in
 Figure~\ref{fig:optuna_search}.
 
-\subsection{Training Protocol}
+\subsection{Pattern Classifier Training Run}
 \label{sec:impl:pattern:training_protocol}
 
 The methodological decisions for the pattern classifier's training
@@ -1116,9 +1116,9 @@ tile candidates beyond Stages~0 and~1.
 Figure~\ref{fig:pen_marker_filters} summarises the complete Stage~2
 filtering pipeline.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{chapters/figures/pen_marker_filters.png}
+\includegraphics[width=\textwidth,height=8.07in,keepaspectratio]{chapters/figures/pen_marker_filters.png}
 \caption[Stage~2 pen marker and artefact rejection filters]{%
     Stage~2 colour-specific pen marker and structural artefact
     rejection filters, applied only to clinical hospital slides.
@@ -1238,7 +1238,7 @@ All fuzzy linguistic labels used in the explanation are computed deterministical
 Displayed only when the ablation comparison shows that patterns contribute positively (Combined~$>$~Embedding-only).
 Shows: (i)~a fuzzy Shapley profile classification (e.g., ``Near-Uniform'') with per-pattern singleton importance bars and individual fuzzy labels; (ii)~a pairwise interaction index table with fuzzy intensity classifications (e.g., ``Moderate Synergy~$\uparrow$''); and (iii)~an optional LLM-generated interpretation using the system-computed fuzzy labels.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/lchai_v2_analysis_tab_overview.png}
 \caption[LCHAI~v2.0 Analysis tab --- TP53 overview]{%
@@ -1255,7 +1255,7 @@ Shows: (i)~a fuzzy Shapley profile classification (e.g., ``Near-Uniform'') with 
 \label{fig:lchai_v2_images}
 \end{figure}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/lchai_v2_analysis_explanation.png}
 \caption[LCHAI~v2.0 Analysis tab --- AI explanation with citations]{%
@@ -1297,7 +1297,7 @@ The viewer displays the dominant pattern name, total tile count, and
 current zoom level in the header bar.
 A colour legend at the bottom maps each pattern to its assigned colour.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \begin{minipage}[t]{0.48\textwidth}
 \centering
@@ -1362,7 +1362,7 @@ after reviewing the updated overlay.
 Figure~\ref{fig:active_learning_workflow} illustrates the complete
 workflow.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/lchai_v2_active_learning_correction.png}
 \caption[LCHAI~v2.0 Viewer --- Active Learning correction mode]{%
@@ -1376,7 +1376,7 @@ workflow.
 \label{fig:lchai_v2_active_learning}
 \end{figure}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/active_learning_workflow.png}
 \caption[Active Learning correction workflow]{%
@@ -1396,7 +1396,7 @@ buffer of original tiles that prevents catastrophic forgetting, and the
 versioned MinIO checkpoint that the microservice writes at the end of
 the run.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/active_learning_delta_training.png}
 \caption[Delta training architecture for active learning]{%
@@ -1434,7 +1434,7 @@ natural-language narrative displayed below the graph
 summarises the detected histological patterns, predicted mutations,
 treatment options, and relevant disclaimers.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/lchai_v2_graph_tab_55_7815.png}
 \caption[LCHAI~v2.0 Graph tab]{%
@@ -1449,7 +1449,7 @@ treatment options, and relevant disclaimers.
 \label{fig:lchai_v2_graph}
 \end{figure}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/lchai_v2_graph_explain_ai.png}
 \caption[LCHAI~v2.0 Graph --- LLM explanation]{%
@@ -1494,7 +1494,7 @@ This extends the coherent application of fuzzy logic to a fourth level:
 (iii)~aggregation (Choquet integral), and (iv)~interpretation (fuzzy
 linguistic labels on XAI outputs).
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \begin{minipage}[t]{0.48\textwidth}
 \centering
@@ -1524,7 +1524,7 @@ linguistic labels on XAI outputs).
 
 % Old Output 4 text removed — Choquet description is now in the Analysis Tab section above.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/lchai_v2_analysis_choquet_fuzzy.png}
 \caption[LCHAI~v2.0 Analysis --- Choquet Shapley with fuzzy labels]{%
@@ -1580,7 +1580,7 @@ provides seven sub-tabs:
     experts to calibrate linguistic boundaries without code changes.
 \end{enumerate}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/lchai_v2_admin_params.png}
 \caption[LCHAI~v2.0 Admin --- System Parameters]{%
@@ -1591,7 +1591,7 @@ provides seven sub-tabs:
 \label{fig:lchai_v2_admin_params}
 \end{figure}
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/lchai_v2_admin_audit_new.png}
 \caption[LCHAI~v2.0 Admin --- Audit Log]{%
@@ -1724,7 +1724,7 @@ knowledge bases.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{chapters/figures/kg_three_layer_architecture.png}
+\includegraphics[width=\textwidth,height=8.4in,keepaspectratio]{chapters/figures/kg_three_layer_architecture.png}
 \caption[Three-layer knowledge graph architecture]{%
     Three-layer knowledge graph architecture.
     \textbf{Layer~1} (top): curated assertions from WHO, OncoKB/FDA,
@@ -1876,7 +1876,7 @@ administrator via the ``Discovered Relations'' panel, setting
 This preserves the audit trail while preventing incorrect edges
 from appearing in the case graph.
  
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{chapters/figures/lchai_v2_admin_deepsearch.png}
 \caption[DeepSearch admin interface (v2.0)]{%
@@ -1989,11 +1989,12 @@ PubMed link, and ends with the thesis disclaimer.
 % ============================================================================
 
 % ============================================================================
-\section{Reproducibility}
+\section{Reproducibility Measures in the Implementation}
 \label{sec:impl:reproducibility}
 % ============================================================================
 
 Several measures were taken to ensure the reproducibility of the results, within the inherent limitations of GPU non-determinism.
+The consolidated Reproducibility Statement (code and checkpoint repository, public data sources, hardware, run times and random seeds) is given in Appendix~\ref{app:reproducibility}.
 
 \subsection{Determinism and Seeds}
 \label{sec:impl:repro:seeds}
@@ -2189,14 +2190,16 @@ Section~\ref{sec:disc:future:short}.
  
 This research was conducted with institutional support and expert
 consultation from the Society for the Fight Against Cancer of Ecuador
-(SOLCA\footnote{\url{https://www.solca.med.ec}}), a non-profit
+(SOLCA Guayaquil\footnote{\url{https://www.solca.med.ec}}), a non-profit
 organisation founded in 1951 and officially mandated by the Ecuadorian
 State to lead national cancer control efforts.
  
-The study protocol was reviewed and approved by the SOLCA--CISOL
+The study protocol was reviewed and approved by the SOLCA Guayaquil--CISOL
 Research Committee, which oversees clinical and epidemiological research
 at SOLCA Guayaquil to ensure scientific rigour, ethical compliance, and
 clinical relevance.
+The official approval document issued by the SOLCA Guayaquil Ethics Committee is
+reproduced in Appendix~\ref{app:ethics}.
 \textbf{No patient-identifiable data were used in this thesis.}
 All data used for model training and evaluation derive from publicly
 available research datasets (Zenodo ANORAK, TCGA-LUAD via GDC) that
@@ -2208,16 +2211,16 @@ of Medical Oncology at HFR, for expert clinical review, oncological
 insight, and critical feedback that contributed to the clinical
 coherence and interpretation of the results presented in this thesis.
  
-SOLCA's contribution includes contextual expert consultation
+SOLCA Guayaquil's contribution includes contextual expert consultation
 (Section~\ref{sec:uc:he_acquisition}) and a preliminary pathologist
 validation of LCHAI~v2.0 tile-level pattern predictions on five TCGA
 slides (Section~\ref{sec:eval:pattern:confusion}), providing an
 independent clinical assessment of the pattern classifier's
 performance on out-of-distribution data.
 No patient records, tissue samples, or proprietary clinical data from
-SOLCA were used in this thesis.
+SOLCA Guayaquil were used in this thesis.
 
-\section{Chapter Summary}
+\section{Summary of the Implementation}
 \label{sec:impl:summary}
 
 This chapter has described the implementation of all three artifacts and

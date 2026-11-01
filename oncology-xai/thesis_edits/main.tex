@@ -1,0 +1,99 @@
+\documentclass[11pt,a4paper,twoside,openany]{book}
+
+\input{preamble}
+
+\title{Pattern-Informed Fuzzy Deep Learning for Interpretable Genotype--Phenotype Inference in Lung Adenocarcinoma under Data Scarcity}
+\author{Servio Fernando Lima Reina}
+\date{27.10.2026}
+
+\begin{document}
+\emergencystretch=3em
+\let\cleardoublepage\clearpage
+\pagestyle{empty}
+\frontmatter
+\setcounter{page}{1}
+
+\begin{titlepage}
+  \centering
+  \vspace*{0.05\textheight}
+
+  {\large Department of Informatics\par}
+  {\large University of Fribourg (Switzerland)\par}
+
+  \vspace{0.10\textheight}
+
+  {\LARGE\bfseries Pattern-Informed Fuzzy Deep Learning\par}
+  \vspace{0.4em}
+  {\Large\bfseries for Interpretable Genotype--Phenotype Inference\par}
+  \vspace{0.4em}
+  {\Large\bfseries in Lung Adenocarcinoma under Data Scarcity\par}
+
+  \vspace{0.07\textheight}
+
+  {\Large\bfseries Ph.D. Thesis\par}
+  \vspace{0.6em}
+  {\normalsize presented to the Faculty of Science and Medicine of the University of Fribourg\par}
+  {\normalsize (Switzerland) in consideration for the award of the academic grade of\par}
+  \vspace{0.3em}
+  {\normalsize\itshape Doctor scientiarum informaticarum\par}
+
+  \vspace{0.07\textheight}
+
+  {\normalsize by\par}
+  \vspace{0.4em}
+  {\LARGE\bfseries Servio Fernando Lima Reina\par}
+  \vspace{0.4em}
+  {\normalsize from\par}
+  \vspace{0.3em}
+  {\large Guayaquil, Ecuador\par}
+
+  \vfill
+
+  {\normalsize Thesis No.\ \emph{[to be assigned]}\par}
+  {\normalsize FRICOPY\par}
+  {\normalsize 27.10.2026\par}
+
+  \vspace*{0.03\textheight}
+\end{titlepage}
+
+\include{frontmatter/imprimatur}
+
+\include{frontmatter/dedication}
+
+\include{frontmatter/acknowledgements}
+
+\include{frontmatter/abstract}
+
+\include{frontmatter/kurzfassung}
+
+\include{frontmatter/resume}
+
+\include{frontmatter/declaration}
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\mainmatter
+\pagestyle{fancy}  
+\include{chapters/ch01_introduction}
+\include{chapters/ch02_background.tex}
+\include{chapters/ch03_usecase_data.tex}
+\include{chapters/ch04_methodology.tex}
+\include{chapters/ch05_implementation.tex}
+\include{chapters/ch06_evaluation}
+\include{chapters/ch07_discussion_conclusion}
+
+
+\backmatter
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\appendix
+\makeatletter\@mainmattertrue\makeatother % keep numbered appendix chapters (A--D) although \backmatter was called
+\include{appendix/appA_glossary}          % Appendix A: Glossary
+\include{appendix/appB_reproducibility}   % Appendix B: Reproducibility Statement (moved from before the Bibliography)
+\include{appendix/appC_hyperparameters}   % Appendix C: Hyperparameter Configurations
+\include{appendix/appD_ethics_approval}   % Appendix D: SOLCA Guayaquil Ethics Committee approval
+
+\end{document}
