@@ -10,3 +10,10 @@ Scripts that redrew the thesis figures so that printed text is >= 8 pt and no la
 - `install_figs.py`: copies the PNGs into the thesis figure folders; `audit.py`: OCR estimate of the smallest printed text per figure.
 
 Photographs and software screenshots cannot be redrawn here. LaTeX: figures are set with `[H]` so they stay where they are cited.
+
+The original `gen_*.py` scripts (AUROC/AUPRC bars, heatmap, radar, Choquet, fuzzy membership functions, etc.) now live in this folder too.
+
+## Layout of `thesis_edits/`
+- `main.tex`, `preamble.tex`: top-level LaTeX (compile `main.tex`; bibliography is `references/references.bib`).
+- `chapters/ch01..ch07*.tex` and `chapters/figures/`: chapters and figures.
+- `frontmatter/` (incl. `abstract.tex`), `appendix/`, `references/`, `figure_scripts/`.
