@@ -3,6 +3,11 @@
 % Layout mirrors the standard University of Fribourg PhD thesis convention.
 % ---------------------------------------------------------------------------
 
+% Signed original (committee signatures) when available; otherwise the
+% unsigned LaTeX layout below is typeset. The signed PDF is not published
+% in the public repository.
+\IfFileExists{frontmatter/imprimatur_signed.pdf}{\includepdf[pages=1,pagecommand={\thispagestyle{empty}}]{frontmatter/imprimatur_signed.pdf}\endinput}{}
+
 \thispagestyle{empty}
 \begin{flushleft}
 

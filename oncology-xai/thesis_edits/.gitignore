@@ -1,0 +1,16 @@
+# private: signatures and personal data (kept only locally / on Overleaf)
+frontmatter/signature.png
+frontmatter/imprimatur_signed.pdf
+appendix/cv_private.tex
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+main.pdf

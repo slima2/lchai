@@ -1724,7 +1724,7 @@ knowledge bases.
 
 \begin{figure}[!tp]
 \centering
-\includegraphics[width=\textwidth,height=8.4in,keepaspectratio]{chapters/figures/kg_three_layer_architecture.png}
+\includegraphics[width=\textwidth,height=8.0in,keepaspectratio]{chapters/figures/kg_three_layer_architecture.png}
 \caption[Three-layer knowledge graph architecture]{%
     Three-layer knowledge graph architecture.
     \textbf{Layer~1} (top): curated assertions from WHO, OncoKB/FDA,
@@ -2003,9 +2003,9 @@ Random seeds are fixed at the beginning of each experiment for
 Python's \texttt{random} module, NumPy, and PyTorch
 (\texttt{torch.manual\_seed}, \texttt{torch.cuda.manual\_seed\_all}).
 The training scripts also request
-\texttt{torch.backends.cudnn.deterministic}\,=\,\texttt{True},
-\texttt{torch.backends.cudnn.benchmark}\,=\,\texttt{False}, and
-\texttt{torch.use\_deterministic\_\allowbreak algorithms(True)}
+\texttt{torch.\allowbreak backends.\allowbreak cudnn.\allowbreak deterministic}\,=\,\texttt{True},
+\texttt{torch.\allowbreak backends.\allowbreak cudnn.\allowbreak benchmark}\,=\,\texttt{False}, and
+\texttt{torch.\allowbreak use\_deterministic\_\allowbreak algorithms(True)}
 (wrapped in a \texttt{try/except} because not every operation exposes
 a deterministic kernel and silent fallback is preferable to a runtime
 crash).
